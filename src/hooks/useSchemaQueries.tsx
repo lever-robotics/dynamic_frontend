@@ -1,13 +1,13 @@
 // src/hooks/useSchemaQueries.ts
 import { useQuery } from '@apollo/client';
-import { QueryBuilder } from '../utils/queryBuilder';
+import { QueryBuilder } from '../utils/QueryBuilder';
 
 export function useSchemaQueries() {
   const queries = QueryBuilder.getAllQueries();
-  
+
   const results = queries.map(({ name, tableName, query }) => {
     const { data, loading, error } = useQuery(query);
-    
+
     return {
       name,
       tableName,

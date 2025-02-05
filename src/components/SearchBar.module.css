@@ -1,0 +1,30 @@
+.SearchbarContainer {
+	width: 400px;
+	background-color: var(--accent-a-bg);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 32px;
+    box-shadow: var(--shadow);
+}
+
+.Icon {
+    width: 9%;
+    height: 9%;
+    padding: 8px;
+    margin-left: 6px;
+    color: var(--gray-text);
+}
+
+.Searchbar {
+    all: unset;
+	width: 90%;
+    text-align: start;
+	padding: 8px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+}
+
+.Searchbar::placeholder {
+    color: #9ca3af;
+}
