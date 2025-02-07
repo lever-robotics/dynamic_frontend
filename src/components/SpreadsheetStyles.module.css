@@ -1,4 +1,4 @@
-/* .spreadsheet-container {
+.spreadsheet-container {
     display: flex;
     justify-content: center;
     padding: 1rem;
@@ -38,4 +38,4 @@
 
 .title-container {
     margin-left: 100px;
-} */
+}

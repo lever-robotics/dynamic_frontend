@@ -1,5 +1,8 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
-
+// src/components/app-sidebar.tsx
+import { Activity, Users, Calendar, FileText, Group, Box, Settings } from "lucide-react"
+import schemaData from '../assets/commonGrounds_schema.json';
+import logoImg from "../assets/cgLogo.png";
+import { AspectRatio } from "radix-ui";
 import {
   Sidebar,
   SidebarContent,
@@ -9,52 +12,63 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "../components/ui/sidebar";
 
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "#",
-    icon: Home,
-  },
-  {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
-]
+// Icon mapping for different object types
+const iconMapping: { [key: string]: any } = {
+  Individual: Users,
+  Volunteer: Users,
+  Staff: Users,
+  Group: Group,
+  ProgressNote: FileText,
+  Event: Calendar,
+  Activity: Activity,
+  Equipment: Box,
+};
 
-export function AppSidebar() {
+// Function to get icon for a type
+const getIconForType = (typeName: string) => {
+  return iconMapping[typeName] || Box;
+};
+
+interface AppSidebarProps {
+  onTableSelect: (tableName: string) => void;
+}
+
+export function AppSidebar({ onTableSelect }: AppSidebarProps) {
+  const schemaItems = schemaData.object_types
+    .filter(type => !type.name.includes('Mention'))
+    .map(type => ({
+      title: type.name,
+      table_name: type.table_name,
+      icon: getIconForType(type.name),
+    }));
+
   return (
-    <Sidebar>
-      <SidebarContent>
+    <Sidebar className="flex flex-col h-full">
+      {/* Logo Section */}
+      <div className="p-4 border-b border-gray-200">
+        <AspectRatio.Root ratio={22 / 6} className="w-full">
+          <img
+            src={logoImg}
+            alt="logo"
+            className="w-full h-full object-contain"
+          />
+        </AspectRatio.Root>
+      </div>
+
+      {/* Main Menu Section */}
+      <SidebarContent className="flex-1">
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {schemaItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
+                  <SidebarMenuButton
+                    onClick={() => onTableSelect(item.table_name)}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -62,6 +76,24 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* Settings Section */}
+      <SidebarContent className="border-t">
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => onTableSelect('settings')}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
     </Sidebar>
-  )
+  );
 }
