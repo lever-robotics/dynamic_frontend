@@ -35,10 +35,10 @@ export default function ObjectDataDisplay({ collectionName, edges }: ObjectDataD
 
     useEffect(() => {
         if (edges && edges.length > 0) {
-            // Get all the fields from the first node, excluding internal fields
+            // Get all the fields from the first node, excluding internal fields and 'id'
             const firstNode = edges[0].node;
             const headers = Object.keys(firstNode).filter(key =>
-                !['__typename', 'nodeId'].includes(key)
+                !['__typename', 'nodeId', 'id'].includes(key)
             );
             setColumnHeaders(headers);
 
