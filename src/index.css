@@ -2,18 +2,22 @@
 @import "@radix-ui/colors/gray.css";
 @import "@radix-ui/colors/sky-alpha.css";
 
-@font-face {
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* @font-face {
   font-family: 'MyFont';
   src: url('./assets/Poppins/Poppins-Regular.ttf.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
-}
+} */
 
 * {
   box-sizing: border-box;
 }
 
-#root {
+/* #root {
   font-family: 'MyFont', sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -23,8 +27,6 @@
 
   color-scheme: light dark;
   color: var(--gray-text);
-  /* background-color: #242424; */
-  /* background-color: var(--accent-base); */
   background: linear-gradient(0deg, #ffffff 60%, var(--sky-2) 90%);
 
   font-synthesis: none;
@@ -86,16 +88,54 @@
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
   --shadow-inner-bottom: inset 0 -4px 8px 0 rgb(0 0 0 / 0.05);
   --shadow-none: 0 0 #0000;
-}
+} */
 
 html,
 body {
   margin: 0;
   padding: 0;
-  /* display: flex; */
   height: 100vh;
   width: 100vw;
   min-width: 320px;
   min-height: 100vh;
-  /* overflow: hidden; */
+  @apply h-full w-full overflow-hidden;
+}
+
+@layer base {
+  :root {
+
+    --radius: 0.5rem
+  ;
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%}
+  .dark {
+
+    --sidebar-background: 240 5.9% 10%;
+
+    --sidebar-foreground: 240 4.8% 95.9%;
+
+    --sidebar-primary: 224.3 76.3% 48%;
+
+    --sidebar-primary-foreground: 0 0% 100%;
+
+    --sidebar-accent: 240 3.7% 15.9%;
+
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+
+    --sidebar-border: 240 3.7% 15.9%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%}
 }

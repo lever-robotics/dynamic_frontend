@@ -43,16 +43,16 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
     const rowLabels = data.map(item => String(item.id));
 
     return (
-        <div className="mx-auto max-w-[90%] my-8">
-            <h2 className={styles['title-container']}>{title}</h2>
-            <div className={styles['spreadsheet-container']}>
+        <div>
+            <h2 className="text-lg">{title}</h2>
+            <div >
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet
                         data={spreadsheetData}
                         onChange={setSpreadsheetData}
                         columnLabels={columnHeaders}
                         rowLabels={rowLabels} // Using IDs as row labels
-                        className="w-full"
+                        className="w-11"
                     />
                 ) : (
                     <div>No data available</div>

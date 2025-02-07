@@ -37,12 +37,13 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
         }
     }, [data, title]);
 
+    //className="w-full max-w-6xl mx-auto p-4 border rounded-lg shadow-lg mb-8"
     return (
-        <div className="w-full max-w-6xl mx-auto p-4 border rounded-lg shadow-lg mb-8">
+        <div >
             <div>
-                <h2 className={styles['title-container']}>{title}</h2>
+                <h2>{title}</h2>
             </div>
-            <div className={styles['spreadsheet-container']}>
+            <div>
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet
                         data={spreadsheetData}
@@ -100,9 +101,9 @@ const ConnectionSpreadsheet: React.FC<{ collectionName: string; edges: any[] }> 
     if (!edges || edges.length === 0) return null;
 
     return (
-        <div className="mx-auto max-w-[90%] my-8"> {/* Container with margin */}
-            <h2 className={styles['title-container']}>{objectTypeName}</h2>
-            <div className={styles['spreadsheet-container']}>
+        <div > {/* Container with margin */}
+            <h2 >{objectTypeName}</h2>
+            <div >
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet
                         data={spreadsheetData}

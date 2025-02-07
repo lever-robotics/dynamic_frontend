@@ -44,12 +44,12 @@ export function DataDisplay() {
 
 
       {/* Debug View */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Raw Data (Debug View)</h2>
+      <div>
+        <h2>Raw Data (Debug View)</h2>
         {results.map(({ name, tableName, data }) => (
-          <div key={tableName} className="mb-4">
-            <h3 className="font-bold">{name}</h3>
-            <pre className="bg-gray-100 p-4 rounded-lg overflow-auto">
+          <div key={tableName}>
+            <h3>{name}</h3>
+            <pre>
               {JSON.stringify(data, null, 2)}
             </pre>
           </div>

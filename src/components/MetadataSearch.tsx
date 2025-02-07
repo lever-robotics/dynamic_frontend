@@ -76,7 +76,7 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto relative" style={{ zIndex: 50 }}>
+        <div style={{ zIndex: 50 }}>
             {/* Search Container */}
             <div className={styles.SearchbarContainer}>
                 <MagnifyingGlassIcon className={styles.Icon} />
@@ -138,11 +138,11 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
 
             {/* Display either Node Connections or AI Response */}
             {selectedNodeId ? (
-                <div className="mt-8">
+                <div>
                     <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
                 </div>
             ) : isAIMode && searchTerm ? (
-                <div className="mt-8">
+                <div>
                     <AIDisplay searchQuery={searchTerm} />
                 </div>
             ) : null}

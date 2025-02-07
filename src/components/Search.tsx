@@ -7,8 +7,8 @@ export function Search() {
     const { results, loading, error } = useSearchQuery(searchTerm);
 
     return (
-        <div className="w-full max-w-6xl mx-auto p-4">
-            <div className="mb-4">
+        <div>
+            <div>
                 <input
                     type="text"
                     value={searchTerm}
@@ -25,10 +25,10 @@ export function Search() {
                 <div>
                     <h2>Search Results:</h2>
                     {results.map((result, index) => (
-                        <div key={index} className="p-2 border-b">
+                        <div key={index}>
                             <h3>{result.name || `${result.first_name} ${result.last_name}`}</h3>
                             <p>Found in: {result.sourceTable}</p>
-                            <pre className="mt-2 text-sm">
+                            <pre>
                                 {JSON.stringify(result, null, 2)}
                             </pre>
                         </div>
