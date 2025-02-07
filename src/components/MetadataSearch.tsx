@@ -1,62 +1,77 @@
+// src/components/MetadataSearch.tsx
 import React, { useState, useEffect, KeyboardEvent } from 'react';
 import { useMetadataSearch } from '../hooks/useMetadataSearch';
 import { NodeConnections } from './NodeConnections';
-import { ObjectList } from './ObjectList'; // You'll need to create this component
+import { ObjectList } from './ObjectList';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import styles from "./SearchBar.module.css";
 import { AIDisplay } from './AIDisplay';
 
 interface MetadataSearchProps {
     onSearchStart?: () => void;
-    onSearchEnd?: () => void;
+    onTableSelect: (tableName: string) => void;
+    tableToDisplay: string | null;
 }
 
-export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
+export function MetadataSearch({
+    onSearchStart,
+    onTableSelect,
+    tableToDisplay
+}: MetadataSearchProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedTypeName, setSelectedTypeName] = useState<string | null>(null);
-    const [selectedTable, setSelectedTable] = useState<string | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number>(-1);
     const [isAIMode, setIsAIMode] = useState(false);
+    const [aiQuery, setAiQuery] = useState(''); // Separate state for AI query
     const { results, loading, error } = useMetadataSearch(searchTerm);
 
     // Limit regular results to 4 to leave room for AI option
     const limitedResults = results.slice(0, 4);
 
-    // Reset selected index and AI mode when search term changes
+    // Reset selected index when search term changes
     useEffect(() => {
         setSelectedIndex(-1);
-        setIsAIMode(false);
     }, [searchTerm]);
+
+    // Clear other displays when table is selected from sidebar
+    useEffect(() => {
+        if (tableToDisplay) {
+            setSelectedNodeId(null);
+            setSelectedTypeName(null);
+            setIsAIMode(false);
+            setAiQuery('');
+            setSearchTerm('');
+        }
+    }, [tableToDisplay]);
 
     const handleResultSelect = (result: any) => {
         if (result.typeName === '') {
-            // This is a schema object type result
             setSelectedNodeId(null);
             setSelectedTypeName(null);
-            setSelectedTable(result.sourceTable);
-            setIsAIMode(false);
+            onTableSelect(result.sourceTable);
         } else {
-            // This is a regular search result
+            onTableSelect('');
             setSelectedNodeId(result.nodeId);
             setSelectedTypeName(result.typeName);
-            setSelectedTable(null);
-            setIsAIMode(false);
         }
         setSearchTerm('');
+        setIsAIMode(false);
+        setAiQuery('');
         onSearchStart?.();
     };
 
     const handleAISelect = () => {
+        onTableSelect('');
         setIsAIMode(true);
         setSelectedNodeId(null);
         setSelectedTypeName(null);
-        setSelectedTable(null);
-        // Don't clear search term as we'll use it for the AI query
+        setAiQuery(searchTerm); // Set AI query when explicitly selecting AI
+        setSearchTerm('');
     };
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        const totalOptions = limitedResults.length + (searchTerm.trim() !== '' ? 1 : 0); // +1 for AI option
+        const totalOptions = limitedResults.length + (searchTerm.trim() !== '' ? 1 : 0);
         if (totalOptions === 0) return;
 
         switch (e.key) {
@@ -83,7 +98,6 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
                 break;
             case 'Escape':
                 setSearchTerm('');
-                setIsAIMode(false);
                 break;
         }
     };
@@ -149,18 +163,18 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
                 </div>
             )}
 
-            {/* Conditional Rendering for Different Display Types */}
-            {selectedTable ? (
+            {/* Display Components - Only one will show at a time */}
+            {tableToDisplay ? (
                 <div className="mt-8">
-                    <ObjectList tableName={selectedTable} />
+                    <ObjectList tableName={tableToDisplay} />
                 </div>
             ) : selectedNodeId ? (
                 <div className="mt-8">
                     <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
                 </div>
-            ) : isAIMode && searchTerm ? (
+            ) : isAIMode ? (
                 <div>
-                    <AIDisplay searchQuery={searchTerm} />
+                    <AIDisplay searchQuery={aiQuery} />
                 </div>
             ) : null}
         </div>

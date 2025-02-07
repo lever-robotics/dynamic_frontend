@@ -1,23 +1,38 @@
-import React from "react";
+// src/App.tsx
+import React, { useState } from "react";
 import { ApolloProvider } from "@apollo/client";
 import client from "./utils/apolloClient";
 import { DataDisplay } from "./components/DataDisplay";
-import NavBar from "./components/NavBar";
-import styles from "./App.module.css";
-import "./index.css";
-import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
+import "./index.css";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 function App() {
-	return (
-		<ApolloProvider client={client}>
-			<SidebarProvider>
-				<AppSidebar />
-				{/* <SidebarTrigger /> */}
-				<DataDisplay />
-			</SidebarProvider>
-		</ApolloProvider>
-	);
+  const [tableToDisplay, setTableToDisplay] = useState<string | null>(null);
+
+  const handleTableSelect = (tableName: string) => {
+    if (tableName === 'settings') {
+      console.log('Settings clicked');
+      return;
+    }
+    setTableToDisplay(tableName);
+  };
+
+  return (
+    <ApolloProvider client={client}>
+      <SidebarProvider defaultIsOpen={true}>
+        <div className="flex h-screen overflow-hidden">
+          <AppSidebar onTableSelect={handleTableSelect} />
+          <main className="flex-1 overflow-auto p-6">
+            <DataDisplay
+              onTableSelect={handleTableSelect}
+              tableToDisplay={tableToDisplay}
+            />
+          </main>
+        </div>
+      </SidebarProvider>
+    </ApolloProvider>
+  );
 }
 
 export default App;

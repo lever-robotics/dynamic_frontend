@@ -4,7 +4,12 @@ import { useSchemaQueries } from '../hooks/useSchemaQueries';
 import DynamicSpreadsheets from './DynamicSpreadsheets';
 import { MetadataSearch } from './MetadataSearch';
 
-export function DataDisplay() {
+interface DataDisplayProps {
+  onTableSelect: (tableName: string) => void;
+  tableToDisplay: string | null;
+}
+
+export function DataDisplay({ onTableSelect, tableToDisplay }: DataDisplayProps) {
   const { results, isLoading, errors } = useSchemaQueries();
   const [isSearching, setIsSearching] = useState(false);
 
@@ -25,36 +30,15 @@ export function DataDisplay() {
     <div className='flex flex-1'>
       <MetadataSearch
         onSearchStart={() => setIsSearching(true)}
+        onTableSelect={onTableSelect}
+        tableToDisplay={tableToDisplay}
       />
 
-      {!isSearching && (
+      {!isSearching && !tableToDisplay && (
         <>
-          {/* <h1 className="text-3xl font-bold text-center my-4">Database Tables</h1> */}
           <DynamicSpreadsheets queryResults={results} />
         </>
       )}
-
-
-
-
-
-
-
-
-
-
-      {/* Debug View */}
-      {/* <div>
-        <h2>Raw Data (Debug View)</h2>
-        {results.map(({ name, tableName, data }) => (
-          <div key={tableName}>
-            <h3>{name}</h3>
-            <pre>
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </div>
-        ))}
-      </div> */}
     </div>
   );
 }
