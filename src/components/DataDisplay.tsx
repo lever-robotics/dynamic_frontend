@@ -27,7 +27,7 @@ export function DataDisplay({ onTableSelect, tableToDisplay }: DataDisplayProps)
   }
 
   return (
-    <div className='flex flex-1'>
+    <div className='flex justify-center w-full h-screen'>
       <MetadataSearch
         onSearchStart={() => setIsSearching(true)}
         onTableSelect={onTableSelect}
@@ -35,9 +35,7 @@ export function DataDisplay({ onTableSelect, tableToDisplay }: DataDisplayProps)
       />
 
       {!isSearching && !tableToDisplay && (
-        <>
           <DynamicSpreadsheets queryResults={results} />
-        </>
       )}
     </div>
   );

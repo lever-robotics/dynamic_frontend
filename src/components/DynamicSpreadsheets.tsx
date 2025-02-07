@@ -54,7 +54,7 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
                         columnLabels={columnHeaders}
                         rowLabels={rowLabels} // Using IDs as row labels
                         // className="w-11"
-                        className="w-full max-w-sm"
+                        className="w-full max-w-sm rounded-md shadow"
                     />
                 ) : (
                     <div>No data available</div>
@@ -66,7 +66,7 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 
 const DynamicSpreadsheets = ({ queryResults }) => {
     return (
-        <div className="w-full max-w-sm">
+        <div className='flex flex-col overflow-y-scroll'>
             {queryResults.map(({ name, data }) => (
                 <DataSpreadsheet
                     key={name}
