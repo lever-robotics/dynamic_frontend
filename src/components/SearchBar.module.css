@@ -60,11 +60,11 @@
 }
 
 .Icon {
-    width: 9%;
-    height: 9%;
+    width: 11%;
+    height: 100%;
     padding: 8px;
     margin-left: 6px;
-    color: var(--gray-text);
+    color: #6b7280;
 }
 
 .Searchbar {
