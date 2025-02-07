@@ -62,15 +62,14 @@ export default function ObjectDataDisplay({ collectionName, edges }: ObjectDataD
     if (!edges || edges.length === 0) return null;
 
     return (
-        <div className="mx-auto max-w-[90%] my-8"> {/* Container with margin */}
-            <h2 className={styles['title-container']}>{objectTypeName}</h2>
-            <div className={styles['spreadsheet-container']}>
+        <div className="flex flex-col items-center w-full"> {/* Container with margin */}
+            <div className="max-w-3xl h-min overflow-y-hidden overflow-x-scroll">
+                <h2 className="text-lg">{objectTypeName}</h2>
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet
                         data={spreadsheetData}
                         onChange={setSpreadsheetData}
                         columnLabels={columnHeaders}
-                        className="w-full"
                     />
                 ) : (
                     <div className="p-4 text-center">No data available</div>

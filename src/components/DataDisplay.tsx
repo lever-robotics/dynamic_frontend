@@ -27,7 +27,7 @@ export function DataDisplay({ onTableSelect, tableToDisplay }: DataDisplayProps)
   }
 
   return (
-    <div className='flex justify-center w-full h-screen'>
+    <div className='flex flex-col items-center w-full h-screen overflow-y-scroll pb-16'>
       <MetadataSearch
         onSearchStart={() => setIsSearching(true)}
         onTableSelect={onTableSelect}
