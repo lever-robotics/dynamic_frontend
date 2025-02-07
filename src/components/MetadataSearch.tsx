@@ -1,6 +1,7 @@
 import React, { useState, useEffect, KeyboardEvent } from 'react';
 import { useMetadataSearch } from '../hooks/useMetadataSearch';
 import { NodeConnections } from './NodeConnections';
+import { ObjectList } from './ObjectList'; // You'll need to create this component
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import styles from "./SearchBar.module.css";
 import { AIDisplay } from './AIDisplay';
@@ -14,6 +15,7 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedTypeName, setSelectedTypeName] = useState<string | null>(null);
+    const [selectedTable, setSelectedTable] = useState<string | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number>(-1);
     const [isAIMode, setIsAIMode] = useState(false);
     const { results, loading, error } = useMetadataSearch(searchTerm);
@@ -27,11 +29,21 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
         setIsAIMode(false);
     }, [searchTerm]);
 
-    const handleResultSelect = (nodeId: string, typeName: string) => {
-        setSelectedNodeId(nodeId);
-        setSelectedTypeName(typeName);
+    const handleResultSelect = (result: any) => {
+        if (result.typeName === '') {
+            // This is a schema object type result
+            setSelectedNodeId(null);
+            setSelectedTypeName(null);
+            setSelectedTable(result.sourceTable);
+            setIsAIMode(false);
+        } else {
+            // This is a regular search result
+            setSelectedNodeId(result.nodeId);
+            setSelectedTypeName(result.typeName);
+            setSelectedTable(null);
+            setIsAIMode(false);
+        }
         setSearchTerm('');
-        setIsAIMode(false);
         onSearchStart?.();
     };
 
@@ -39,6 +51,7 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
         setIsAIMode(true);
         setSelectedNodeId(null);
         setSelectedTypeName(null);
+        setSelectedTable(null);
         // Don't clear search term as we'll use it for the AI query
     };
 
@@ -62,7 +75,7 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
                 if (selectedIndex >= 0) {
                     if (selectedIndex < limitedResults.length) {
                         const result = limitedResults[selectedIndex];
-                        handleResultSelect(result.nodeId, result.typeName);
+                        handleResultSelect(result);
                     } else {
                         handleAISelect();
                     }
@@ -107,7 +120,7 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
                             {limitedResults.map((result, index) => (
                                 <button
                                     key={index}
-                                    onClick={() => handleResultSelect(result.nodeId, result.typeName)}
+                                    onClick={() => handleResultSelect(result)}
                                     className={`${styles.ResultItem} ${index === selectedIndex ? styles.selected : ''}`}
                                 >
                                     <div className={styles.ResultName}>
@@ -136,8 +149,12 @@ export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
                 </div>
             )}
 
-            {/* Display either Node Connections or AI Response */}
-            {selectedNodeId ? (
+            {/* Conditional Rendering for Different Display Types */}
+            {selectedTable ? (
+                <div className="mt-8">
+                    <ObjectList tableName={selectedTable} />
+                </div>
+            ) : selectedNodeId ? (
                 <div className="mt-8">
                     <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
                 </div>
