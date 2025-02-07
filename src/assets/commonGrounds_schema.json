@@ -208,7 +208,7 @@
                         "description": "Unique identifier"
                     },
                     {
-                        "name": "description",
+                        "name": "name",
                         "type": "text",
                         "description": "Note content"
                     },
@@ -237,7 +237,7 @@
                         "description": "Event date"
                     },
                     {
-                        "name": "event_name",
+                        "name": "name",
                         "type": "text",
                         "description": "Name of the event"
                     }
@@ -256,7 +256,7 @@
                         "description": "Unique identifier"
                     },
                     {
-                        "name": "type",
+                        "name": "name",
                         "type": "string",
                         "description": "Type of activity"
                     },
@@ -285,7 +285,7 @@
                         "description": "Unique identifier"
                     },
                     {
-                        "name": "serial_number",
+                        "name": "name",
                         "type": "string",
                         "description": "Equipment serial number"
                     },

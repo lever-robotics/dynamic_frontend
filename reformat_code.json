@@ -1,0 +1,40 @@
+query GetNodeConnections($nodeId: ID!) {      node(nodeId: $nodeId) {        ... on individual {          id        first_name        last_name        phone_number        age        email        birth_day        address        gender        notes        prp_record        waiver_record                individualgroupCollection {        edges {          node {            groups {              name        purpose
+                        }
+                    }
+                }
+            }      individualattendeventCollection {        edges {          node {            event {              date        name
+                        }
+                    }
+                }
+            }      individualtoindividualbuddyCollection {        edges {          node {            individual {              first_name        last_name        phone_number        age        email        birth_day        address        gender        notes        prp_record        waiver_record
+                        }
+                    }
+                }
+            }      individualtostaffbuddyCollection {        edges {          node {            staff {              name        phone_number        email        staff_form
+                        }
+                    }
+                }
+            }      individualtovolunteerbuddyCollection {        edges {          node {            volunteer {              first_name        last_name        email        birth_day        address        phone_number        emergency_contact_name        experiance_asl        previous_experience        volunteer_form
+                        }
+                    }
+                }
+            }      prefersequipmentCollection {        edges {          node {            equipment {              name        location_held        type
+                        }
+                    }
+                }
+            }      individuallikesactivityCollection {        edges {          node {            activity {              name        instructions        typical_locations
+                        }
+                    }
+                }
+            }      individualusesequipmentCollection {        edges {          node {            equipment {              name        location_held        type
+                        }
+                    }
+                }
+            }      individualtoeventCollection {        edges {          node {            event {              date        name
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

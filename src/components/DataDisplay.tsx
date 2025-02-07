@@ -1,12 +1,12 @@
 // src/components/DataDisplay.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useSchemaQueries } from '../hooks/useSchemaQueries';
 import DynamicSpreadsheets from './DynamicSpreadsheets';
-import { Search } from './Search';
 import { MetadataSearch } from './MetadataSearch';
 
 export function DataDisplay() {
   const { results, isLoading, errors } = useSchemaQueries();
+  const [isSearching, setIsSearching] = useState(false);
 
   if (isLoading) return <div>Loading data...</div>;
 
@@ -22,13 +22,28 @@ export function DataDisplay() {
   }
 
   return (
-    <div className="p-4">
-      <MetadataSearch />
-      {/* <Search /> */}
-      <h1 className="text-3xl font-bold text-center my-4">Database Tables</h1>
-      {/* <DynamicSpreadsheets queryResults={results} /> */}
+    <div>
+      <MetadataSearch
+        onSearchStart={() => setIsSearching(true)}
+      />
 
-      {/* Optionally keep the JSON view for debugging */}
+      {!isSearching && (
+        <>
+          {/* <h1 className="text-3xl font-bold text-center my-4">Database Tables</h1> */}
+          <DynamicSpreadsheets queryResults={results} />
+        </>
+      )}
+
+
+
+
+
+
+
+
+
+
+      {/* Debug View */}
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Raw Data (Debug View)</h2>
         {results.map(({ name, tableName, data }) => (

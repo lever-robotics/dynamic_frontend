@@ -39,8 +39,8 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 
     return (
         <div className="w-full max-w-6xl mx-auto p-4 border rounded-lg shadow-lg mb-8">
-            <div className="mb-4">
-                <h2 className="text-2xl font-bold">{title}</h2>
+            <div>
+                <h2 className={styles['title-container']}>{title}</h2>
             </div>
             <div className={styles['spreadsheet-container']}>
                 {spreadsheetData.length > 0 ? (
@@ -61,6 +61,8 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 const ConnectionSpreadsheet: React.FC<{ collectionName: string; edges: any[] }> = ({ collectionName, edges }) => {
     const [spreadsheetData, setSpreadsheetData] = useState<Array<Array<{ value: string; readOnly?: boolean }>>>([]);
     const [columnHeaders, setColumnHeaders] = useState<string[]>([]);
+    const [objectTypeName, setObjectTypeName] = useState<string>('');
+
 
     useEffect(() => {
         if (edges && edges.length > 0) {
@@ -75,6 +77,11 @@ const ConnectionSpreadsheet: React.FC<{ collectionName: string; edges: any[] }> 
                 const firstEntity = firstNode[connectedEntityKey];
                 const headers = Object.keys(firstEntity).filter(key => key !== '__typename');
                 setColumnHeaders(headers);
+
+                // Determine the object type name and capitalize it
+                const rawObjectTypeName = connectedEntityKey.replace(/Collection$/, '');
+                const capitalizedObjectTypeName = rawObjectTypeName.charAt(0).toUpperCase() + rawObjectTypeName.slice(1);
+                setObjectTypeName(capitalizedObjectTypeName);
 
                 // Create matrix of all connected entities
                 const matrix = edges.map(edge => {
@@ -93,10 +100,8 @@ const ConnectionSpreadsheet: React.FC<{ collectionName: string; edges: any[] }> 
     if (!edges || edges.length === 0) return null;
 
     return (
-        <div className="w-full max-w-6xl mx-auto p-4 border rounded-lg shadow-lg mb-8">
-            <div className="mb-4">
-                <h2 className="text-2xl font-bold">{collectionName}</h2>
-            </div>
+        <div className="mx-auto max-w-[90%] my-8"> {/* Container with margin */}
+            <h2 className={styles['title-container']}>{objectTypeName}</h2>
             <div className={styles['spreadsheet-container']}>
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet
@@ -106,7 +111,7 @@ const ConnectionSpreadsheet: React.FC<{ collectionName: string; edges: any[] }> 
                         className="w-full"
                     />
                 ) : (
-                    <div>No connections available</div>
+                    <div className="p-4 text-center">No data available</div>
                 )}
             </div>
         </div>

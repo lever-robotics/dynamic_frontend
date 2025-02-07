@@ -43,10 +43,8 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
     const rowLabels = data.map(item => String(item.id));
 
     return (
-        <div className="w-full max-w-6xl mx-auto p-4 border rounded-lg shadow-lg mb-8">
-            <div className="mb-4">
-                <h2 className="text-2xl font-bold">{title}</h2>
-            </div>
+        <div className="mx-auto max-w-[90%] my-8">
+            <h2 className={styles['title-container']}>{title}</h2>
             <div className={styles['spreadsheet-container']}>
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet

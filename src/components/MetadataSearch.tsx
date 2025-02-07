@@ -1,24 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, KeyboardEvent } from 'react';
 import { useMetadataSearch } from '../hooks/useMetadataSearch';
 import { NodeConnections } from './NodeConnections';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import styles from "./SearchBar.module.css";
+import { AIDisplay } from './AIDisplay';
 
-export function MetadataSearch() {
+interface MetadataSearchProps {
+    onSearchStart?: () => void;
+    onSearchEnd?: () => void;
+}
+
+export function MetadataSearch({ onSearchStart }: MetadataSearchProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedTypeName, setSelectedTypeName] = useState<string | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+    const [isAIMode, setIsAIMode] = useState(false);
     const { results, loading, error } = useMetadataSearch(searchTerm);
 
-    const handleResultClick = (nodeId: string, typeName: string) => {
-        setSelectedNodeId(selectedNodeId === nodeId ? null : nodeId);
-        setSelectedTypeName(selectedTypeName === typeName ? null : typeName);
+    // Limit regular results to 4 to leave room for AI option
+    const limitedResults = results.slice(0, 4);
+
+    // Reset selected index and AI mode when search term changes
+    useEffect(() => {
+        setSelectedIndex(-1);
+        setIsAIMode(false);
+    }, [searchTerm]);
+
+    const handleResultSelect = (nodeId: string, typeName: string) => {
+        setSelectedNodeId(nodeId);
+        setSelectedTypeName(typeName);
+        setSearchTerm('');
+        setIsAIMode(false);
+        onSearchStart?.();
     };
 
-    const limitedResults = results.slice(0, 5);
+    const handleAISelect = () => {
+        setIsAIMode(true);
+        setSelectedNodeId(null);
+        setSelectedTypeName(null);
+        // Don't clear search term as we'll use it for the AI query
+    };
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+        const totalOptions = limitedResults.length + (searchTerm.trim() !== '' ? 1 : 0); // +1 for AI option
+        if (totalOptions === 0) return;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedIndex(prev =>
+                    prev < totalOptions - 1 ? prev + 1 : prev
+                );
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedIndex(prev => prev > 0 ? prev - 1 : prev);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0) {
+                    if (selectedIndex < limitedResults.length) {
+                        const result = limitedResults[selectedIndex];
+                        handleResultSelect(result.nodeId, result.typeName);
+                    } else {
+                        handleAISelect();
+                    }
+                }
+                break;
+            case 'Escape':
+                setSearchTerm('');
+                setIsAIMode(false);
+                break;
+        }
+    };
 
     return (
-        <div className="w-full max-w-4xl mx-auto">
+        <div className="w-full max-w-4xl mx-auto relative" style={{ zIndex: 50 }}>
             {/* Search Container */}
             <div className={styles.SearchbarContainer}>
                 <MagnifyingGlassIcon className={styles.Icon} />
@@ -26,58 +84,68 @@ export function MetadataSearch() {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search any field..."
+                    onKeyDown={handleKeyDown}
+                    placeholder="Search any field or ask AI..."
                     className={styles.Searchbar}
                 />
             </div>
 
-            {/* Results Container */}
-            {loading ? (
-                <div className="text-center py-4 text-gray-600">Searching...</div>
-            ) : error ? (
-                <div className="text-center py-4 text-red-600">Error: {error.message}</div>
-            ) : searchTerm.trim() !== '' && (
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-4">
-                    {limitedResults.length > 0 ? (
-                        <div className="divide-y divide-gray-200">
+            {/* Floating Results Container */}
+            {searchTerm.trim() !== '' && (
+                <div className={styles.ResultsContainer}>
+                    {loading ? (
+                        <div className={styles.ResultItem}>
+                            Searching...
+                        </div>
+                    ) : error ? (
+                        <div className={styles.ResultItem}>
+                            Error: {error.message}
+                        </div>
+                    ) : (
+                        <>
+                            {/* Regular search results */}
                             {limitedResults.map((result, index) => (
                                 <button
                                     key={index}
-                                    onClick={() => handleResultClick(result.nodeId, result.typeName)}
-                                    className="w-full text-left p-4 hover:bg-gray-50 transition-colors focus:outline-none"
+                                    onClick={() => handleResultSelect(result.nodeId, result.typeName)}
+                                    className={`${styles.ResultItem} ${index === selectedIndex ? styles.selected : ''}`}
                                 >
-                                    <div className="font-semibold text-lg text-gray-900">
+                                    <div className={styles.ResultName}>
                                         {result.displayName}
                                     </div>
-                                    <div className="text-sm text-gray-600 mt-1">
+                                    <div className={styles.ResultDetail}>
                                         {result.matchedField}: {result.matchedValue}
                                     </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                        in {result.sourceTable}
-                                    </div>
-                                    {selectedNodeId === result.nodeId && (
-                                        <div className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                                            <div>Node ID: {result.nodeId}</div>
-                                            <div>Type: {result.typeName}</div>
-                                        </div>
-                                    )}
                                 </button>
                             ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-4 text-gray-600">
-                            No results found for "{searchTerm}"
-                        </div>
+
+                            {/* AI Option */}
+                            <button
+                                onClick={handleAISelect}
+                                className={`${styles.ResultItem} ${selectedIndex === limitedResults.length ? styles.selected : ''}`}
+                            >
+                                <div className={styles.ResultName}>
+                                    Ask AI about: "{searchTerm}"
+                                </div>
+                                <div className={styles.ResultDetail}>
+                                    Get AI-powered insights and analysis
+                                </div>
+                            </button>
+                        </>
                     )}
                 </div>
             )}
 
-            {/* Node Connections */}
-            {selectedNodeId && (
+            {/* Display either Node Connections or AI Response */}
+            {selectedNodeId ? (
                 <div className="mt-8">
-                    <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName!} />
+                    <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
                 </div>
-            )}
+            ) : isAIMode && searchTerm ? (
+                <div className="mt-8">
+                    <AIDisplay searchQuery={searchTerm} />
+                </div>
+            ) : null}
         </div>
     );
 }

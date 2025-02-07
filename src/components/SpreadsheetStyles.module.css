@@ -1,11 +1,13 @@
 .spreadsheet-container {
+    display: flex;
+    justify-content: center;
     padding: 1rem;
-    max-width: 800px;
-    margin: 0 auto;
 }
 
 /* Round the outer corners of the table */
 .spreadsheet-container>div {
+    max-width: 90%;
+    /* Optional: prevents table from stretching too wide */
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #e2e8f0;
@@ -39,4 +41,8 @@
 .Spreadsheet__active-row,
 .Spreadsheet__active-column {
     background-color: rgba(59, 130, 246, 0.05) !important;
+}
+
+.title-container {
+    margin-left: 100px;
 }
