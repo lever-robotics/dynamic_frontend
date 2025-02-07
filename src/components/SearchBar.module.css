@@ -1,6 +1,25 @@
 /* SearchBar.module.css */
+.searchWrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    transition: opacity 0.2s ease;
+}
+
 .SearchbarContainer {
-    /* width: 400px;
+    width: 400px;
     background-color: white;
     display: flex;
     flex-direction: row;
@@ -8,74 +27,88 @@
     border-radius: 32px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     margin: 100px auto;
-    position: relative; */
+    position: relative;
+    z-index: 50;
+    transition: all 0.2s ease;
+}
+
+.SearchbarContainerActive {
+    width: 600px;
+    transform: translateY(20px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.ResultsContainer {
+    position: absolute;
+    width: 100%;
+    top: calc(100% + 8px);
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 50;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
+}
+
+.ResultsContainerVisible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
 }
 
 .Icon {
-    /* width: 9%;
+    width: 9%;
     height: 9%;
     padding: 8px;
     margin-left: 6px;
-    color: var(--gray-text); */
+    color: var(--gray-text);
 }
 
 .Searchbar {
-    /* all: unset;
+    all: unset;
     width: 90%;
     text-align: start;
     padding: 8px;
     border: 1px solid transparent;
-    border-radius: 4px; */
+    border-radius: 4px;
 }
 
 .Searchbar::placeholder {
-    /* color: #9ca3af; */
-}
-
-/* Updated dropdown styles */
-.ResultsContainer {
-    /* position: absolute;
-    width: 100%;
-    top: 220px;
-    width: 25rem;
-    left: 50.5%;
-    transform: translateX(-50%);
-    background-color: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    z-index: 1000;
-    overflow: hidden; */
+    color: #9ca3af;
 }
 
 .ResultItem {
-    /* all: unset;
+    all: unset;
     display: block;
     width: 100%;
     padding: 12px 16px;
     cursor: pointer;
     background-color: white;
     transition: background-color 0.2s ease;
-    box-sizing: border-box; */
+    box-sizing: border-box;
 }
 
 .ResultItem:hover,
 .ResultItem.selected {
-    /* background-color: #f3f4f6; */
+    background-color: #f3f4f6;
 }
 
 .ResultName {
-    /* font-weight: 500;
+    font-weight: 500;
     color: #1f2937;
-    margin-bottom: 4px; */
+    margin-bottom: 4px;
 }
 
 .ResultDetail {
-    /* font-size: 0.875rem;
-    color: #4b5563; */
+    font-size: 0.875rem;
+    color: #4b5563;
 }
 
 .ResultSource {
-    /* font-size: 0.75rem;
+    font-size: 0.75rem;
     color: #6b7280;
-    margin-top: 2px; */
+    margin-top: 2px;
 }
