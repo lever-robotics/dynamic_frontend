@@ -142,7 +142,6 @@ export class QueryBuilder {
     // Get all metadata fields
     const metadataFields = typeObj.metadata.fields.map(field => {
       return `${field.name}
-        __typename
         nodeId`;
     }).join('\n        ');
 
@@ -151,12 +150,15 @@ export class QueryBuilder {
         ${tableName}Collection {
           edges {
             node {
+              __typename
               ${metadataFields}
             }
           }
         }
       }
     `;
+
+    console.log(queryString);
 
     return gql(queryString);
   }

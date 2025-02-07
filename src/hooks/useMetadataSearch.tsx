@@ -2,6 +2,7 @@
 import React from 'react';
 import { useQuery } from '@apollo/client';
 import { QueryBuilder } from '../utils/QueryBuilder';
+import schemaData from '../assets/commonGrounds_schema.json';
 
 interface MetadataSearchResult {
     displayName: string;
@@ -37,9 +38,23 @@ export function useMetadataSearch(searchTerm: string) {
     });
 
     const formattedResults = React.useMemo(() => {
-        if (!data) return [];
+        if (!data && !searchTerm) return [];
 
-        return Object.entries(data)
+        // Get schema object type matches
+        const schemaMatches = schemaData.object_types
+            .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
+            .map(obj => ({
+                displayName: obj.name,
+                matchedField: 'table',
+                matchedValue: obj.table_name,
+                sourceTable: obj.table_name,
+                nodeId: '',
+                typeName: ''
+            }));
+
+        if (!data) return schemaMatches;
+
+        const dbResults = Object.entries(data)
             .flatMap(([tableName, tableData]: [string, any]) => {
                 const edges = tableData?.edges || [];
                 return edges.flatMap(({ node }) => {
@@ -87,6 +102,9 @@ export function useMetadataSearch(searchTerm: string) {
                 });
             })
             .filter(Boolean);
+
+        // Combine schema matches and database results, with schema matches first
+        return [...schemaMatches, ...dbResults];
     }, [data, searchTerm, numberTerm, dateTerm]);
 
     return {
