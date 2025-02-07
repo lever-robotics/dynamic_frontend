@@ -34,7 +34,7 @@ export function DataDisplay({ onTableSelect, tableToDisplay }: DataDisplayProps)
         tableToDisplay={tableToDisplay}
       />
 
-      {!isSearching && !tableToDisplay && (
+      {(!tableToDisplay || tableToDisplay === '') && (
         <>
           <DynamicSpreadsheets queryResults={results} />
         </>

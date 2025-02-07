@@ -43,11 +43,19 @@ export function AppSidebar({ onTableSelect }: AppSidebarProps) {
       table_name: type.table_name,
       icon: getIconForType(type.name),
     }));
+  
+  const handleLogoClick = () => {
+    // Pass empty string or null to clear table selection
+    onTableSelect('');
+  };
 
   return (
     <Sidebar className="flex flex-col h-full">
       {/* Logo Section */}
-      <div className="p-4 border-b border-gray-200">
+      <div
+        className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={handleLogoClick}
+      >
         <AspectRatio.Root ratio={22 / 6} className="w-full">
           <img
             src={logoImg}
