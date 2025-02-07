@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Spreadsheet from 'react-spreadsheet';
 import styles from './SpreadsheetStyles.module.css';
 import schemaData from '../assets/commonGrounds_schema.json';
+import "./react-spreadsheet-overrides.css"
 
 interface DataSpreadsheetProps {
     title: string;
@@ -45,14 +46,15 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
     return (
         <div>
             <h2 className="text-lg">{title}</h2>
-            <div >
+            <div>
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet
                         data={spreadsheetData}
                         onChange={setSpreadsheetData}
                         columnLabels={columnHeaders}
                         rowLabels={rowLabels} // Using IDs as row labels
-                        className="w-11"
+                        // className="w-11"
+                        className="w-full max-w-sm"
                     />
                 ) : (
                     <div>No data available</div>
@@ -64,7 +66,7 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 
 const DynamicSpreadsheets = ({ queryResults }) => {
     return (
-        <div className="p-4">
+        <div className="w-full max-w-sm">
             {queryResults.map(({ name, data }) => (
                 <DataSpreadsheet
                     key={name}

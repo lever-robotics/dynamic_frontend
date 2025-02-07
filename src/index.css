@@ -13,6 +13,14 @@
   font-style: normal;
 } */
 
+.Spreadsheet__table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.react-spreadsheet-table {
+  width: 100% !important;
+}
+
 * {
   box-sizing: border-box;
 }

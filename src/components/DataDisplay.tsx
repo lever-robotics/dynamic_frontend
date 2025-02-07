@@ -22,7 +22,7 @@ export function DataDisplay() {
   }
 
   return (
-    <div>
+    <div className='flex flex-1'>
       <MetadataSearch
         onSearchStart={() => setIsSearching(true)}
       />
@@ -44,7 +44,7 @@ export function DataDisplay() {
 
 
       {/* Debug View */}
-      <div>
+      {/* <div>
         <h2>Raw Data (Debug View)</h2>
         {results.map(({ name, tableName, data }) => (
           <div key={tableName}>
@@ -54,7 +54,7 @@ export function DataDisplay() {
             </pre>
           </div>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }
