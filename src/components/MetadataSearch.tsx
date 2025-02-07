@@ -1,5 +1,5 @@
 // src/components/MetadataSearch.tsx
-import React, { useState, useEffect, KeyboardEvent } from 'react';
+import React, { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useMetadataSearch } from '../hooks/useMetadataSearch';
 import { NodeConnections } from './NodeConnections';
 import { ObjectList } from './ObjectList';
@@ -23,10 +23,11 @@ export function MetadataSearch({
     const [selectedTypeName, setSelectedTypeName] = useState<string | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number>(-1);
     const [isAIMode, setIsAIMode] = useState(false);
-    const [aiQuery, setAiQuery] = useState(''); // Separate state for AI query
-    const { results, loading, error } = useMetadataSearch(searchTerm);
+    const [aiQuery, setAiQuery] = useState('');
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
 
-    // Limit regular results to 4 to leave room for AI option
+    const { results, loading, error } = useMetadataSearch(searchTerm);
     const limitedResults = results.slice(0, 4);
 
     // Reset selected index when search term changes
@@ -40,17 +41,31 @@ export function MetadataSearch({
             setSelectedNodeId(null);
             setSelectedTypeName(null);
             setIsAIMode(false);
-            setAiQuery('');
             setSearchTerm('');
+            setIsSearchFocused(false);
         }
     }, [tableToDisplay]);
 
+    const handleSearchFocus = () => {
+        setIsSearchFocused(true);
+    };
+
+    const handleSearchBlur = (e: React.FocusEvent) => {
+        // If clicking within search container or results, don't blur
+        if (searchContainerRef.current?.contains(e.relatedTarget as Node)) {
+            return;
+        }
+        setIsSearchFocused(false);
+    };
+
     const handleResultSelect = (result: any) => {
         if (result.typeName === '') {
+            // This is a schema object type result
             setSelectedNodeId(null);
             setSelectedTypeName(null);
             onTableSelect(result.sourceTable);
         } else {
+            // This is a regular search result
             onTableSelect('');
             setSelectedNodeId(result.nodeId);
             setSelectedTypeName(result.typeName);
@@ -58,6 +73,7 @@ export function MetadataSearch({
         setSearchTerm('');
         setIsAIMode(false);
         setAiQuery('');
+        setIsSearchFocused(false);
         onSearchStart?.();
     };
 
@@ -66,8 +82,9 @@ export function MetadataSearch({
         setIsAIMode(true);
         setSelectedNodeId(null);
         setSelectedTypeName(null);
-        setAiQuery(searchTerm); // Set AI query when explicitly selecting AI
+        setAiQuery(searchTerm);
         setSearchTerm('');
+        setIsSearchFocused(false);
     };
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -98,85 +115,100 @@ export function MetadataSearch({
                 break;
             case 'Escape':
                 setSearchTerm('');
+                setIsSearchFocused(false);
                 break;
         }
     };
 
     return (
-        <div style={{ zIndex: 50 }}>
-            {/* Search Container */}
-            <div className={styles.SearchbarContainer}>
-                <MagnifyingGlassIcon className={styles.Icon} />
-                <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Search any field or ask AI..."
-                    className={styles.Searchbar}
-                />
-            </div>
+        <div className={styles.searchWrapper}>
+            {isSearchFocused && <div className={styles.overlay} />}
 
-            {/* Floating Results Container */}
-            {searchTerm.trim() !== '' && (
-                <div className={styles.ResultsContainer}>
-                    {loading ? (
-                        <div className={styles.ResultItem}>
-                            Searching...
-                        </div>
-                    ) : error ? (
-                        <div className={styles.ResultItem}>
-                            Error: {error.message}
-                        </div>
-                    ) : (
-                        <>
-                            {/* Regular search results */}
-                            {limitedResults.map((result, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => handleResultSelect(result)}
-                                    className={`${styles.ResultItem} ${index === selectedIndex ? styles.selected : ''}`}
-                                >
-                                    <div className={styles.ResultName}>
-                                        {result.displayName}
-                                    </div>
-                                    <div className={styles.ResultDetail}>
-                                        {result.matchedField}: {result.matchedValue}
-                                    </div>
-                                </button>
-                            ))}
+            <div className="relative w-full flex flex-col items-center">
+                {/* Search Bar */}
+                <div
+                    ref={searchContainerRef}
+                    className={`${styles.SearchbarContainer} ${isSearchFocused ? styles.SearchbarContainerActive : ''}`}
+                >
+                    <MagnifyingGlassIcon className={styles.Icon} />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onFocus={handleSearchFocus}
+                        onBlur={handleSearchBlur}
+                        placeholder="Search any field or ask AI..."
+                        className={styles.Searchbar}
+                    />
 
-                            {/* AI Option */}
-                            <button
-                                onClick={handleAISelect}
-                                className={`${styles.ResultItem} ${selectedIndex === limitedResults.length ? styles.selected : ''}`}
-                            >
-                                <div className={styles.ResultName}>
-                                    Ask AI about: "{searchTerm}"
+                    {/* Floating Results Container */}
+                    {searchTerm.trim() !== '' && (
+                        <div
+                            className={`${styles.ResultsContainer} ${isSearchFocused ? styles.ResultsContainerVisible : ''}`}
+                            tabIndex={-1}
+                        >
+                            {loading ? (
+                                <div className={styles.ResultItem}>
+                                    Searching...
                                 </div>
-                                <div className={styles.ResultDetail}>
-                                    Get AI-powered insights and analysis
+                            ) : error ? (
+                                <div className={styles.ResultItem}>
+                                    Error: {error.message}
                                 </div>
-                            </button>
-                        </>
+                            ) : (
+                                <>
+                                    {/* Regular search results */}
+                                    {limitedResults.map((result, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => handleResultSelect(result)}
+                                            className={`${styles.ResultItem} ${index === selectedIndex ? styles.selected : ''}`}
+                                        >
+                                            <div className={styles.ResultName}>
+                                                {result.displayName}
+                                            </div>
+                                            <div className={styles.ResultDetail}>
+                                                {result.matchedField}: {result.matchedValue}
+                                            </div>
+                                        </button>
+                                    ))}
+
+                                    {/* AI Option */}
+                                    <button
+                                        onClick={handleAISelect}
+                                        className={`${styles.ResultItem} ${selectedIndex === limitedResults.length ? styles.selected : ''}`}
+                                    >
+                                        <div className={styles.ResultName}>
+                                            Ask AI about: "{searchTerm}"
+                                        </div>
+                                        <div className={styles.ResultDetail}>
+                                            Get AI-powered insights and analysis
+                                        </div>
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     )}
                 </div>
-            )}
 
-            {/* Display Components - Only one will show at a time */}
-            {tableToDisplay ? (
-                <div className="mt-8">
-                    <ObjectList tableName={tableToDisplay} />
+                {/* Display Components - Only one will show at a time */}
+                <div className={`w-full ${isSearchFocused ? 'opacity-50' : ''} transition-opacity duration-200`}>
+                    {tableToDisplay ? (
+                        <div className="mt-8">
+                            <ObjectList tableName={tableToDisplay} />
+                        </div>
+                    ) : selectedNodeId ? (
+                        <div className="mt-8">
+                            <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
+                        </div>
+                    ) : isAIMode ? (
+                        <div>
+                            <AIDisplay searchQuery={aiQuery} />
+                        </div>
+                    ) : null}
                 </div>
-            ) : selectedNodeId ? (
-                <div className="mt-8">
-                    <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
-                </div>
-            ) : isAIMode ? (
-                <div>
-                    <AIDisplay searchQuery={aiQuery} />
-                </div>
-            ) : null}
+            </div>
         </div>
     );
 }
