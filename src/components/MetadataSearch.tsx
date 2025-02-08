@@ -55,7 +55,7 @@ export function MetadataSearch({
         if (searchContainerRef.current?.contains(e.relatedTarget as Node)) {
             return;
         }
-        // setIsSearchFocused(false);
+        setIsSearchFocused(false);
     };
 
     const handleResultSelect = (result: any) => {
@@ -89,6 +89,7 @@ export function MetadataSearch({
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         const totalOptions = limitedResults.length + (searchTerm.trim() !== '' ? 1 : 0);
+        console.log(totalOptions)
         if (totalOptions === 0) return;
 
         switch (e.key) {
@@ -124,12 +125,12 @@ export function MetadataSearch({
         <>
         <div className='my-32 z-10 w-96 flex flex-col'>
             {isSearchFocused && <div className={styles.overlay} />}
-
-            <div className="z-10 w-96 transition-all focus-within:scale-105">
+            <div className='absolute z-10'>
+            <div className="w-96 transition-all focus-within:scale-105">
                 {/* Search Bar */}
                 <div
                     ref={searchContainerRef}
-                    className='flex items-center px-3 pr-5 rounded-3xl shadow bg-white'
+                    className='flex items-center px-3 pr-5 rounded-3xl shadow-md bg-white'
                 >
                     <MagnifyingGlassIcon className={styles.Icon} />
                     <div className="bg-white flex-1 p-2 transition-all">
@@ -148,17 +149,17 @@ export function MetadataSearch({
             </div>
 
                     {/* Floating Results Container */}
-                    {searchTerm.trim() !== '' && (
+                    {searchTerm.trim() !== ''  && (
                         <div
-                            className={`z-10 mt-2 w-full bg-white rounded-xl ${isSearchFocused ? styles.ResultsContainerVisible : ''}`}
+                            className={`mt-2 w-full bg-white rounded-xl ${isSearchFocused ? 'opacity-1' : 'opacity-0'}`}
                             tabIndex={-1}
                         >
                             {loading ? (
-                                <div className={styles.ResultItem}>
+                                <div className="p-2 pl-5 w-full min-w-0 rounded-xl box-border">
                                     Searching...
                                 </div>
                             ) : error ? (
-                                <div className={styles.ResultItem}>
+                                <div className="p-2 pl-5 w-full min-w-0 rounded-xl box-border">
                                     Error: {error.message}
                                 </div>
                             ) : (
@@ -168,12 +169,12 @@ export function MetadataSearch({
                                         <button
                                             key={index}
                                             onClick={() => handleResultSelect(result)}
-                                            className={`flex flex-col p-2 pl-5 w-full min-w-0 rounded-xl box-border transition-all hover:bg-primary-500/20 hover:shadow-sm`}
+                                            className={`flex flex-col p-2 pl-5 w-full min-w-0 rounded-xl box-border transition-all hover:bg-primary-500/20 hover:shadow-sm ${index === selectedIndex && "bg-primary-500/20"}`}
                                         >
-                                            <div className={styles.ResultName}>
+                                            <div className="text-lg">
                                                 {result.displayName}
                                             </div>
-                                            <div className={styles.ResultDetail}>
+                                            <div className="text-sm">
                                                 {result.matchedField}: {result.matchedValue}
                                             </div>
                                         </button>
@@ -182,12 +183,12 @@ export function MetadataSearch({
                                     {/* AI Option */}
                                     <button
                                         onClick={handleAISelect}
-                                        className={"flex flex-col w-full p-2 pl-5 box-border rounded-xl transition-all hover:bg-primary-500/20 hover:shadow-sm"}
+                                        className={`flex flex-col w-full p-2 pl-5 box-border rounded-xl transition-all hover:bg-primary-500/20 hover:shadow-sm ${limitedResults.length === selectedIndex && "bg-primary-500/20"}`}
                                     >
-                                        <div className={styles.ResultName}>
+                                        <div className="text-lg">
                                             Ask AI about: "{searchTerm}"
                                         </div>
-                                        <div className={styles.ResultDetail}>
+                                        <div className="text-sm">
                                             Get AI-powered insights and analysis
                                         </div>
                                     </button>
@@ -195,6 +196,7 @@ export function MetadataSearch({
                             )}
                         </div>
                     )}
+                    </div>
         </div>
         {/* Display Components - Only one will show at a time */}
         <div className={`w-full ${isSearchFocused ? 'opacity-50' : ''} transition-opacity duration-200`}>
