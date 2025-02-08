@@ -122,6 +122,14 @@ const ConnectionSpreadsheet: React.FC<{ collectionName: string; edges: any[] }> 
 const NodeDataDisplay = ({ nodeData }) => {
     if (!nodeData) return null;
 
+    // Filter out collections and internal fields for main data
+    const mainData = Object.entries(nodeData)
+        .filter(([key, value]) =>
+            !key.endsWith('Collection') &&
+            !key.startsWith('__') &&
+            value !== null
+        );
+
     // Get collections from the data
     const collections = Object.entries(nodeData)
         .filter(([key]) => key.endsWith('Collection'));
@@ -130,21 +138,39 @@ const NodeDataDisplay = ({ nodeData }) => {
         <div className="flex flex-col items-center w-full">
             <div className="flex flex-col justify-start gap-10 max-w-3xl">
                 {/* Main entity data */}
-            <DataSpreadsheet
-                title={nodeData.__typename}
-                data={nodeData}
-            />
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+                        {nodeData.__typename}
+                    </h2>
+                    <div className="grid gap-3">
+                        {mainData.map(([key, value]) => (
+                            <div
+                                key={key}
+                                className="grid grid-cols-3 gap-4 py-2 border-b border-gray-100 last:border-0"
+                            >
+                                <span className="text-gray-600 font-medium">
+                                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                                </span>
+                                <span className="col-span-2 text-gray-800">
+                                    {typeof value === 'object'
+                                        ? JSON.stringify(value)
+                                        : String(value)
+                                    }
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-            {/* Connection data */}
-            {collections.map(([collectionName, collection]: [string, any]) => (
-                <ConnectionSpreadsheet
-                    key={collectionName}
-                    collectionName={collectionName}
-                    edges={collection.edges}
-                />
-            ))}
+                {/* Connection data - keeping original implementation */}
+                {collections.map(([collectionName, collection]: [string, any]) => (
+                    <ConnectionSpreadsheet
+                        key={collectionName}
+                        collectionName={collectionName}
+                        edges={collection.edges}
+                    />
+                ))}
             </div>
-            
         </div>
     );
 };
