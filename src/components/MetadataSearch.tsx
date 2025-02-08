@@ -92,9 +92,8 @@ export function MetadataSearch({
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         const totalOptions = limitedResults.length + (searchTerm.trim() !== '' ? 1 : 0);
-        console.log(totalOptions)
         if (totalOptions === 0) return;
-
+console.log("here ",selectedIndex)
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
@@ -159,16 +158,16 @@ export function MetadataSearch({
     return (
         <>
         <div className='my-32 z-10 w-96 flex flex-col'>
-            {isSearchFocused && <div className={styles.overlay} />}
+            <div className={`${isSearchFocused && styles.overlay} transition-all`} />
             <div className='absolute z-10'>
                 <div className="w-96 transition-all focus-within:scale-105">
                     {/* Search Bar */}
                     <div
                         ref={searchContainerRef}
-                        className='flex items-center px-3 pr-5 rounded-3xl shadow-md bg-white'
+                        className='flex items-center px-3 pr-5 rounded-3xl shadow-md bg-anakiwa-50 focus-within:bg-white'
                     >
                         <MagnifyingGlassIcon className={styles.Icon} />
-                        <div className="bg-white flex-1 p-2 transition-all">
+                        <div className="flex-1 p-2 transition-all">
                         <input
                             type="text"
                             value={searchTerm}
@@ -177,7 +176,7 @@ export function MetadataSearch({
                             onFocus={handleSearchFocus}
                             onBlur={handleSearchBlur}
                             placeholder="Search any field or ask AI..."
-                            className="w-full border-none bg-transparent focus:outline-none"
+                            className="w-full border-none bg-transparent placeholder:font-light font-base text-[14px] focus:outline-none text-portage-950"
                         />
                         </div>
                     </div>
@@ -204,12 +203,12 @@ export function MetadataSearch({
                                         <button
                                             key={index}
                                             onClick={() => handleResultSelect(result)}
-                                            className={`flex flex-col p-2 pl-5 w-full min-w-0 rounded-xl box-border transition-all hover:bg-primary-500/20 hover:shadow-sm ${index === selectedIndex && "bg-primary-500/20"}`}
+                                            className={`flex flex-col p-2 pl-5 my-2 w-full min-w-0 rounded-xl box-border transition-all hover:bg-anakiwa-200 hover:shadow-sm ${index === selectedIndex && "bg-anakiwa-200"}`}
                                         >
-                                            <div className="text-lg">
+                                            <div className="text-lg font-medium">
                                                 {result.displayName}
                                             </div>
-                                            <div className="text-sm">
+                                            <div className="text-sm font-light">
                                                 {result.matchedField}: {result.matchedValue}
                                             </div>
                                         </button>
@@ -218,12 +217,12 @@ export function MetadataSearch({
                                     {/* AI Option */}
                                     <button
                                         onClick={handleAISelect}
-                                        className={`flex flex-col w-full p-2 pl-5 box-border rounded-xl transition-all hover:bg-primary-500/20 hover:shadow-sm ${limitedResults.length === selectedIndex && "bg-primary-500/20"}`}
+                                        className={`flex flex-col w-full p-2 pl-5 my-2 box-border rounded-xl transition-all hover:bg-anakiwa-200 hover:shadow-sm ${limitedResults.length === selectedIndex && "bg-anakiwa-200"}`}
                                     >
-                                        <div className="text-lg">
+                                        <div className="text-lg font-medium">
                                             Ask AI about: "{searchTerm}"
                                         </div>
-                                        <div className="text-sm">
+                                        <div className="text-sm font-light">
                                             Get AI-powered insights and analysis
                                         </div>
                                     </button>

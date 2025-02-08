@@ -48,7 +48,7 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 
 	return (
 		<div className="max-w-3xl h-mi">
-			<h2 className="text-2xl font-heading">{title}</h2>
+			<h2 className="text-2xl font-heading text-portage-950">{title}</h2>
             <div className="overflow-y-hidden overflow-x-scroll no-scrollbar">
 			{spreadsheetData.length > 0 ? (
 				<Spreadsheet

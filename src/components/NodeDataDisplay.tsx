@@ -103,7 +103,7 @@ const ConnectionSpreadsheet: React.FC<{ collectionName: string; edges: any[] }> 
 
     return (
         <div className="max-w-3xl h-mi"> {/* Container with margin */}
-            <h2 className="text-2xl font-heading">{objectTypeName}</h2>
+            <h2 className="text-2xl font-heading text-portage-950">{objectTypeName}</h2>
             <div className="overflow-y-hidden overflow-x-scroll no-scrollbar">
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet

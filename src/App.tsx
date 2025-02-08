@@ -21,7 +21,7 @@ function App() {
   return (
     <ApolloProvider client={client}>
       <SidebarProvider defaultIsOpen={true}   >
-        <div className="flex w-screen overflow-hidden">
+        <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
           <AppSidebar onTableSelect={handleTableSelect} />
             <DataDisplay
               onTableSelect={handleTableSelect}

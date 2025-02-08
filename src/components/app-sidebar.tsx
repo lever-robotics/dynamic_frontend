@@ -50,10 +50,10 @@ export function AppSidebar({ onTableSelect }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="flex flex-col justify-between h-full shadow-lg">
+    <Sidebar className="flex flex-col justify-between h-screen">
       {/* Logo Section */}
       <div
-        className="p-6 pl-4 border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="p-6 pl-4 cursor-pointer hover:bg-anakiwa-50 transition-colors"
         onClick={handleLogoClick}
       >
         <AspectRatio.Root ratio={22 / 6}>
