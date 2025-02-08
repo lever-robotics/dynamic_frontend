@@ -63,7 +63,7 @@ export default function ObjectDataDisplay({ collectionName, edges }: ObjectDataD
 
     return (
         <div className="flex flex-col items-center w-full"> {/* Container with margin */}
-            <div className="max-w-3xl h-min overflow-y-hidden overflow-x-scroll">
+            <div className="max-w-3xl h-min overflow-y-hidden overflow-x-scroll no-scrollbar">
                 <h2 className="text-2xl font-heading ">{objectTypeName}</h2>
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet
