@@ -6,6 +6,10 @@ import { ObjectList } from './ObjectList';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import styles from "./SearchBar.module.css";
 import { AIDisplay } from './AIDisplay';
+import DynamicSpreadsheets from './DynamicSpreadsheets';
+import { useSchemaQueries } from '../hooks/useSchemaQueries';
+
+
 
 interface MetadataSearchProps {
     onSearchStart?: () => void;
@@ -26,6 +30,7 @@ export function MetadataSearch({
     const [aiQuery, setAiQuery] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
+    const { results: schemaResults, isLoading, errors } = useSchemaQueries();
 
     const { results, loading, error } = useMetadataSearch(searchTerm);
     const limitedResults = results.slice(0, 4);
@@ -78,10 +83,7 @@ export function MetadataSearch({
     };
 
     const handleAISelect = () => {
-        onTableSelect('');
         setIsAIMode(true);
-        setSelectedNodeId(null);
-        setSelectedTypeName(null);
         setAiQuery(searchTerm);
         setSearchTerm('');
         setIsSearchFocused(false);
@@ -120,98 +122,122 @@ export function MetadataSearch({
         }
     };
 
+    // Function to determine what content to display
+    const renderMainContent = () => {
+        // Check for node selection first
+        if (selectedNodeId) {
+            return (
+                <div className="mt-8">
+                    <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
+                </div>
+            );
+        }
+        // Then check table display conditions
+        else if (tableToDisplay === 'logo-table' || !tableToDisplay) {
+            return !isLoading && !errors.length && (
+                <DynamicSpreadsheets queryResults={schemaResults} />
+            );
+        }
+        // Finally, handle regular table display
+        else {
+            return (
+                <div className="mt-8">
+                    <ObjectList tableName={tableToDisplay} />
+                </div>
+            );
+        }
+    };
+
     return (
         <>
-        <div className='my-32 z-10 w-96 flex flex-col'>
-            {isSearchFocused && <div className={styles.overlay} />}
+            <div className='my-32 z-10 w-96 flex flex-col'>
+                {isSearchFocused && <div className={styles.overlay} />}
 
-            <div className="z-10 w-96 transition-all focus-within:scale-105">
-                {/* Search Bar */}
-                <div
-                    ref={searchContainerRef}
-                    className='flex items-center px-3 pr-5 rounded-3xl shadow bg-white'
-                >
-                    <MagnifyingGlassIcon className={styles.Icon} />
-                    <div className="bg-white flex-1 p-2 transition-all">
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        onFocus={handleSearchFocus}
-                        onBlur={handleSearchBlur}
-                        placeholder="Search any field or ask AI..."
-                        className="w-full border-none bg-transparent focus:outline-none"
-                    />
+                <div className="z-10 w-96 transition-all focus-within:scale-105">
+                    {/* Search Bar */}
+                    <div
+                        ref={searchContainerRef}
+                        className='flex items-center px-3 pr-5 rounded-3xl shadow bg-white'
+                    >
+                        <MagnifyingGlassIcon className={styles.Icon} />
+                        <div className="bg-white flex-1 p-2 transition-all">
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                onFocus={handleSearchFocus}
+                                onBlur={handleSearchBlur}
+                                placeholder="Search any field or ask AI..."
+                                className="w-full border-none bg-transparent focus:outline-none"
+                            />
+                        </div>
                     </div>
+                </div>
+
+                {/* Floating Results Container */}
+                {searchTerm.trim() !== '' && (
+                    <div
+                        className={`z-10 mt-2 w-full bg-white rounded-xl ${isSearchFocused ? styles.ResultsContainerVisible : ''}`}
+                        tabIndex={-1}
+                    >
+                        {loading ? (
+                            <div className={styles.ResultItem}>
+                                Searching...
+                            </div>
+                        ) : error ? (
+                            <div className={styles.ResultItem}>
+                                Error: {error.message}
+                            </div>
+                        ) : (
+                            <>
+                                {/* Regular search results */}
+                                {limitedResults.map((result, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => handleResultSelect(result)}
+                                        className={`flex flex-col p-2 pl-5 w-full min-w-0 rounded-xl box-border transition-all hover:bg-primary-500/20 hover:shadow-sm`}
+                                    >
+                                        <div className={styles.ResultName}>
+                                            {result.displayName}
+                                        </div>
+                                        <div className={styles.ResultDetail}>
+                                            {result.matchedField}: {result.matchedValue}
+                                        </div>
+                                    </button>
+                                ))}
+
+                                {/* AI Option */}
+                                <button
+                                    onClick={handleAISelect}
+                                    className={"flex flex-col w-full p-2 pl-5 box-border rounded-xl transition-all hover:bg-primary-500/20 hover:shadow-sm"}
+                                >
+                                    <div className={styles.ResultName}>
+                                        Search AI:  "{searchTerm}"
+                                    </div>
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+            {/* Main Content Container */}
+            <div className="relative w-full">
+                {/* AI Display Section */}
+                {isAIMode && (
+                    <div className="w-full max-w-4xl mx-auto mb-8 px-4">
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <AIDisplay searchQuery={aiQuery} />
+                        </div>
+                    </div>
+                )}
+
+                {/* Main Content */}
+                <div className={`w-full ${isSearchFocused ? 'opacity-50' : ''} transition-opacity duration-200`}>
+                    {renderMainContent()}
                 </div>
             </div>
 
-                    {/* Floating Results Container */}
-                    {searchTerm.trim() !== '' && (
-                        <div
-                            className={`z-10 mt-2 w-full bg-white rounded-xl ${isSearchFocused ? styles.ResultsContainerVisible : ''}`}
-                            tabIndex={-1}
-                        >
-                            {loading ? (
-                                <div className={styles.ResultItem}>
-                                    Searching...
-                                </div>
-                            ) : error ? (
-                                <div className={styles.ResultItem}>
-                                    Error: {error.message}
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Regular search results */}
-                                    {limitedResults.map((result, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => handleResultSelect(result)}
-                                            className={`flex flex-col p-2 pl-5 w-full min-w-0 rounded-xl box-border transition-all hover:bg-primary-500/20 hover:shadow-sm`}
-                                        >
-                                            <div className={styles.ResultName}>
-                                                {result.displayName}
-                                            </div>
-                                            <div className={styles.ResultDetail}>
-                                                {result.matchedField}: {result.matchedValue}
-                                            </div>
-                                        </button>
-                                    ))}
-
-                                    {/* AI Option */}
-                                    <button
-                                        onClick={handleAISelect}
-                                        className={"flex flex-col w-full p-2 pl-5 box-border rounded-xl transition-all hover:bg-primary-500/20 hover:shadow-sm"}
-                                    >
-                                        <div className={styles.ResultName}>
-                                            Ask AI about: "{searchTerm}"
-                                        </div>
-                                        <div className={styles.ResultDetail}>
-                                            Get AI-powered insights and analysis
-                                        </div>
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    )}
-        </div>
-        {/* Display Components - Only one will show at a time */}
-        <div className={`w-full ${isSearchFocused ? 'opacity-50' : ''} transition-opacity duration-200`}>
-        {tableToDisplay ? (
-            <div className="mt-8">
-                <ObjectList tableName={tableToDisplay} />
-            </div>
-        ) : selectedNodeId ? (
-            <div className="mt-8">
-                <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
-            </div>
-        ) : isAIMode ? (
-            <div>
-                <AIDisplay searchQuery={aiQuery} />
-            </div>
-        ) : null}
-    </div>
-    </>
+        </>
     );
 }

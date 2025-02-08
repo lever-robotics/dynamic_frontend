@@ -46,7 +46,7 @@ export function AppSidebar({ onTableSelect }: AppSidebarProps) {
   
   const handleLogoClick = () => {
     // Pass empty string or null to clear table selection
-    onTableSelect('');
+    onTableSelect('logo-table');
   };
 
   return (
