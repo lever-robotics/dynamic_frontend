@@ -6,6 +6,10 @@ import { ObjectList } from './ObjectList';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import styles from "./SearchBar.module.css";
 import { AIDisplay } from './AIDisplay';
+import DynamicSpreadsheets from './DynamicSpreadsheets';
+import { useSchemaQueries } from '../hooks/useSchemaQueries';
+
+
 
 interface MetadataSearchProps {
     onSearchStart?: () => void;
@@ -26,6 +30,7 @@ export function MetadataSearch({
     const [aiQuery, setAiQuery] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
+    const { results: schemaResults, isLoading, errors } = useSchemaQueries();
 
     const { results, loading, error } = useMetadataSearch(searchTerm);
     const limitedResults = results.slice(0, 4);
@@ -78,10 +83,7 @@ export function MetadataSearch({
     };
 
     const handleAISelect = () => {
-        onTableSelect('');
         setIsAIMode(true);
-        setSelectedNodeId(null);
-        setSelectedTypeName(null);
         setAiQuery(searchTerm);
         setSearchTerm('');
         setIsSearchFocused(false);
@@ -121,6 +123,32 @@ export function MetadataSearch({
         }
     };
 
+    // Function to determine what content to display
+    const renderMainContent = () => {
+        // Check for node selection first
+        if (selectedNodeId) {
+            return (
+                <div className="mt-8">
+                    <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
+                </div>
+            );
+        }
+        // Then check table display conditions
+        else if (tableToDisplay === 'logo-table' || !tableToDisplay) {
+            return !isLoading && !errors.length && (
+                <DynamicSpreadsheets queryResults={schemaResults} />
+            );
+        }
+        // Finally, handle regular table display
+        else {
+            return (
+                <div className="mt-8">
+                    <ObjectList tableName={tableToDisplay} />
+                </div>
+            );
+        }
+    };
+
     return (
         <>
         <div className='my-32 z-10 w-96 flex flex-col'>
@@ -148,6 +176,37 @@ export function MetadataSearch({
                 </div>
             </div>
 
+                {/* Floating Results Container */}
+                {searchTerm.trim() !== '' && (
+                    <div
+                        className={`z-10 mt-2 w-full bg-white rounded-xl ${isSearchFocused ? styles.ResultsContainerVisible : ''}`}
+                        tabIndex={-1}
+                    >
+                        {loading ? (
+                            <div className={styles.ResultItem}>
+                                Searching...
+                            </div>
+                        ) : error ? (
+                            <div className={styles.ResultItem}>
+                                Error: {error.message}
+                            </div>
+                        ) : (
+                            <>
+                                {/* Regular search results */}
+                                {limitedResults.map((result, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => handleResultSelect(result)}
+                                        className={`flex flex-col p-2 pl-5 w-full min-w-0 rounded-xl box-border transition-all hover:bg-primary-500/20 hover:shadow-sm`}
+                                    >
+                                        <div className={styles.ResultName}>
+                                            {result.displayName}
+                                        </div>
+                                        <div className={styles.ResultDetail}>
+                                            {result.matchedField}: {result.matchedValue}
+                                        </div>
+                                    </button>
+                                ))}
                     {/* Floating Results Container */}
                     {searchTerm.trim() !== ''  && (
                         <div

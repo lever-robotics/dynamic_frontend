@@ -1,7 +1,5 @@
 // src/components/DataDisplay.tsx
 import React, { useState } from 'react';
-import { useSchemaQueries } from '../hooks/useSchemaQueries';
-import DynamicSpreadsheets from './DynamicSpreadsheets';
 import { MetadataSearch } from './MetadataSearch';
 
 interface DataDisplayProps {
@@ -10,21 +8,7 @@ interface DataDisplayProps {
 }
 
 export function DataDisplay({ onTableSelect, tableToDisplay }: DataDisplayProps) {
-  const { results, isLoading, errors } = useSchemaQueries();
   const [isSearching, setIsSearching] = useState(false);
-
-  if (isLoading) return <div>Loading data...</div>;
-
-  if (errors.length > 0) {
-    return (
-      <div>
-        <h2>Errors:</h2>
-        {errors.map(({ table, error }) => (
-          <div key={table}>Error loading {table}: {error.message}</div>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div className='flex flex-col items-center w-full h-screen overflow-y-scroll overflow-x-hidden pb-16'>
@@ -33,10 +17,6 @@ export function DataDisplay({ onTableSelect, tableToDisplay }: DataDisplayProps)
         onTableSelect={onTableSelect}
         tableToDisplay={tableToDisplay}
       />
-
-      {(!tableToDisplay || tableToDisplay === '') && (
-          <DynamicSpreadsheets queryResults={results} />
-      )}
     </div>
   );
 }
