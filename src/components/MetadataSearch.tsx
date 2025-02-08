@@ -55,7 +55,7 @@ export function MetadataSearch({
         if (searchContainerRef.current?.contains(e.relatedTarget as Node)) {
             return;
         }
-        setIsSearchFocused(false);
+        // setIsSearchFocused(false);
     };
 
     const handleResultSelect = (result: any) => {
@@ -121,16 +121,18 @@ export function MetadataSearch({
     };
 
     return (
-        <div className={styles.searchWrapper}>
+        <>
+        <div className='my-32 z-10 w-96 flex flex-col'>
             {isSearchFocused && <div className={styles.overlay} />}
 
-            <div className="relative w-full flex flex-col items-center">
+            <div className="z-10 w-96 transition-all focus-within:scale-105">
                 {/* Search Bar */}
                 <div
                     ref={searchContainerRef}
-                    className={`${styles.SearchbarContainer} ${isSearchFocused ? styles.SearchbarContainerActive : ''}`}
+                    className='flex items-center px-3 pr-5 rounded-3xl shadow bg-white'
                 >
                     <MagnifyingGlassIcon className={styles.Icon} />
+                    <div className="bg-white flex-1 p-2 transition-all">
                     <input
                         type="text"
                         value={searchTerm}
@@ -139,13 +141,16 @@ export function MetadataSearch({
                         onFocus={handleSearchFocus}
                         onBlur={handleSearchBlur}
                         placeholder="Search any field or ask AI..."
-                        className={styles.Searchbar}
+                        className="w-full border-none bg-transparent focus:outline-none"
                     />
+                    </div>
+                </div>
+            </div>
 
                     {/* Floating Results Container */}
                     {searchTerm.trim() !== '' && (
                         <div
-                            className={`${styles.ResultsContainer} ${isSearchFocused ? styles.ResultsContainerVisible : ''}`}
+                            className={`z-10 mt-2 w-full bg-white rounded-xl ${isSearchFocused ? styles.ResultsContainerVisible : ''}`}
                             tabIndex={-1}
                         >
                             {loading ? (
@@ -163,7 +168,7 @@ export function MetadataSearch({
                                         <button
                                             key={index}
                                             onClick={() => handleResultSelect(result)}
-                                            className={`${styles.ResultItem} ${index === selectedIndex ? styles.selected : ''}`}
+                                            className={`flex flex-col p-2 pl-5 w-full min-w-0 rounded-xl box-border transition-all hover:bg-primary-500/20 hover:shadow-sm`}
                                         >
                                             <div className={styles.ResultName}>
                                                 {result.displayName}
@@ -177,7 +182,7 @@ export function MetadataSearch({
                                     {/* AI Option */}
                                     <button
                                         onClick={handleAISelect}
-                                        className={`${styles.ResultItem} ${selectedIndex === limitedResults.length ? styles.selected : ''}`}
+                                        className={"flex flex-col w-full p-2 pl-5 box-border rounded-xl transition-all hover:bg-primary-500/20 hover:shadow-sm"}
                                     >
                                         <div className={styles.ResultName}>
                                             Ask AI about: "{searchTerm}"
@@ -190,25 +195,23 @@ export function MetadataSearch({
                             )}
                         </div>
                     )}
-                </div>
-
-                {/* Display Components - Only one will show at a time */}
-                <div className={`w-full ${isSearchFocused ? 'opacity-50' : ''} transition-opacity duration-200`}>
-                    {tableToDisplay ? (
-                        <div className="mt-8">
-                            <ObjectList tableName={tableToDisplay} />
-                        </div>
-                    ) : selectedNodeId ? (
-                        <div className="mt-8">
-                            <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
-                        </div>
-                    ) : isAIMode ? (
-                        <div>
-                            <AIDisplay searchQuery={aiQuery} />
-                        </div>
-                    ) : null}
-                </div>
-            </div>
         </div>
+        {/* Display Components - Only one will show at a time */}
+        <div className={`w-full ${isSearchFocused ? 'opacity-50' : ''} transition-opacity duration-200`}>
+        {tableToDisplay ? (
+            <div className="mt-8">
+                <ObjectList tableName={tableToDisplay} />
+            </div>
+        ) : selectedNodeId ? (
+            <div className="mt-8">
+                <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
+            </div>
+        ) : isAIMode ? (
+            <div>
+                <AIDisplay searchQuery={aiQuery} />
+            </div>
+        ) : null}
+    </div>
+    </>
     );
 }

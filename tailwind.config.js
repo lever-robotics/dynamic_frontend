@@ -12,15 +12,23 @@ export default {
     		'4xl': '3.158rem',
     		'5xl': '4.210rem'
     	},
-    	fontFamily: {
-    		heading: 'Poppins',
-    		body: 'Lustria'
-    	},
+    	// fontFamily: {
+    	// 	heading: 'Poppins',
+    	// 	body: 'Lustria'
+    	// },
+		// fontFamily: {
+		// 	heading: 'Comfortaa',
+		// 	body: 'Lustria',
+		//   },
     	fontWeight: {
     		normal: '400',
     		bold: '700'
     	},
     	extend: {
+			fontFamily: {
+				heading: ['Poppins', "sans-serif"],
+				body: ['Spline-Sans', "serif"],
+			},
     		borderRadius: {
     			lg: 'var(--radius)',
     			md: 'calc(var(--radius) - 2px)',

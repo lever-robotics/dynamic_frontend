@@ -106,8 +106,37 @@ body {
   width: 100vw;
   min-width: 320px;
   min-height: 100vh;
+  
   @apply h-full w-full overflow-hidden;
 }
+
+@layer base {
+  body {
+    @apply font-body;
+  }
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins/Poppins-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins/Poppins-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Spline-Sans';
+  src: url('/fonts/Spline_Sans/SplineSans-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
 
 @layer base {
   :root {

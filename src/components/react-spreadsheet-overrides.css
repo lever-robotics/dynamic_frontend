@@ -2,3 +2,10 @@
 .Spreadsheet {
     /* overflow: scroll; */
 }
+
+.Spreadsheet__cell {
+    padding: 6px 2px !important;
+    /* padding: 8px !important; */
+    /* padding-top: 8px !important; */
+    border: 1px solid #e2e8f0 !important;
+}

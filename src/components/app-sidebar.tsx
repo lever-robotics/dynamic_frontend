@@ -50,13 +50,13 @@ export function AppSidebar({ onTableSelect }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="flex flex-col h-full">
+    <Sidebar className="flex flex-col justify-between h-full shadow-lg">
       {/* Logo Section */}
       <div
-        className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="p-6 pl-4 border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={handleLogoClick}
       >
-        <AspectRatio.Root ratio={22 / 6} className="w-full">
+        <AspectRatio.Root ratio={22 / 6}>
           <img
             src={logoImg}
             alt="logo"
@@ -66,7 +66,7 @@ export function AppSidebar({ onTableSelect }: AppSidebarProps) {
       </div>
 
       {/* Main Menu Section */}
-      <SidebarContent className="flex-1">
+      <SidebarContent className="flex-1 ml-1 justify-center">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -86,7 +86,7 @@ export function AppSidebar({ onTableSelect }: AppSidebarProps) {
       </SidebarContent>
 
       {/* Settings Section */}
-      <SidebarContent className="border-t">
+      <SidebarContent className="pb-4 ml-1 justify-end">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

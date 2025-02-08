@@ -101,9 +101,9 @@ const ConnectionSpreadsheet: React.FC<{ collectionName: string; edges: any[] }> 
     if (!edges || edges.length === 0) return null;
 
     return (
-        <div > {/* Container with margin */}
-            <h2 >{objectTypeName}</h2>
-            <div >
+        <div className="max-w-3xl h-mi"> {/* Container with margin */}
+            <h2 className="text-2xl font-heading">{objectTypeName}</h2>
+            <div className="overflow-y-hidden overflow-x-scroll">
                 {spreadsheetData.length > 0 ? (
                     <Spreadsheet
                         data={spreadsheetData}
@@ -127,8 +127,9 @@ const NodeDataDisplay = ({ nodeData }) => {
         .filter(([key]) => key.endsWith('Collection'));
 
     return (
-        <div className="p-4">
-            {/* Main entity data */}
+        <div className="flex flex-col items-center w-full">
+            <div className="flex flex-col justify-start gap-10 max-w-3xl">
+                {/* Main entity data */}
             <DataSpreadsheet
                 title={nodeData.__typename}
                 data={nodeData}
@@ -142,6 +143,8 @@ const NodeDataDisplay = ({ nodeData }) => {
                     edges={collection.edges}
                 />
             ))}
+            </div>
+            
         </div>
     );
 };

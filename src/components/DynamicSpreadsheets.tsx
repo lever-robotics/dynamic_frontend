@@ -47,8 +47,9 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 	const rowLabels = data.map((item) => String(item.id));
 
 	return (
-		<div className="max-w-3xl h-min overflow-y-hidden overflow-x-scroll">
-			<h2 className="text-lg">{title}</h2>
+		<div className="max-w-3xl h-mi">
+			<h2 className="text-2xl font-heading">{title}</h2>
+            <div className="overflow-y-hidden overflow-x-scroll">
 			{spreadsheetData.length > 0 ? (
 				<Spreadsheet
 					data={spreadsheetData}
@@ -56,11 +57,12 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 					columnLabels={columnHeaders}
 					rowLabels={rowLabels} // Using IDs as row labels
 					// className="w-11"
-					className="rounded-md shadow"
+					className="text-sm"
 				/>
 			) : (
 				<div>No data available</div>
 			)}
+            </div>
 		</div>
 	);
 };
@@ -68,9 +70,11 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 const DynamicSpreadsheets = ({ queryResults }) => {
 	return (
 		<div className="flex flex-col items-center w-full">
-			{queryResults.map(({ name, data }) => (
-				<DataSpreadsheet key={name} title={name} data={data || []} />
-			))}
+			<div className="flex flex-col justify-start gap-10">
+				{queryResults.map(({ name, data }) => (
+					<DataSpreadsheet key={name} title={name} data={data || []} />
+				))}
+			</div>
 		</div>
 	);
 };
