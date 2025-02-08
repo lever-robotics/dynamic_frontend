@@ -83,6 +83,7 @@ export function MetadataSearch({
     };
 
     const handleAISelect = () => {
+
         setIsAIMode(true);
         setAiQuery(searchTerm);
         setSearchTerm('');
@@ -126,7 +127,7 @@ export function MetadataSearch({
     // Function to determine what content to display
     const renderMainContent = () => {
         // Check for node selection first
-        if (selectedNodeId) {
+        if (selectedNodeId && !isAIMode) {
             return (
                 <div className="mt-8">
                     <NodeConnections nodeId={selectedNodeId} typeName={selectedTypeName} />
@@ -134,11 +135,19 @@ export function MetadataSearch({
             );
         }
         // Then check table display conditions
-        if (tableToDisplay === 'logo-table' || !tableToDisplay) {
+        if ((tableToDisplay === 'logo-table' || !tableToDisplay)&& !isAIMode) {
             return !isLoading && !errors.length && (
                 <DynamicSpreadsheets queryResults={schemaResults} />
             );
         }
+        // Ai node
+        if (isAIMode) {
+            return (
+                <AIDisplay searchQuery={aiQuery}/>
+            )
+        }
+
+
         // Finally, handle regular table display
             return (
                 <div className="mt-8">
