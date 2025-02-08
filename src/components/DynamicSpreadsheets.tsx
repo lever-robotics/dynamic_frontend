@@ -47,7 +47,7 @@ const DataSpreadsheet: React.FC<DataSpreadsheetProps> = ({ title, data }) => {
 	const rowLabels = data.map((item) => String(item.id));
 
 	return (
-		<div className="max-w-3xl h-mi">
+		<div className="max-w-3xl h-mi p-2 rounded-xl bg-anakiwa-200 text-anakiwa-950 border border-anakiwa-300 shadow">
 			<h2 className="text-2xl font-heading text-portage-950">{title}</h2>
             <div className="overflow-y-hidden overflow-x-scroll no-scrollbar">
 			{spreadsheetData.length > 0 ? (
