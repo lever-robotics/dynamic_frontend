@@ -37,6 +37,11 @@
                         "description": "Email address"
                     },
                     {
+                        "name": "allergies",
+                        "type": "string",
+                        "description": "List out all the allergies of the individuals"
+                    },
+                    {
                         "name": "birth_day",
                         "type": "date",
                         "description": "Date of birth"
