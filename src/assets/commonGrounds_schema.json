@@ -42,6 +42,11 @@
                         "description": "List out all the allergies of the individuals"
                     },
                     {
+                        "name": "waiver_date",
+                        "type": "date",
+                        "description": "Date waiver was signed"
+                    },
+                    {
                         "name": "birth_day",
                         "type": "date",
                         "description": "Date of birth"
