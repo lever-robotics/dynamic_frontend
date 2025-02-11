@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Spreadsheet from "react-spreadsheet";
 import styles from "./SpreadsheetStyles.module.css";
-import schemaData from "../assets/commonGrounds_schema.json";
+import schemaData from "../assets/odoo_schema.json";
 import "./react-spreadsheet-overrides.css";
 
 interface DataSpreadsheetProps {

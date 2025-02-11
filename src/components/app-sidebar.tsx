@@ -1,6 +1,6 @@
 // src/components/app-sidebar.tsx
 import { Activity, Users, Calendar, FileText, Group, Box, Settings } from "lucide-react"
-import schemaData from '../assets/commonGrounds_schema.json';
+import schemaData from '../assets/odoo_schema.json';
 import logoImg from "../assets/cgLogo.png";
 import { AspectRatio } from "radix-ui";
 import {

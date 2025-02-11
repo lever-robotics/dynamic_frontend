@@ -23,10 +23,10 @@ function App() {
       <SidebarProvider defaultIsOpen={true}   >
         <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
           <AppSidebar onTableSelect={handleTableSelect} />
-            <DataDisplay
-              onTableSelect={handleTableSelect}
-              tableToDisplay={tableToDisplay}
-            />
+          <DataDisplay
+            onTableSelect={handleTableSelect}
+            tableToDisplay={tableToDisplay}
+          />
         </div>
       </SidebarProvider>
     </ApolloProvider>

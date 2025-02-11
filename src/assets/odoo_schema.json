@@ -1,0 +1,287 @@
+{
+    "object_types": [
+        {
+            "name": "Partners",
+            "table_name": "res_partner",
+            "metadata": {
+                "description": "Partners and Companies in Odoo",
+                "fields": [
+                    {
+                        "name": "id",
+                        "type": "integer",
+                        "description": "Unique identifier"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "description": "Name"
+                    },
+                    {
+                        "name": "phone",
+                        "type": "string",
+                        "description": "Phone number"
+                    },
+                    {
+                        "name": "mobile",
+                        "type": "string",
+                        "description": "Mobile number"
+                    },
+                    {
+                        "name": "email",
+                        "type": "string",
+                        "description": "Email"
+                    },
+                    {
+                        "name": "street",
+                        "type": "string",
+                        "description": "Street"
+                    },
+                    {
+                        "name": "street2",
+                        "type": "string",
+                        "description": "Street 2"
+                    },
+                    {
+                        "name": "city",
+                        "type": "string",
+                        "description": "City"
+                    },
+                    {
+                        "name": "zip",
+                        "type": "string",
+                        "description": "ZIP"
+                    },
+                    {
+                        "name": "website",
+                        "type": "string",
+                        "description": "Website"
+                    },
+                    {
+                        "name": "is_company",
+                        "type": "boolean",
+                        "description": "Is a Company"
+                    },
+                    {
+                        "name": "type",
+                        "type": "string",
+                        "description": "Address Type"
+                    },
+                    {
+                        "name": "child_ids",
+                        "type": "integer",
+                        "description": "Child Partners"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "Users",
+            "table_name": "res_users",
+            "metadata": {
+                "description": "User accounts in Odoo",
+                "fields": [
+                    {
+                        "name": "id",
+                        "type": "integer",
+                        "description": "Unique identifier"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "description": "Full Name"
+                    },
+                    {
+                        "name": "login",
+                        "type": "string",
+                        "description": "Login"
+                    },
+                    {
+                        "name": "email",
+                        "type": "string",
+                        "description": "Email"
+                    },
+                    {
+                        "name": "active",
+                        "type": "boolean",
+                        "description": "Active"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "Leads",
+            "table_name": "crm_lead",
+            "metadata": {
+                "description": "CRM Leads and Opportunities",
+                "fields": [
+                    {
+                        "name": "id",
+                        "type": "integer",
+                        "description": "Unique identifier"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "description": "Lead/Opportunity name"
+                    },
+                    {
+                        "name": "email_from",
+                        "type": "string",
+                        "description": "Email"
+                    },
+                    {
+                        "name": "phone",
+                        "type": "string",
+                        "description": "Phone"
+                    },
+                    {
+                        "name": "expected_revenue",
+                        "type": "float",
+                        "description": "Expected Revenue"
+                    },
+                    {
+                        "name": "probability",
+                        "type": "float",
+                        "description": "Success Rate (%)"
+                    },
+                    {
+                        "name": "description",
+                        "type": "text",
+                        "description": "Notes"
+                    },
+                    {
+                        "name": "date_deadline",
+                        "type": "date",
+                        "description": "Expected Closing"
+                    },
+                    {
+                        "name": "type",
+                        "type": "string",
+                        "description": "Type"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "Calendar_Events",
+            "table_name": "calendar_event",
+            "metadata": {
+                "description": "Calendar Events and Meetings",
+                "fields": [
+                    {
+                        "name": "id",
+                        "type": "integer",
+                        "description": "Unique identifier"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "description": "Meeting Subject"
+                    },
+                    {
+                        "name": "start",
+                        "type": "datetime",
+                        "description": "Start Date"
+                    },
+                    {
+                        "name": "stop",
+                        "type": "datetime",
+                        "description": "Stop Date"
+                    },
+                    {
+                        "name": "allday",
+                        "type": "boolean",
+                        "description": "All Day"
+                    },
+                    {
+                        "name": "duration",
+                        "type": "float",
+                        "description": "Duration"
+                    },
+                    {
+                        "name": "location",
+                        "type": "string",
+                        "description": "Location"
+                    },
+                    {
+                        "name": "description",
+                        "type": "text",
+                        "description": "Description"
+                    }
+                ]
+            }
+        }
+    ],
+    "relationships": [
+        {
+            "name": "partner_hierarchy",
+            "table_name": "res_partner",
+            "source_types": [
+                "Partners"
+            ],
+            "target_types": [
+                "Partners"
+            ],
+            "metadata": {
+                "description": "Company hierarchy through parent_id",
+                "relationship_description": "parent_of"
+            }
+        },
+        {
+            "name": "user_partner",
+            "table_name": "res_users",
+            "source_types": [
+                "Users"
+            ],
+            "target_types": [
+                "Partners"
+            ],
+            "metadata": {
+                "description": "User's related partner record",
+                "relationship_description": "related_to"
+            }
+        },
+        {
+            "name": "lead_partner",
+            "table_name": "crm_lead",
+            "source_types": [
+                "Leads"
+            ],
+            "target_types": [
+                "Partners"
+            ],
+            "metadata": {
+                "description": "Lead to partner relationship",
+                "relationship_description": "belongs_to"
+            }
+        },
+        {
+            "name": "event_partner",
+            "table_name": "calendar_event_res_partner_rel",
+            "source_types": [
+                "Calendar_Events"
+            ],
+            "target_types": [
+                "Partners"
+            ],
+            "metadata": {
+                "description": "Event attendees",
+                "relationship_description": "attended_by"
+            }
+        },
+        {
+            "name": "lead_user",
+            "table_name": "crm_lead",
+            "source_types": [
+                "Leads"
+            ],
+            "target_types": [
+                "Users"
+            ],
+            "metadata": {
+                "description": "Lead salesperson assignment",
+                "relationship_description": "assigned_to"
+            }
+        }
+    ]
+}

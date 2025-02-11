@@ -1,6 +1,6 @@
 // src/utils/QueryBuilder.ts
 import { gql } from '@apollo/client';
-import schemaData from '../assets/commonGrounds_schema.json';
+import schemaData from '../assets/odoo_schema.json';
 import { compact } from '@apollo/client/utilities';
 
 export class QueryBuilder {
@@ -20,6 +20,9 @@ export class QueryBuilder {
         }
       `;
 
+
+      console.log(queryString);
+      
       return {
         name: type.name,
         tableName: type.table_name,

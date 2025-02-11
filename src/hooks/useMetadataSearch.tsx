@@ -2,7 +2,7 @@
 import React from 'react';
 import { useQuery } from '@apollo/client';
 import { QueryBuilder } from '../utils/QueryBuilder';
-import schemaData from '../assets/commonGrounds_schema.json';
+import schemaData from '../assets/odoo_schema.json';
 
 interface MetadataSearchResult {
     displayName: string;
