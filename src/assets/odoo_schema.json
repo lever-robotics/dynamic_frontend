@@ -2,6 +2,7 @@
     "object_types": [
         {
             "name": "Partners",
+            "entity_name": "res.partner",
             "table_name": "res_partner",
             "metadata": {
                 "description": "Partners and Companies in Odoo",
@@ -65,17 +66,13 @@
                         "name": "type",
                         "type": "string",
                         "description": "Address Type"
-                    },
-                    {
-                        "name": "child_ids",
-                        "type": "integer",
-                        "description": "Child Partners"
                     }
                 ]
             }
         },
         {
             "name": "Users",
+            "entity_name": "res.users",
             "table_name": "res_users",
             "metadata": {
                 "description": "User accounts in Odoo",
@@ -110,6 +107,7 @@
         },
         {
             "name": "Leads",
+            "entity_name": "crm.lead",
             "table_name": "crm_lead",
             "metadata": {
                 "description": "CRM Leads and Opportunities",
@@ -136,12 +134,12 @@
                     },
                     {
                         "name": "expected_revenue",
-                        "type": "float",
+                        "type": "integer",
                         "description": "Expected Revenue"
                     },
                     {
                         "name": "probability",
-                        "type": "float",
+                        "type": "integer",
                         "description": "Success Rate (%)"
                     },
                     {
@@ -164,6 +162,7 @@
         },
         {
             "name": "Calendar_Events",
+            "entity_name": "calendar.event",
             "table_name": "calendar_event",
             "metadata": {
                 "description": "Calendar Events and Meetings",
@@ -195,7 +194,7 @@
                     },
                     {
                         "name": "duration",
-                        "type": "float",
+                        "type": "integer",
                         "description": "Duration"
                     },
                     {
@@ -207,6 +206,51 @@
                         "name": "description",
                         "type": "text",
                         "description": "Description"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "Projects",
+            "entity_name": "project.project",
+            "table_name": "project_project",
+            "metadata": {
+                "description": "Projects in Odoo",
+                "fields": [
+                    {
+                        "name": "id",
+                        "type": "integer",
+                        "description": "Unique identifier"
+                    },
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "description": "Project Name"
+                    },
+                    {
+                        "name": "date_start",
+                        "type": "date",
+                        "description": "Start Date"
+                    },
+                    {
+                        "name": "date",
+                        "type": "date",
+                        "description": "End Date"
+                    },
+                    {
+                        "name": "description",
+                        "type": "text",
+                        "description": "Description"
+                    },
+                    {
+                        "name": "active",
+                        "type": "boolean",
+                        "description": "Active"
+                    },
+                    {
+                        "name": "privacy_visibility",
+                        "type": "string",
+                        "description": "Visibility"
                     }
                 ]
             }

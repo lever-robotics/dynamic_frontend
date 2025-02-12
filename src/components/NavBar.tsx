@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styles from "./NavBar.module.css";
-import logoImg from "../assets/cgLogo.png";
+import logoImg from "../assets/odoo_logo.png";
 import { AspectRatio } from "radix-ui";
 
 const NavBar: React.FC = () => {

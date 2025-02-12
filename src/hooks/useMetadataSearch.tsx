@@ -3,6 +3,7 @@ import React from 'react';
 import { useQuery } from '@apollo/client';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import schemaData from '../assets/odoo_schema.json';
+import { ApolloError } from '@apollo/client';
 
 interface MetadataSearchResult {
     displayName: string;
@@ -16,26 +17,49 @@ interface MetadataSearchResult {
 export function useMetadataSearch(searchTerm: string) {
     const metadataQuery = QueryBuilder.buildMetadataSearchQuery();
 
-    // Try to parse the search term as a number if possible
-    const numberTerm = !isNaN(parseInt(searchTerm)) ? parseInt(searchTerm) : null;
+    // Convert number to float instead of int
+    const numberTerm = !isNaN(parseFloat(searchTerm)) ? parseFloat(searchTerm) : null;
 
-    // Try to parse the search term as a date if it matches date format
-    let dateTerm = null;
-    if (searchTerm.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const dateObj = new Date(searchTerm);
-        if (!isNaN(dateObj.getTime())) {
-            dateTerm = searchTerm;
+    // Keep date as string
+    const dateTerm = searchTerm.match(/^\d{4}-\d{2}-\d{2}$/) ? searchTerm : null;
+
+    // Log all variables being sent
+    const variables = {
+        searchTerm: `%${searchTerm}%`,
+        numberTerm,
+        dateTerm
+    };
+
+    const handleError = (error: ApolloError) => {
+
+        if (error.graphQLErrors) {
+            console.error('GraphQL Errors:', error.graphQLErrors.map(e => ({
+                message: e.message,
+                locations: e.locations,
+                path: e.path,
+                extensions: e.extensions
+            })));
         }
-    }
+
+        if (error.networkError) {
+            console.error('Network Error:', {
+                statusCode: (error.networkError as any).statusCode,
+                result: (error.networkError as any).result,
+                bodyText: (error.networkError as any).bodyText
+            });
+        }
+    };
 
     const { data, loading, error } = useQuery(metadataQuery, {
-        variables: {
-            searchTerm: `%${searchTerm}%`,
-            numberTerm: numberTerm,
-            dateTerm: dateTerm
-        },
+        variables,
         skip: !searchTerm || searchTerm.trim() === '',
+        onError: handleError,
+        onCompleted: (data) => {
+            // console.log('Query Completed Successfully:', data);
+        }
     });
+
+
 
     const formattedResults = React.useMemo(() => {
         if (!data && !searchTerm) return [];

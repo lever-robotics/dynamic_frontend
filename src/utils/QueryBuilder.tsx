@@ -2,6 +2,7 @@
 import { gql } from '@apollo/client';
 import schemaData from '../assets/odoo_schema.json';
 import { compact } from '@apollo/client/utilities';
+import { CornerDownLeft } from 'lucide-react';
 
 export class QueryBuilder {
   static getAllQueries() {
@@ -20,9 +21,6 @@ export class QueryBuilder {
         }
       `;
 
-
-      console.log(queryString);
-      
       return {
         name: type.name,
         tableName: type.table_name,
@@ -77,7 +75,7 @@ export class QueryBuilder {
     }).filter(Boolean);
 
 
-    console.log(searchQueries);
+    // console.log(searchQueries);
 
     return gql`
     query SearchByName($searchTerm: String!) {
@@ -96,16 +94,21 @@ export class QueryBuilder {
       if (!nameField) return null;
 
       // Create different filters based on field type
-      const fieldFilters = searchableFields.map(field => {
-        switch (field.type) {
-          case 'integer':
-            return `{ ${field.name}: { eq: $numberTerm } }`;
-          case 'date':
-            return `{ ${field.name}: { eq: $dateTerm } }`;
-          default:
-            return `{ ${field.name}: { ilike: $searchTerm } }`;
-        }
-      }).join(', ');
+      const fieldFilters = searchableFields
+        .filter(field => field.type !== 'boolean')
+        .map(field => {
+          switch (field.type) {
+            case 'integer':
+            case 'float':
+              return `{ ${field.name}: { eq: $numberTerm } }`;
+            case 'date':
+              return `{ ${field.name}: { eq: $dateTerm } }`;
+            default:
+              return `{ ${field.name}: { ilike: $searchTerm } }`;
+          }
+        })
+        .filter(filter => filter)
+        .join(', ');
 
       return `
       ${type.table_name}Collection(filter: {
@@ -124,11 +127,11 @@ export class QueryBuilder {
     }).filter(Boolean);
 
     const queryString = `
-    query SearchMetadata($searchTerm: String!, $numberTerm: Int, $dateTerm: Date) {
+    query SearchMetadata($searchTerm: String!, $numberTerm: Float, $dateTerm: String) {
       ${searchQueries.join('\n')}
     }
   `;
-    console.log(queryString);
+    // console.log(queryString);
 
     return gql(queryString);
   }
@@ -161,7 +164,7 @@ export class QueryBuilder {
       }
     `;
 
-    console.log(queryString);
+    // console.log(queryString);
 
     return gql(queryString);
   }
@@ -169,7 +172,7 @@ export class QueryBuilder {
   // src/utils/QueryBuilder.ts
   static buildConnectionsQuery(typeName: string) {
     // Find the type object to get its table_name and fields
-    const typeObj = schemaData.object_types.find(t => t.table_name === typeName);
+    const typeObj = schemaData.object_types.find(t => t.name === typeName);
     if (!typeObj) {
       console.warn(`Type object not found for: ${typeName}`);
       return null;
@@ -183,8 +186,7 @@ export class QueryBuilder {
       return isSourceOrTarget && !isSelfReferential;
     });
 
-
-    console.log('Found relevant relationships:', relevantRelationships.map(r => r.name));
+    // console.log('Found relevant relationships:', relevantRelationships.map(r => r.name));
 
     // Build connection queries
     const relationshipQueries = relevantRelationships.map(rel => {
@@ -216,6 +218,7 @@ export class QueryBuilder {
         }
       }`;
 
+
       return queryFragment;
     });
 
@@ -234,9 +237,7 @@ export class QueryBuilder {
       }
     }
   `;
-
     // console.log(fullQueryString);
-
     return gql(fullQueryString);
   }
 }
