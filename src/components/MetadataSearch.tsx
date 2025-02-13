@@ -93,7 +93,7 @@ export function MetadataSearch({
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         const totalOptions = limitedResults.length + (searchTerm.trim() !== '' ? 1 : 0);
         if (totalOptions === 0) return;
-console.log("here ",selectedIndex)
+// console.log("here ",selectedIndex)
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();

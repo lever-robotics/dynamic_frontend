@@ -9,7 +9,7 @@ export function useObjectData(tableName: string) {
         skip: !tableName || !tableQuery
     });
 
-    console.log('Raw GraphQL Response:', data);
+    // console.log('Raw GraphQL Response:', data);
 
     return {
         data: data?.[`${tableName}Collection`],

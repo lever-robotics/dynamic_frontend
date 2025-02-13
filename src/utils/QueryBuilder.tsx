@@ -74,7 +74,7 @@ export class QueryBuilder {
     }).filter(Boolean);
 
 
-    console.log(searchQueries);
+    // console.log(searchQueries);
 
     return gql`
     query SearchByName($searchTerm: String!) {
@@ -125,7 +125,7 @@ export class QueryBuilder {
       ${searchQueries.join('\n')}
     }
   `;
-    console.log(queryString);
+    // console.log(queryString);
 
     return gql(queryString);
   }
@@ -158,7 +158,7 @@ export class QueryBuilder {
       }
     `;
 
-    console.log(queryString);
+    // console.log(queryString);
 
     return gql(queryString);
   }
@@ -181,7 +181,7 @@ export class QueryBuilder {
     });
 
 
-    console.log('Found relevant relationships:', relevantRelationships.map(r => r.name));
+    // console.log('Found relevant relationships:', relevantRelationships.map(r => r.name));
 
     // Build connection queries
     const relationshipQueries = relevantRelationships.map(rel => {

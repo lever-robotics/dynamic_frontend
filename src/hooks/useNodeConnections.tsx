@@ -11,7 +11,7 @@ export function useNodeConnections(nodeId: string, typeName: string) {
         skip: !nodeId
     });
 
-    console.log('Raw GraphQL Response:', data);
+    // console.log('Raw GraphQL Response:', data);
 
     return {
         data: data?.node,

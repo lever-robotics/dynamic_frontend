@@ -12,19 +12,21 @@ export interface AuthState {
     error: string | null;
     user: any | null;
 }
-const MASTER_SUPABASE_URL = process.env.REACT_APP_MASTER_SUPABASE_URL!
-const MASTER_SUPABASE_ANON_KEY = process.env.REACT_APP_MASTER_SUPABASE_ANON_KEY!
 
-if (!MASTER_SUPABASE_URL || !MASTER_SUPABASE_ANON_KEY) {
-    throw new Error('Missing Supabase environment variables')
-}
+const MASTER_SUPABASE_URL = "https://ugqelrsbgvwjlnzrzqab.supabase.co"
+const MASTER_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncWVscnNiZ3Z3amxuenJ6cWFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk0Njk1MjIsImV4cCI6MjA1NTA0NTUyMn0.onkTRQl074KrSeQ8kmK3Kv3gUt-PAru-z1RrrK1tq5E"
+
 
 export const masterSupabase = createClient(
     MASTER_SUPABASE_URL,
-    MASTER_SUPABASE_ANON_KEY
+    MASTER_SUPABASE_ANON_KEY,
+    {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false
+        }
+    }
 )
-
-
 
 export class ApolloMaster {
     private static instance: ApolloMaster
@@ -41,45 +43,62 @@ export class ApolloMaster {
         return ApolloMaster.instance
     }
 
-    async signUp(email: string, password: string) {
-        const { data, error } = await this.supabase.auth.signUp({
-            email,
-            password,
-        })
-        if (error) throw error
-        return data
-    }
-
     async signIn(email: string, password: string) {
-        const { data, error } = await this.supabase.auth.signInWithPassword({
-            email,
-            password,
-        })
-        if (error) throw error
-        return data
+        console.log('Starting sign in process...');
+        try {
+            const { data: authData, error: authError } = await this.supabase.auth.signInWithPassword({
+                email,
+                password,
+            })
+
+            if (authError) {
+                console.error('Sign in error:', authError);
+                throw authError;
+            }
+
+            if (!authData.user) {
+                console.error('No user data received');
+                throw new Error('No user data received');
+            }
+
+            console.log('Successfully signed in user:', authData.user.id);
+
+            // Query user_configurations table
+
+            let { configData, error } = await this.supabase
+                .from('user_configurations')
+                .select('*');
+
+            // .eq('id', authData.user.id)
+            // .single();
+
+            console.log('User configuration:', configData);
+
+            if (error) {
+                console.error('Error fetching user configuration:', error);
+                throw error;
+            }
+
+            if (!error) {
+                console.log('No configuration found for user');
+                throw new Error('No configuration found for user');
+            }
+
+            // console.log('User configuration:', {
+            //     supabaseUrl: configData.supabase_domain,
+            //     apiKey: configData.api_key,
+            //     schema: configData.schema
+            // });
+
+            return configData as any;
+        } catch (e) {
+            console.error('Caught error during sign in:', e);
+            throw e;
+        }
     }
 
     async signOut() {
-        const { error } = await this.supabase.auth.signOut()
-        if (error) throw error
-    }
-
-    async getUserConfig(): Promise<UserConfig> {
-        const { data: { session } } = await this.supabase.auth.getSession()
-
-        if (!session) throw new Error('No active session')
-
-        const { data, error } = await this.supabase
-            .from('user_configurations')
-            .select('*')
-            .single()
-
-        if (error) throw error
-        return data as UserConfig
-    }
-
-    getAuthStateChange(callback: (event: string, session: any) => void) {
-        return this.supabase.auth.onAuthStateChange(callback)
+        return this.supabase.auth.signOut()
     }
 }
 
