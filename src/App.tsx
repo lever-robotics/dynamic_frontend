@@ -6,6 +6,7 @@ import { DataDisplay } from "./components/DataDisplay";
 import { AppSidebar } from "./components/app-sidebar";
 import "./index.css";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import MasterAuthWrapper from "./components/Auth/MasterAuthWrapper";
 
 function App() {
   const [tableToDisplay, setTableToDisplay] = useState<string | null>(null);
@@ -19,17 +20,19 @@ function App() {
   };
 
   return (
-    <ApolloProvider client={client}>
-      <SidebarProvider defaultIsOpen={true}   >
-        <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
-          <AppSidebar onTableSelect={handleTableSelect} />
+    <MasterAuthWrapper>
+      <ApolloProvider client={client}>
+        <SidebarProvider defaultIsOpen={true}>
+          <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
+            <AppSidebar onTableSelect={handleTableSelect} />
             <DataDisplay
               onTableSelect={handleTableSelect}
               tableToDisplay={tableToDisplay}
             />
-        </div>
-      </SidebarProvider>
-    </ApolloProvider>
+          </div>
+        </SidebarProvider>
+      </ApolloProvider>
+    </MasterAuthWrapper>
   );
 }
 
