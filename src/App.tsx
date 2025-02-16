@@ -1,59 +1,28 @@
-import React, { useState } from "react";
-import { ApolloProvider } from "@apollo/client";
-import client from "./utils/apolloClient";
-import { DataDisplay } from "./components/DataDisplay";
-import { AppSidebar } from "./components/app-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import OdooLoginForm from "./components/ui/loginOdoo";
+import { ApolloProvider } from '@apollo/client';
+import { Auth0ProviderWithNavigate } from './auth/Auth0Provider';
+import { LoginButton } from './components/LoginButton';
+import { UserProfile } from './components/UserProfile';
+import { client } from './config/apollo-client';
 
-interface OdooCredentials {
-  odooUrl: string;
-  database: string;
-  username: string;
-  apiKey: string;
-}
-
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [credentials, setCredentials] = useState<OdooCredentials | null>(null);
-  const [tableToDisplay, setTableToDisplay] = useState<string | null>(null);
-
-  const handleConnect = (creds: OdooCredentials) => {
-    // Here you would typically validate the connection
-    // and store the credentials securely
-    setCredentials(creds);
-    setIsAuthenticated(true);
-  };
-
-  const handleTableSelect = (tableName: string) => {
-    if (tableName === 'settings') {
-      console.log('Settings clicked');
-      return;
-    }
-    setTableToDisplay(tableName);
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-portage-50 flex items-center justify-center">
-        <OdooLoginForm onSubmit={handleConnect} />
-      </div>
-    );
-  }
-
+export const App = () => {
   return (
-    <ApolloProvider client={client}>
-      <SidebarProvider defaultIsOpen={true}>
-        <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
-          <AppSidebar onTableSelect={handleTableSelect} />
-          <DataDisplay
-            onTableSelect={handleTableSelect}
-            tableToDisplay={tableToDisplay}
-          />
+    <Auth0ProviderWithNavigate>
+      <ApolloProvider client={client}>
+        <div className="min-h-screen bg-gray-100">
+          <header className="bg-white shadow p-4">
+            <div className="max-w-7xl mx-auto flex justify-between items-center">
+              <h1 className="text-xl font-bold">My App</h1>
+              <LoginButton />
+            </div>
+          </header>
+
+          <main className="max-w-7xl mx-auto mt-8 p-4">
+            <UserProfile />
+          </main>
         </div>
-      </SidebarProvider>
-    </ApolloProvider>
+      </ApolloProvider>
+    </Auth0ProviderWithNavigate>
   );
-}
+};
 
 export default App;
