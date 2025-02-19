@@ -1,30 +1,37 @@
-import React, { useState } from 'react'
+import type React from 'react'
+import { useState } from 'react'
 import apolloMaster from '../../utils/apolloMaster'
+import { useAuth } from '@/utils/AuthProvider';
+import { useAuthApollo } from '@/utils/ApolloProvider';
+import { AuthResponse } from '@supabase/supabase-js';
 
 interface AuthModalProps {
     isOpen: boolean;
     onSuccess: (config: UserConfig) => void;
 }
 
+interface LoginResponse {
+    access_token: string;
+}
+
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
     const [email, setEmail] = useState('mark.soulier@usu.edu')
     const [password, setPassword] = useState('password')
     const [error, setError] = useState<string | null>(null)
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(false);
+
+    const { isAuthenticated, signIn } = useAuth();
+    const { fetchUserSchema } = useAuthApollo();
+    if(isAuthenticated) return;
 
     const handleSubmit = async (e: React.FormEvent) => {
+        console.log("handle");
         e.preventDefault()
         setError(null)
         setLoading(true)
-
-        try {
-            const config = await apolloMaster.signIn(email, password)
-            onSuccess(config)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred')
-        } finally {
-            setLoading(false)
-        }
+        console.log("signup");
+        const authResponse = await signIn({email, password});
+        fetchUserSchema(authResponse.user?.id || "");
     }
 
     if (!isOpen) return null;
