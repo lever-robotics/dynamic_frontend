@@ -2,8 +2,13 @@ import { ApolloProvider } from '@apollo/client';
 import { Auth0ProviderWithNavigate } from './auth/Auth0Provider';
 import { LoginButton } from './components/LoginButton';
 import { UserProfile } from './components/UserProfile';
-import { client } from './config/apollo-client';
+// import { client } from './config/apollo-client';
 import { LeverApp } from './components/LeverApp';
+import { SidebarProvider } from "@/components/ui/sidebar";
+
+
+// For Testing
+import client from "./utils/TempapolloClient";
 
 export const App = () => {
   return (
@@ -24,7 +29,11 @@ export const App = () => {
     //   </ApolloProvider>
     // </Auth0ProviderWithNavigate>
 
-    <LeverApp />
+    <ApolloProvider client={client}>
+      <SidebarProvider defaultOpen={true}>
+        <LeverApp />
+      </SidebarProvider>
+    </ApolloProvider>
   );
 };
 

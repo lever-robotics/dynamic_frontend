@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { SchmeaJson } from '../config/SchemaLoader';
-import { Sidebar } from '../components/Sidebar';
+import { SchemaJson } from '../config/SchemaLoader';
+import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 
@@ -11,16 +11,28 @@ export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'setting
 export interface SearchQuery {
     id: number;
     type: SearchQueryType;
-    data: string;
+    metadata?: {
+        objectID?: string; //Their node ID defined by graphQL
+        objectType?: string; //Their objectType which is table_name for now.
+        searchTerm?: string; //Their search term, used for AI.
+        other?: string;
+    };
 }
 
 // LeverApp component with search query management
 export const LeverApp: React.FC = () => {
     // State for search query
-    const [searchQuery, setSearchQuery] = useState<SearchQuery | null>(null);
+    const [searchQuery, setSearchQuery] = useState<SearchQuery>({
+        id: 0,
+        type: 'all',
+        metadata: {
+            objectID: "WyJwdWJsaWMiLCAiaW5kaXZpZHVhbCIsIDFd",
+            objectType: "individual",
+        },
+    });
 
     // State for schema
-    const [schema] = useState(SchmeaJson);
+    const [schema] = useState(SchemaJson);
 
     // Function to update search query
     const updateSearchQuery = (query: SearchQuery) => {
@@ -28,14 +40,14 @@ export const LeverApp: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen">
+        <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
             {/* Sidebar */}
-            <Sidebar
+            <SidebarComp
                 schema={schema}
                 updateSearchQuery={updateSearchQuery}
             />
 
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col h-full">
                 {/* Search Bar */}
                 <SearchBar
                     schema={schema}

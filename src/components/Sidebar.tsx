@@ -1,5 +1,42 @@
 import React from 'react';
+import {
+    Users,
+    Group,
+    FileText,
+    Calendar,
+    Activity,
+    Box,
+    Settings,
+    List,
+    Award
+} from 'lucide-react';
 import { SearchQuery, SearchQueryType } from './LeverApp';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton
+} from "../components/ui/sidebar";
+
+// Icon mapping for different object types
+const iconMapping: { [key: string]: any } = {
+    Individual: Users,
+    Volunteer: Users,
+    Staff: Users,
+    Group: Group,
+    ProgressNote: FileText,
+    Event: Calendar,
+    Activity: Activity,
+    Equipment: Box,
+};
+
+// Function to get icon for a type
+const getIconForType = (typeName: string) => {
+    return iconMapping[typeName] || Box;
+};
 
 // Sidebar component props
 interface SidebarProps {
@@ -7,7 +44,7 @@ interface SidebarProps {
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ schema, updateSearchQuery }) => {
+export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery }) => {
     // Extract object types from schema
     const schemaItems = schema.object_types
         ? schema.object_types
@@ -15,8 +52,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ schema, updateSearchQuery }) =
             .map((type: any) => ({
                 title: type.name,
                 id: type.id,
-                data: type.table_name || type.name.toLowerCase(),
-                type: 'object' as SearchQueryType
+                type: 'table' as SearchQueryType,
+                icon: getIconForType(type.name)
             }))
         : [];
 
@@ -25,14 +62,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ schema, updateSearchQuery }) =
         {
             title: 'Recommendations',
             id: 1,
-            data: 'recommend',
-            type: 'recommend' as SearchQueryType
+            type: 'recommend' as SearchQueryType,
+            icon: Award
         },
         {
             title: 'Settings',
             id: 1,
-            data: 'settings',
-            type: 'settings' as SearchQueryType
+            type: 'settings' as SearchQueryType,
+            icon: Settings
         }
     ];
 
@@ -40,24 +77,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ schema, updateSearchQuery }) =
     const sidebarItems = [...schemaItems, ...additionalActions];
 
     return (
-        <div className="w-64 bg-gray-100 flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto">
-                {sidebarItems.map((item) => (
-                    <button
-                        key={item.id}
-                        className="w-full p-3 text-left hover:bg-gray-200"
-                        onClick={() => updateSearchQuery({
-                            id: item.id,
-                            data: item.data,
-                            type: item.type
-                        })}
-                    >
-                        {item.title}
-                    </button>
-                ))}
-            </div>
-        </div>
+        <Sidebar className="flex flex-col justify-between h-screen">
+            <SidebarContent className="flex-1 ml-1 justify-center">
+                <SidebarGroup>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {sidebarItems.map((item) => (
+                                <SidebarMenuItem key={item.id}>
+                                    <SidebarMenuButton
+                                        onClick={() => updateSearchQuery({
+                                            id: item.id,
+                                            type: item.type,
+                                            metadata: {
+                                                other: item.title.toLowerCase()
+                                            }
+                                        })}
+                                    >
+                                        <item.icon className="w-4 h-4" />
+                                        <span>{item.title}</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+            </SidebarContent>
+        </Sidebar>
     );
 };
 
-export default Sidebar;
+export default SidebarComp;
