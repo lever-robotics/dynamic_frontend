@@ -17,6 +17,7 @@ export class QueryBuilder {
         ${type.table_name}Collection {
           edges {
             node {
+              nodeId
               ${fields.join('\n              ')}
             }
           }
@@ -42,6 +43,7 @@ export class QueryBuilder {
       }) {
         edges {
           node {
+            nodeId
             ${fields.join('\n              ')}
           }
         }
@@ -183,6 +185,7 @@ export class QueryBuilder {
         edges {
           node {
             ${isSource ? relatedTypeObj.table_name : relatedTypeObj.table_name} {
+              nodeId
               ${relatedFields}
             }
           }

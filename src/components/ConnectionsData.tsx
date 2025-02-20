@@ -1,66 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import Spreadsheet from 'react-spreadsheet';
-import schemaData from '../assets/commonGrounds_schema.json';
+import React from 'react';
+import { Table } from './Table';
+import { SearchQuery } from './LeverApp';
 
 interface ConnectionSpreadsheetProps {
     collectionName: string;
     edges: any[];
+    updateSearchQuery: (query: SearchQuery) => void;
 }
 
-const ConnectionSpreadsheet: React.FC<ConnectionSpreadsheetProps> = ({ collectionName, edges }) => {
-    const [spreadsheetData, setSpreadsheetData] = useState<Array<Array<{ value: string; readOnly?: boolean }>>>([]);
-    const [columnHeaders, setColumnHeaders] = useState<string[]>([]);
-    const [objectTypeName, setObjectTypeName] = useState<string>('');
-
-    useEffect(() => {
-        if (edges && edges.length > 0) {
-            // Get the connected entity type
-            const firstNode = edges[0].node;
-            const connectedEntityKey = Object.keys(firstNode).find(key =>
-                !['__typename'].includes(key)
-            );
-
-            if (connectedEntityKey) {
-                // Get all fields from the first connected entity
-                const firstEntity = firstNode[connectedEntityKey];
-                const headers = Object.keys(firstEntity).filter(key => key !== '__typename');
-                setColumnHeaders(headers);
-
-                // Determine the object type name and capitalize it
-                const rawObjectTypeName = connectedEntityKey.replace(/Collection$/, '');
-                const capitalizedObjectTypeName = rawObjectTypeName.charAt(0).toUpperCase() + rawObjectTypeName.slice(1);
-                setObjectTypeName(capitalizedObjectTypeName);
-
-                // Create matrix of all connected entities
-                const matrix = edges.map(edge => {
-                    const entity = edge.node[connectedEntityKey];
-                    return headers.map(fieldName => ({
-                        value: String(entity[fieldName] || ''),
-                        readOnly: true
-                    }));
-                });
-
-                setSpreadsheetData(matrix);
-            }
-        }
-    }, [edges, collectionName]);
-
+const ConnectionSpreadsheet: React.FC<ConnectionSpreadsheetProps> = ({ 
+    collectionName, 
+    edges, 
+    updateSearchQuery 
+}) => {
     if (!edges || edges.length === 0) return null;
+
+    // Get the first node to analyze structure
+    const firstNode = edges[0].node;
+    
+    // Find all collection keys in the node (they will be objects/arrays)
+    const collectionKeys = Object.keys(firstNode).filter(key => {
+        const value = firstNode[key];
+        return value && typeof value === 'object' && !Array.isArray(value) && key !== '__typename';
+    });
+
+    console.log('Found collections:', collectionKeys);
+    console.log('First node structure:', firstNode);
 
     return (
         <div className="max-w-3xl h-min">
-            <h2 className="text-2xl font-heading text-portage-950">{objectTypeName}</h2>
+            <h2 className="text-2xl font-heading text-portage-950">Connected Collections</h2>
             <div className="overflow-y-hidden overflow-x-scroll no-scrollbar">
-                {spreadsheetData.length > 0 ? (
-                    <Spreadsheet
-                        data={spreadsheetData}
-                        onChange={setSpreadsheetData}
-                        columnLabels={columnHeaders}
-                        className="w-full"
-                    />
-                ) : (
-                    <div className="p-4 text-center">No data available</div>
-                )}
+                {collectionKeys.map(collectionKey => {
+                    // Extract data for this collection from all nodes
+                    const collectionData = edges
+                        .map(edge => edge.node[collectionKey])
+                        .filter(Boolean); // Remove any null/undefined entries
+
+                    // Format the collection name for display
+                    const displayName = collectionKey
+                        .replace(/([A-Z])/g, ' $1') // Add spaces before capital letters
+                        .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+
+                    console.log(`Collection ${collectionKey} data:`, collectionData);
+
+                    return collectionData.length > 0 ? (
+                        <Table
+                            key={collectionKey}
+                            data={collectionData}
+                            tableName={displayName}
+                            updateSearchQuery={updateSearchQuery}
+                        />
+                    ) : null;
+                })}
             </div>
         </div>
     );

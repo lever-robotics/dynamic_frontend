@@ -31,7 +31,7 @@ export const ObjectDisplay: React.FC<{
     schema: any;
     searchQuery: SearchQuery;
     updateSearchQuery: (query: SearchQuery) => void;
-}> = ({ schema, searchQuery }) => {
+}> = ({ schema, searchQuery, updateSearchQuery }) => {
     // Find object type from schema using the objectType in search query metadata
     const objectType = searchQuery.metadata?.objectType;
     const objectDef = schema.object_types.find(
@@ -83,6 +83,7 @@ export const ObjectDisplay: React.FC<{
                         key={collectionName}
                         collectionName={collectionName}
                         edges={collection.edges}
+                        updateSearchQuery={updateSearchQuery}
                     />
                 ))}
             </div>

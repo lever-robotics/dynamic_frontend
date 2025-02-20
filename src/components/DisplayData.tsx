@@ -3,6 +3,8 @@ import { SearchQuery } from './LeverApp';
 import AllDisplay from './AllDisplay';
 import TableDisplay from './TableDisplay';
 import ObjectDisplay from './ObjectDisplay';
+import AIDisplay from './AIDisplay';
+import RecommendDisplay from './RecommendDisplay';
 
 // Display component props
 interface DisplayDataProps {
@@ -10,24 +12,6 @@ interface DisplayDataProps {
     searchQuery: SearchQuery | null;
     updateSearchQuery: (query: SearchQuery) => void;
 }
-
-const AIDisplay: React.FC<DisplayDataProps> = ({ searchQuery }) => {
-    return (
-        <div className="p-4">
-            <h2 className="text-xl font-bold">AI Search</h2>
-            <p>AI-powered search for: {searchQuery?.data}</p>
-        </div>
-    );
-};
-
-const RecommendDisplay: React.FC<DisplayDataProps> = ({ searchQuery }) => {
-    return (
-        <div className="p-4">
-            <h2 className="text-xl font-bold">Recommendations</h2>
-            <p>Recommendations for: {searchQuery?.data}</p>
-        </div>
-    );
-};
 
 const SettingsDisplay: React.FC<DisplayDataProps> = ({ searchQuery }) => {
     return (

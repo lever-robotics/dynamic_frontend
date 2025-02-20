@@ -2,12 +2,13 @@ import React from 'react';
 import { useQuery } from '@apollo/client';
 import { SearchQuery } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
+import { Table } from './Table';
 
 export const TableDisplay: React.FC<{
     schema: any;
     searchQuery: SearchQuery | null;
     updateSearchQuery: (query: SearchQuery) => void;
-}> = ({ schema, searchQuery }) => {
+}> = ({ schema, searchQuery, updateSearchQuery }) => {
     // Find the object type that matches the search query ID
     const matchedObjectType = schema.object_types.find(
         (type: any) => type.id === searchQuery?.id
@@ -30,7 +31,7 @@ export const TableDisplay: React.FC<{
     const query = QueryBuilder.getQueryForTable(tableName);
 
     // Execute the query
-    const { data, loading, error } = useQuery(query);
+    const { data, loading, error } = useQuery(query!);
 
     // Render loading state
     if (loading) {
@@ -48,16 +49,13 @@ export const TableDisplay: React.FC<{
     }
 
     // Prepare table data
-    const tableData = data
-        ? data[`${tableName}Collection`]?.edges?.map(edge => edge.node)
-        : null;
+    const tableData = data?.[`${tableName}Collection`]?.edges?.map(edge => edge.node) || [];
 
     return (
-        <div className="p-4">
-            <h2 className="text-xl font-bold mb-4">Table: {tableName}</h2>
-            <pre className="bg-gray-100 p-2 rounded overflow-auto">
-                {JSON.stringify(tableData, null, 2)}
-            </pre>
+        <div className="flex flex-col items-center w-full">
+            <div className="max-w-3xl w-full h-min overflow-y-hidden overflow-x-scroll no-scrollbar">
+                <Table data={tableData} tableName={tableName} updateSearchQuery={updateSearchQuery} />
+            </div>
         </div>
     );
 };
