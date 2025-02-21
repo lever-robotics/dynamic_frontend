@@ -32,8 +32,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [session, setSession] = useState<Session | null>(null);
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
-	const [userId, setUserId] = useState<string | null>(null);  // Add this
-
+	const [userId, setUserId] = useState<string | null>(null);
 
 	/**
 	 * Subscribes to Supabase to listen for Auth changes
@@ -73,6 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		}
 
 		return session.access_token;
+	};
+
+	const signOut = async () => {
+		await supabase.auth.signOut();
+		setIsAuthenticated(false);
+		setSession(null);
+		setUserId(null);
 	};
 
 	return (
@@ -116,11 +122,4 @@ async function signIn({ email, password }: Credentials) {
 
 	if (error) throw error;
 	return data;
-}
-
-/**
- * Logs out the user.
- */
-async function signOut() {
-	await supabase.auth.signOut();
 }

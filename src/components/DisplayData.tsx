@@ -5,6 +5,7 @@ import TableDisplay from './TableDisplay';
 import ObjectDisplay from './ObjectDisplay';
 import AIDisplay from './AIDisplay';
 import RecommendDisplay from './RecommendDisplay';
+import SettingsDisplay from './SettingsDisplay';
 
 // Display component props
 interface DisplayDataProps {
@@ -12,15 +13,6 @@ interface DisplayDataProps {
     searchQuery: SearchQuery | null;
     updateSearchQuery: (query: SearchQuery) => void;
 }
-
-const SettingsDisplay: React.FC<DisplayDataProps> = ({ searchQuery }) => {
-    return (
-        <div className="p-4">
-            <h2 className="text-xl font-bold">Settings</h2>
-            <p>Settings for: {searchQuery?.data}</p>
-        </div>
-    );
-};
 
 // Main DisplayData component
 export const DisplayData: React.FC<DisplayDataProps> = ({
@@ -54,10 +46,10 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
 
     return (
         <div className="flex-1 overflow-auto">
-            <div className="p-4">
+            {/* <div className="p-4">
                 <h2 className="text-xl font-bold mb-4">Search Query</h2>
                 <pre>{JSON.stringify(searchQuery, null, 2)}</pre>
-            </div>
+            </div> */}
             {renderDisplay()}
         </div>
     );
