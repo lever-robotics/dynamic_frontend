@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { SchemaJson } from '../config/SchemaLoader';
 import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
+import { useAuthApollo } from '../utils/ApolloProvider';
 
 // Define the search query type
 export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all';
@@ -31,32 +31,33 @@ export const LeverApp: React.FC = () => {
         },
     });
 
-    // State for schema
-    const [schema] = useState(SchemaJson);
-
     // Function to update search query
     const updateSearchQuery = (query: SearchQuery) => {
         setSearchQuery(query);
     };
 
+    const { jsonSchema } = useAuthApollo();
+
+
     return (
         <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
+
             {/* Sidebar */}
             <SidebarComp
-                schema={schema}
+                schema={jsonSchema}
                 updateSearchQuery={updateSearchQuery}
             />
 
             <div className="flex-1 flex flex-col h-full">
                 {/* Search Bar */}
                 <SearchBar
-                    schema={schema}
+                    schema={jsonSchema}
                     updateSearchQuery={updateSearchQuery}
                 />
 
                 {/* Display Data */}
                 <DisplayData
-                    schema={schema}
+                    schema={jsonSchema}
                     searchQuery={searchQuery}
                     updateSearchQuery={updateSearchQuery}
                 />

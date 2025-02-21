@@ -6,7 +6,7 @@ import {
 	type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "./SupabaseClient"; 
+import { supabase } from "./SupabaseClient";
 
 interface AuthResponse {
 	user: User | null;
@@ -24,6 +24,7 @@ type AuthContextType = {
 	signIn: (credentials: Credentials) => Promise<AuthResponse>;
 	signOut: () => Promise<void>;
 	readonly isAuthenticated: boolean;
+	readonly userId: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +32,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [session, setSession] = useState<Session | null>(null);
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
+	const [userId, setUserId] = useState<string | null>(null);  // Add this
+
 
 	/**
 	 * Subscribes to Supabase to listen for Auth changes
@@ -40,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			if (session) {
 				setSession(session);
 				setIsAuthenticated(true);
+				setUserId(session.user.id);
 			}
 		});
 
@@ -73,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	return (
 		<AuthContext.Provider
-			value={{ getValidToken, isAuthenticated, signUp, signIn, signOut }}
+			value={{ getValidToken, isAuthenticated, signUp, signIn, signOut, userId }}
 		>
 			{children}
 		</AuthContext.Provider>

@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { SearchQuery, SearchQueryType } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import { useQuery } from '@apollo/client';
-import { SchemaJson } from '@/config/SchemaLoader';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 
 // Search Bar component props
@@ -12,7 +11,7 @@ interface SearchBarProps {
 }
 
 
-function useMetadataSearch(searchTerm: string) {
+function useMetadataSearch(searchTerm: string, schema: any) {
     const metadataQuery = QueryBuilder.buildMetadataSearchQuery();
 
 
@@ -57,7 +56,7 @@ function useMetadataSearch(searchTerm: string) {
         if (!data && !searchTerm) return [];
 
         // Get schema object type matches
-        const schemaMatches = SchemaJson.object_types
+        const schemaMatches = schema.object_types
             .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
             .map(obj => ({
                 displayName: obj.name,
@@ -182,7 +181,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
     const [isSearchFocused, setIsSearchFocused] = useState(false);
 
     // Use metadata search hook
-    const { results, loading } = useMetadataSearch(searchInput);
+    const { results, loading } = useMetadataSearch(searchInput, schema);
 
     // Handle input change
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,7 +246,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                             </div>
                         ) : (
                             <>
-                                    {results.map((result, index) => (
+                                {results.map((result, index) => (
                                     <button
                                         key={`${result.sourceTable}-${index}`}
                                         onClick={() => handleResultSelect(result)}

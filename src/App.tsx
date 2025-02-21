@@ -16,8 +16,9 @@ import AuthModal from './components/AuthModal';
 export const App = () => {
 
   const { isAuthenticated } = useAuth();
+  const { jsonSchema } = useAuthApollo();
 
-  if(!isAuthenticated){
+  if(!isAuthenticated || !jsonSchema) {
     return (
       <AuthModal/>
     )

@@ -1,11 +1,18 @@
 // src/utils/QueryBuilder.ts
 import { gql } from '@apollo/client';
-import { SchemaJson } from '../config/SchemaLoader';
 
 export class QueryBuilder {
 
+  // Add a property to store the schema
+  private static jsonSchema: any = null;
+
+  // Add a method to set the schema
+  static setSchema(schema: any) {
+    QueryBuilder.jsonSchema = schema;
+  }
+
   static getQueryForTable(tableName: string) {
-    const type = SchemaJson.object_types.find(t => t.table_name === tableName);
+    const type = QueryBuilder.jsonSchema.object_types.find(t => t.table_name === tableName);
     if (!type) {
       return null;
     }
@@ -29,7 +36,7 @@ export class QueryBuilder {
   }
 
   static buildSearchQuery() {
-    const searchQueries = SchemaJson.object_types.map(type => {
+    const searchQueries = QueryBuilder.jsonSchema.object_types.map(type => {
       const fields = type.metadata.fields.map(field => field.name);
       const hasName = fields.includes('name');
       const hasFirstName = fields.includes('first_name');
@@ -52,7 +59,7 @@ export class QueryBuilder {
     }).filter(Boolean);
 
 
-    console.log(searchQueries);
+    // console.log(searchQueries);
 
     return gql`
     query SearchByName($searchTerm: String!) {
@@ -62,7 +69,7 @@ export class QueryBuilder {
   }
 
   static buildMetadataSearchQuery() {
-    const searchQueries = SchemaJson.object_types.map(type => {
+    const searchQueries = QueryBuilder.jsonSchema.object_types.map(type => {
       // Get all fields except ID
       const searchableFields = type.metadata.fields.filter(field => field.name !== 'id');
 
@@ -103,7 +110,7 @@ export class QueryBuilder {
       ${searchQueries.join('\n')}
     }
   `;
-    console.log(queryString);
+    // console.log(queryString);
 
     return gql(queryString);
   }
@@ -111,7 +118,7 @@ export class QueryBuilder {
   // src/utils/QueryBuilder.ts
   static buildTableMetadataQuery(tableName: string) {
     // Find the type object for the specified table
-    const typeObj = SchemaJson.object_types.find(t => t.table_name === tableName);
+    const typeObj = QueryBuilder.jsonSchema.object_types.find(t => t.table_name === tableName);
     if (!typeObj) {
       console.warn(`Type object not found for table: ${tableName}`);
       return null;
@@ -136,7 +143,7 @@ export class QueryBuilder {
       }
     `;
 
-    console.log(queryString);
+    // console.log(queryString);
 
     return gql(queryString);
   }
@@ -144,7 +151,7 @@ export class QueryBuilder {
   // src/utils/QueryBuilder.ts
   static buildConnectionsQuery(typeName: string) {
     // Find the type object to get its table_name and fields
-    const typeObj = SchemaJson.object_types.find(t => t.table_name === typeName);
+    const typeObj = QueryBuilder.jsonSchema.object_types.find(t => t.table_name === typeName);
     if (!typeObj) {
       console.warn(`Type object not found for: ${typeName}`);
       return null;
@@ -152,7 +159,7 @@ export class QueryBuilder {
     const typeObjectName = typeObj.name;
 
     // Get all relationships where this type is a source or target, excluding self-referential relationships
-    const relevantRelationships = SchemaJson.relationships.filter(rel => {
+    const relevantRelationships = QueryBuilder.jsonSchema.relationships.filter(rel => {
       const isSourceOrTarget = rel.source_types.includes(typeObjectName) || rel.target_types.includes(typeObjectName);
       const isSelfReferential = rel.source_types[0] === rel.target_types[0];
       return isSourceOrTarget && !isSelfReferential;
@@ -167,7 +174,7 @@ export class QueryBuilder {
 
       // Get the correct type object based on whether we're the source or target
       const relatedTypeName = isSource ? rel.target_types[0] : rel.source_types[0];
-      const relatedTypeObj = SchemaJson.object_types.find(t => t.name === relatedTypeName);
+      const relatedTypeObj = QueryBuilder.jsonSchema.object_types.find(t => t.name === relatedTypeName);
 
       if (!relatedTypeObj) {
         console.warn(`Related type object not found for: ${relatedTypeName}`);
@@ -211,7 +218,7 @@ export class QueryBuilder {
     }
   `;
 
-    console.log(fullQueryString);
+    // console.log(fullQueryString);
 
     return gql(fullQueryString);
   }
