@@ -3,6 +3,7 @@ import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
+import { initiateGoogleAuth } from './GoogleConnect';
 
 // Define the search query type
 export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all';
@@ -62,6 +63,7 @@ export const LeverApp: React.FC = () => {
                     updateSearchQuery={updateSearchQuery}
                 />
             </div>
+            <button type="button" onClick={initiateGoogleAuth}>Google</button>
         </div>
     );
 };

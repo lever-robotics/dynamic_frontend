@@ -7,6 +7,7 @@ import { LeverApp } from './components/LeverApp';
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 
+
 // For Testing
 import client from "./utils/TempapolloClient";
 import { useAuth } from './utils/AuthProvider';
