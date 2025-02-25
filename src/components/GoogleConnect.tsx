@@ -1,23 +1,40 @@
-export const initiateGoogleAuth = async () => {
-    // Generate and store state for CSRF protection
-    // const state = crypto.randomUUID();
-    // sessionStorage.setItem('oauth_state', state);
-    
-    // // Redirect to Google OAuth
-    // window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-    //   client_id: "715836038842-r2vk9jj8bd00pmrikdvlbvf57443mvcd.apps.googleusercontent.com",
-    //   redirect_uri: `${window.location.origin}`,
-    //   response_type: 'code',
-    //   scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
-    //   state,
-    //   access_type: 'offline'
-    // })}`;
+import { useAuth } from "../utils/AuthProvider";
 
-    const response = await fetch('http://localhost:4000/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      const data = await response.json();
-      console.log(data);
-  };
+export const GoogleConnect = () => {
+	const { getValidToken } = useAuth();
+
+	const handleGoogleAuth = async () => {
+		const token = await getValidToken();
+
+		try {
+			const response = await fetch("http://localhost:4000/api/auth/google", {
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
+			// Get the redirect URL from the response
+			const { url } = await response.json();
+
+			// Redirect to Google's OAuth page
+			if (url) {
+				window.location.href = url;
+			} else {
+				throw new Error("No redirect URL received");
+			}
+		} catch (error) {
+			console.error("Error initiating Google auth:", error);
+		}
+	};
+
+	return (
+		<button type="button" onClick={handleGoogleAuth}>
+			Connect with Google
+		</button>
+	);
+};

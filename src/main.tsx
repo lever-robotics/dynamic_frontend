@@ -5,7 +5,7 @@ import App from "./App.tsx";
 import { AuthProvider } from "./utils/AuthProvider.tsx";
 import AuthApolloProvider from "./utils/ApolloProvider.tsx";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-// import { OAuthCallback } from "./utils/OAuthCallback.tsx";
+import { OAuthCallback } from "./utils/OAuthCallback.tsx";
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
@@ -16,7 +16,7 @@ createRoot(document.getElementById("root")!).render(
 						{/* <Route path="/oauth/callback" element={<OAuthCallback />} /> */}
 						<Route path="/" element={<App />} />
 						{/* other specific routes */}
-						{/* <Route path="*" element={<OAuthCallback />} />{" "} */}
+						<Route path="*" element={<OAuthCallback />} />{" "}
 						{/* Catch all unmatched paths */}
 					</Routes>
 				</BrowserRouter>

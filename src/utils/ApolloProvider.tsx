@@ -96,17 +96,29 @@ const AuthApolloProvider = ({
 		}
 	};
 
-	const authLink = createAuthLink(getValidToken);
 	const httpLink = createHttpLink({
 		uri: "http://localhost:4000/graphql",
+		credentials: 'include',
+	});
+
+	const authLink = setContext(async (_, { headers }) => {
+		const token = localStorage.getItem('token');
+		return {
+			headers: {
+				...headers,
+				authorization: token ? `Bearer ${token}` : "",
+			},
+		};
 	});
 
 	const client = new ApolloClient({
-		link: from([
-			// createValidationLink(schema),
-			authLink.concat(httpLink),
-		]),
+		link: authLink.concat(httpLink),
 		cache: new InMemoryCache(),
+		defaultOptions: {
+			watchQuery: {
+				fetchPolicy: 'network-only',
+			},
+		},
 	});
 
 	return (
@@ -122,19 +134,6 @@ export function useAuthApollo() {
 		throw new Error("useAuthApollo must be used within a CustomApolloProvider");
 	}
 	return context;
-}
-
-
-function createAuthLink(getValidToken: () => Promise<string | null | undefined>) {
-	return setContext(async (_, { headers }) => {
-		const validToken = await getValidToken();
-		return {
-			headers: {
-				...headers,
-				authorization: validToken ? `Bearer ${validToken}` : "",
-			},
-		}
-	});
 }
 
 function createValidationLink(schema: GraphQLSchema) {

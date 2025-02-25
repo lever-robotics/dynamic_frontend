@@ -3,7 +3,7 @@ import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
-import { initiateGoogleAuth } from './GoogleConnect';
+import { GoogleConnect } from './GoogleConnect';
 
 // Define the search query type
 export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all';
@@ -39,6 +39,9 @@ export const LeverApp: React.FC = () => {
 
     const { jsonSchema } = useAuthApollo();
 
+    if(!jsonSchema) {
+        return  <GoogleConnect />
+    }
 
     return (
         <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
@@ -62,10 +65,10 @@ export const LeverApp: React.FC = () => {
                     searchQuery={searchQuery}
                     updateSearchQuery={updateSearchQuery}
                 />
-            </div>
-            <button type="button" onClick={initiateGoogleAuth}>Google</button>
-        </div>
-    );
+			</div>
+			
+		</div>
+	);
 };
 
 export default LeverApp;
