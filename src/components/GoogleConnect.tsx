@@ -30,11 +30,39 @@ export const GoogleConnect = () => {
 		} catch (error) {
 			console.error("Error initiating Google auth:", error);
 		}
+
+		console.log("Google auth initiated!");
+	};
+
+	// Add new test handler
+	const handleTest = async () => {
+		console.log("Starting test request...");
+		const token = await getValidToken();
+
+		try {
+			const response = await fetch("http://localhost:4000/api/test", {
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			console.log("Response status:", response.status);
+			const data = await response.json();
+			console.log("Response data:", data);
+		} catch (error) {
+			console.error("Error during test request:", error);
+		}
 	};
 
 	return (
-		<button type="button" onClick={handleGoogleAuth}>
-			Connect with Google
-		</button>
+		<div className="flex flex-col items-center justify-center h-screen">
+			<button type="button" onClick={handleGoogleAuth} className="bg-blue-500 text-white px-4 py-2 rounded-md">
+				Connect with Google
+			</button>
+			<button type="button" onClick={handleTest} className="bg-blue-500 text-white px-4 py-2 rounded-md">
+				Test API
+			</button>
+		</div>
 	);
 };

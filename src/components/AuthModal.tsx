@@ -6,8 +6,8 @@ import { AuthResponse } from '@supabase/supabase-js';
 
 
 export const AuthModal: React.FC = () => {
-    const [email, setEmail] = useState('mark.soulier@usu.edu')
-    const [password, setPassword] = useState('password')
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false);
 
