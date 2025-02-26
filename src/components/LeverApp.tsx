@@ -48,7 +48,7 @@ export const LeverApp: React.FC = () => {
                 updateSearchQuery={updateSearchQuery}
             />
 
-            <div className="flex-1 flex flex-col h-full">
+            <div className='flex flex-col items-center w-full mr-3 bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg'>
                 {/* Search Bar */}
                 <SearchBar
                     schema={jsonSchema}

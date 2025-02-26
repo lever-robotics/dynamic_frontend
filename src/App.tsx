@@ -8,7 +8,6 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 
 
 // For Testing
-import client from "./utils/TempapolloClient";
 import { useAuth } from './utils/AuthProvider';
 import { useAuthApollo } from './utils/ApolloProvider';
 import AuthModal from './components/AuthModal';
@@ -25,7 +24,7 @@ export const App = () => {
   }
 
   return (
-      <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={true}>
         <LeverApp />
       </SidebarProvider>
   );

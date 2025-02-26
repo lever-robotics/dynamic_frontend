@@ -3,6 +3,7 @@ import { SearchQuery, SearchQueryType } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import { useQuery } from '@apollo/client';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { useRef } from 'react';
 
 // Search Bar component props
 interface SearchBarProps {
@@ -52,6 +53,8 @@ function useMetadataSearch(searchTerm: string, schema: any) {
         skip: !searchTerm || searchTerm.trim() === '',
     });
 
+
+
     const formattedResults = React.useMemo(() => {
         if (!data && !searchTerm) return [];
 
@@ -69,6 +72,8 @@ function useMetadataSearch(searchTerm: string, schema: any) {
             }));
 
         if (!data) return schemaMatches;
+
+
 
         const dbResults = Object.entries(data)
             .flatMap(([tableName, tableData]: [string, any]) => {
@@ -178,7 +183,20 @@ function useMetadataSearch(searchTerm: string, schema: any) {
 export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery }) => {
     // State for search input and potential results
     const [searchInput, setSearchInput] = useState('');
+    const searchContainerRef = useRef<HTMLDivElement>(null);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+    const handleSearchFocus = () => {
+        setIsSearchFocused(true);
+    };
+
+    const handleSearchBlur = (e: React.FocusEvent) => {
+        // If clicking within search container or results, don't blur
+        if (searchContainerRef.current?.contains(e.relatedTarget as Node)) {
+            return;
+        }
+        setIsSearchFocused(false);
+    };
 
     // Use metadata search hook
     const { results, loading } = useMetadataSearch(searchInput, schema);
@@ -213,10 +231,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
 
     return (
         <div className='my-32 z-10 w-96 flex flex-col'>
+            <div className={`${isSearchFocused ? 'fixed inset-0 bg-black bg-opacity-50 z-10 transition-opacity duration-200' : 'opacity-0 pointer-events-none'}`} />
             <div className='absolute z-10'>
                 <div className="w-96 transition-all focus-within:scale-105">
                     {/* Search Bar */}
                     <div
+                        ref={searchContainerRef}
                         className='flex items-center px-3 pr-5 rounded-3xl shadow-md bg-anakiwa-50 focus-within:bg-white'
                     >
                         <MagnifyingGlassIcon className="w-4 h-4 text-gray-500" />
@@ -225,8 +245,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                                 type="text"
                                 value={searchInput}
                                 onChange={handleInputChange}
-                                onFocus={() => setIsSearchFocused(true)}
-                                onBlur={() => setIsSearchFocused(false)}
+                                onFocus={handleSearchFocus}
+                                onBlur={handleSearchBlur}
                                 placeholder="Search any field or ask AI..."
                                 className="w-full border-none bg-transparent placeholder:font-light font-base text-[14px] focus:outline-none text-portage-950"
                             />
