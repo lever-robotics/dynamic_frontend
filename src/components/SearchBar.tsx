@@ -249,7 +249,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                                 onBlur={handleSearchBlur}
                                 placeholder="Search any field or ask AI..."
                                 className="w-full border-none bg-transparent placeholder:font-light font-base text-[14px] focus:outline-none text-portage-950"
-                            />
+                            />       
                         </div>
                     </div>
                 </div>
