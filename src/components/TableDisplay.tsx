@@ -10,8 +10,9 @@ export const TableDisplay: React.FC<{
     updateSearchQuery: (query: SearchQuery) => void;
 }> = ({ schema, searchQuery, updateSearchQuery }) => {
     // Find the object type that matches the search query ID
-    const matchedObjectType = schema.object_types.find(
-        (type: any) => type.id === searchQuery?.id
+
+    const matchedObjectType = schema.entities.find(
+        (type: any) => type.name === searchQuery?.id
     );
 
     // If no matching object type found, render an error
@@ -25,7 +26,7 @@ export const TableDisplay: React.FC<{
     }
 
     // Get the table name for the matched object type
-    const tableName = matchedObjectType.table_name;
+    const tableName = matchedObjectType.name;
 
     // Generate query for the specific table
     const query = QueryBuilder.getQueryForTable(schema, tableName);

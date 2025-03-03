@@ -34,8 +34,8 @@ export const ObjectDisplay: React.FC<{
 }> = ({ schema, searchQuery, updateSearchQuery }) => {
     // Find object type from schema using the objectType in search query metadata
     const objectType = searchQuery.metadata?.objectType;
-    const objectDef = schema.object_types.find(
-        (type: any) => type.table_name === objectType
+    const objectDef = schema.entities.find(
+        (type: any) => type.name === objectType
     );
 
     // Use custom hook to fetch object data and connections

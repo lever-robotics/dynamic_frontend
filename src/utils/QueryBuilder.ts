@@ -19,6 +19,7 @@ export class QueryBuilder {
       }
     `;
 
+    console.log(queryString);
     return gql(queryString);
   }
 

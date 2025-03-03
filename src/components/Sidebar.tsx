@@ -49,7 +49,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
     // Extract object types from schema
     const schemaItems = schema.entities.map((type: any) => ({
         title: type.name,
-        id: `table_${type.name.toLowerCase().replace(/\s+/g, '_')}`,  // Generate unique ID from name,
+        id: `${type.name}`,  // Generate unique ID from name,
         type: 'table' as SearchQueryType,
         icon: getIconForType(type.name)
     }));
@@ -72,6 +72,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
         updateSearchQuery({
             id: 0,
             type: 'all',
+            name: '',
             metadata: {
                 other: 'home'
             }
@@ -82,6 +83,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
         updateSearchQuery({
             id: item.id,
             type: item.type,
+            name: item.name,
             metadata: {
                 other: item.title.toLowerCase()
             }
@@ -92,6 +94,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
         updateSearchQuery({
             id: settingsItem.id,
             type: settingsItem.type,
+            name: '',
             metadata: {
                 other: settingsItem.title.toLowerCase()
             }

@@ -10,6 +10,7 @@ export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'setting
 // Define the search query structure
 export interface SearchQuery {
     id: number;
+    name: string;
     type: SearchQueryType;
     metadata?: {
         objectID?: string; //Their node ID defined by graphQL
@@ -25,6 +26,7 @@ export const LeverApp: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState<SearchQuery>({
         id: 0,
         type: 'all',
+        name: '',
         metadata: {
             objectID: "WyJwdWJsaWMiLCAiaW5kaXZpZHVhbCIsIDFd",
             objectType: "individual",
