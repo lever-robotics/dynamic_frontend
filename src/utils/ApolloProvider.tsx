@@ -15,7 +15,6 @@ import { makeExecutableSchema } from "@graphql-tools/schema";
 import { createContext, useContext, useState } from "react";
 import { supabase } from "./SupabaseClient";
 import { useEffect } from "react";
-import { QueryBuilder } from "./QueryBuilder";
 
 const typeDefs = gql`# GraphQL Schema
       type Query {
@@ -70,7 +69,7 @@ const AuthApolloProvider = ({
 					.single(),
 				supabase
 					.from('user_configs')
-					.select('json_schema')
+					.select('blueprint')
 					.eq('user_id', userId)
 					.single()
 			]);
@@ -86,10 +85,9 @@ const AuthApolloProvider = ({
 			if (jsonSchemaResponse.error) {
 				console.error("Error fetching JSON schema:", jsonSchemaResponse.error);
 			} else if (jsonSchemaResponse.data) {
-				const newSchema = jsonSchemaResponse.data.json_schema;
+				const newSchema = jsonSchemaResponse.data.blueprint;
 				console.log('JSON Schema:', newSchema);
-				setJsonSchema(newSchema);
-				QueryBuilder.setSchema(newSchema); // Use the new value directly
+				setJsonSchema(newSchema)
 			}
 		} catch (error) {
 			console.error("Error fetching schemas:", error);

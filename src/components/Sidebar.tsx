@@ -47,16 +47,12 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
     };
 
     // Extract object types from schema
-    const schemaItems = schema.entities
-        ? schema.entities
-            .filter((type: any) => !type.name.includes('Mention'))
-            .map((type: any) => ({
-                title: type.name,
-                id: type.id,
-                type: 'table' as SearchQueryType,
-                icon: getIconForType(type.name)
-            }))
-        : [];
+    const schemaItems = schema.entities.map((type: any) => ({
+        title: type.name,
+        id: `table_${type.name.toLowerCase().replace(/\s+/g, '_')}`,  // Generate unique ID from name,
+        type: 'table' as SearchQueryType,
+        icon: getIconForType(type.name)
+    }));
 
     const recommendationsItem = {
         title: 'Recommendations',
