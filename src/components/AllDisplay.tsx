@@ -16,7 +16,7 @@ export const AllDisplay: React.FC<{
     const tableQueries = useMemo(() => {
         return schema.entities.map((type: any) => ({
             tableName: type.table_name,
-            query: QueryBuilder.getQueryForTable(type.table_name)
+            query: QueryBuilder.getQueryForTable(schema, type.table_name)
         })).filter(item => item.query);
     }, [schema]);
 

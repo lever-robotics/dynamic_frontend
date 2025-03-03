@@ -60,13 +60,13 @@ const QueryBuilderTester: React.FC<QueryBuilderTesterProps> = () => {
 
             switch (queryType) {
                 case 'table':
-                    result = QueryBuilder.getQueryForTable(selectedEntity);
+                    result = QueryBuilder.getQueryForTable(schemaData, selectedEntity);
                     break;
                 case 'connections':
-                    result = QueryBuilder.buildConnectionsQuery(selectedEntity);
+                    result = QueryBuilder.buildConnectionsQuery(schemaData, selectedEntity);
                     break;
                 case 'search':
-                    result = QueryBuilder.buildMetadataSearchQuery();
+                    result = QueryBuilder.buildMetadataSearchQuery(schemaData);
                     break;
                 default:
                     result = null;

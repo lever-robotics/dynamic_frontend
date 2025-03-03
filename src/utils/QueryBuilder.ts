@@ -1,18 +1,9 @@
-// src/utils/QueryBuilder.ts
 import { gql } from '@apollo/client';
 
 export class QueryBuilder {
 
-  // Add a property to store the schema
-  private static jsonSchema: any = null;
-
-  // Add a method to set the schema
-  static setSchema(schema: any) {
-    QueryBuilder.jsonSchema = schema;
-  }
-
-  static getQueryForTable(tableName: string) {
-    const type = QueryBuilder.jsonSchema.entities.find(t => t.name === tableName);
+  static getQueryForTable(schema: any, tableName: string) {
+    const type = schema.entities.find(t => t.name === tableName);
     if (!type) {
       return null;
     }
@@ -31,8 +22,8 @@ export class QueryBuilder {
     return gql(queryString);
   }
 
-  static buildMetadataSearchQuery() {
-    const searchQueries = QueryBuilder.jsonSchema.entities.map(type => {
+  static buildMetadataSearchQuery(schema: any) {
+    const searchQueries = schema.entities.map(type => {
       // Get all fields except ID
       const searchableFields = type.fields.filter(f => f.type !== 'relationship').filter(field => field.name !== 'id');
 
@@ -73,10 +64,9 @@ export class QueryBuilder {
     return gql(queryString);
   }
 
-  // src/utils/QueryBuilder.ts
-  static buildConnectionsQuery(typeName: string) {
+  static buildConnectionsQuery(schema: any, typeName: string) {
     // Find the type object to get its name and fields
-    const typeObj = QueryBuilder.jsonSchema.entities.find(t => t.name === typeName);
+    const typeObj = schema.entities.find(t => t.name === typeName);
     if (!typeObj) {
       console.warn(`Type object not found for: ${typeName}`);
       return null;
@@ -92,7 +82,7 @@ export class QueryBuilder {
     const relationshipQueries = typeObj.fields
       .filter(f => f.type === 'relationship')
       .map(relField => {
-        const relatedTypeObj = QueryBuilder.jsonSchema.entities.find(t => t.name === relField.name);
+        const relatedTypeObj = schema.entities.find(t => t.name === relField.name);
         if (!relatedTypeObj) {
           console.warn(`Related type object not found for: ${relField.name}`);
           return '';

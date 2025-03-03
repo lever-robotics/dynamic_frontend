@@ -45,6 +45,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
     const getIconForType = (typeName: string) => {
         return iconMapping[typeName] || Box;
     };
+
     // Extract object types from schema
     const schemaItems = schema.entities
         ? schema.entities

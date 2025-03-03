@@ -6,9 +6,9 @@ import MainEntityData from './MainEntityData';
 import ConnectionSpreadsheet from './ConnectionsData';
 
 // Custom hook for fetching object data and connections
-export function useObjectData(objectId: string, typeName: string) {
+export function useObjectData(schema: any, objectId: string, typeName: string) {
     // Generate connections query for the specific object type
-    const connectionsQuery = QueryBuilder.buildConnectionsQuery(typeName);
+    const connectionsQuery = QueryBuilder.buildConnectionsQuery(schema, typeName);
 
     // Execute the query
     const { data, loading, error } = useQuery(connectionsQuery!, {
@@ -40,6 +40,7 @@ export const ObjectDisplay: React.FC<{
 
     // Use custom hook to fetch object data and connections
     const { data: nodeData, loading, error } = useObjectData(
+        schema,
         searchQuery.metadata?.objectID!,
         objectType!
     );

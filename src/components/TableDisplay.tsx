@@ -28,7 +28,7 @@ export const TableDisplay: React.FC<{
     const tableName = matchedObjectType.table_name;
 
     // Generate query for the specific table
-    const query = QueryBuilder.getQueryForTable(tableName);
+    const query = QueryBuilder.getQueryForTable(schema, tableName);
 
     // Execute the query
     const { data, loading, error } = useQuery(query!);

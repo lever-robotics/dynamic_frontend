@@ -13,7 +13,7 @@ interface SearchBarProps {
 
 
 function useMetadataSearch(searchTerm: string, schema: any) {
-    const metadataQuery = QueryBuilder.buildMetadataSearchQuery();
+    const metadataQuery = QueryBuilder.buildMetadataSearchQuery(schema);
 
 
     const isTermContainedInSearch = (term: string) => {
