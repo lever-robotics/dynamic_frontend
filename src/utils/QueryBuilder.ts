@@ -22,6 +22,7 @@ export class QueryBuilder {
     const queryString = `
       query Get${type.name} {
         ${type.name} {
+          __typename
           ${fields.join('\n              ')}
         }
       }
@@ -67,36 +68,6 @@ export class QueryBuilder {
       ${searchQueries.join('\n')}
     }
   `;
-    // console.log(queryString);
-
-    return gql(queryString);
-  }
-
-  // src/utils/QueryBuilder.ts
-  static buildTableMetadataQuery(tableName: string) {
-    // Find the type object for the specified table
-    const typeObj = QueryBuilder.jsonSchema.entities.find(t => t.name === tableName);
-    if (!typeObj) {
-      console.warn(`Type object not found for table: ${tableName}`);
-      return null;
-    }
-
-    // Get all metadata fields
-    const metadataFields = typeObj.fields
-      .filter(f => f.type !== 'relationship')
-      .map(field => {
-        return `${field.name}`;
-      }).join('\n        ');
-
-    const queryString = `
-      query Get${typeObj.name}WithMetadata {
-        ${tableName} {
-            __typename
-            ${metadataFields}
-        }
-      }
-    `;
-
     // console.log(queryString);
 
     return gql(queryString);

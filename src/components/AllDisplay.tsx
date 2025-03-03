@@ -14,7 +14,7 @@ export const AllDisplay: React.FC<{
 }> = ({ schema, updateSearchQuery }) => {
     // Prepare queries for all tables using useMemo to avoid recreating on every render
     const tableQueries = useMemo(() => {
-        return schema.object_types.map((type: any) => ({
+        return schema.entities.map((type: any) => ({
             tableName: type.table_name,
             query: QueryBuilder.getQueryForTable(type.table_name)
         })).filter(item => item.query);

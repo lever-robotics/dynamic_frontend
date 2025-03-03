@@ -1,0 +1,562 @@
+{
+    "entities": [
+        {
+            "name": "individual",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "first_name",
+                    "type": "string",
+                    "description": "First name of individual"
+                },
+                {
+                    "name": "last_name",
+                    "type": "string",
+                    "description": "Last name of individual"
+                },
+                {
+                    "name": "phone_number",
+                    "type": "string",
+                    "description": "Contact phone number"
+                },
+                {
+                    "name": "age",
+                    "type": "integer",
+                    "description": "Age of individual"
+                },
+                {
+                    "name": "email",
+                    "type": "string",
+                    "description": "Email address"
+                },
+                {
+                    "name": "allergies",
+                    "type": "string",
+                    "description": "List out all the allergies of the individuals"
+                },
+                {
+                    "name": "waiver_date",
+                    "type": "date",
+                    "description": "Date waiver was signed"
+                },
+                {
+                    "name": "birth_day",
+                    "type": "date",
+                    "description": "Date of birth"
+                },
+                {
+                    "name": "address",
+                    "type": "string",
+                    "description": "Physical address"
+                },
+                {
+                    "name": "gender",
+                    "type": "enum",
+                    "values": [
+                        "Male",
+                        "Female",
+                        "Other"
+                    ],
+                    "description": "Gender identity"
+                },
+                {
+                    "name": "notes",
+                    "type": "text",
+                    "description": "General notes"
+                },
+                {
+                    "name": "prp_record",
+                    "type": "url",
+                    "description": "URL to PRP record PDF"
+                },
+                {
+                    "name": "waiver_record",
+                    "type": "url",
+                    "description": "URL to waiver record PDF"
+                },
+                {
+                    "name": "staff",
+                    "type": "relationship",
+                    "description": "Staff member assigned to individual",
+                    "displayName": "buddy"
+                },
+                {
+                    "name": "volunteers",
+                    "type": "relationship",
+                    "description": "Volunteer assigned to individual",
+                    "displayName": "buddy"
+                },
+                {
+                    "name": "groups",
+                    "type": "relationship",
+                    "description": "Groups or programs individual is part of",
+                    "displayName": "member of"
+                },
+                {
+                    "name": "progress_notes",
+                    "type": "relationship",
+                    "description": "Progress notes for individual",
+                    "displayName": "mentioned in"
+                },
+                {
+                    "name": "events",
+                    "type": "relationship",
+                    "description": "Events individual has attended",
+                    "displayName": "attended"
+                },
+                {
+                    "name": "activities",
+                    "type": "relationship",
+                    "description": "Activities individual has participated in",
+                    "displayName": "likes"
+                },
+                {
+                    "name": "equipment",
+                    "type": "relationship",
+                    "description": "Equipment used by individual",
+                    "displayName": "prefers"
+                }
+            ],
+            "description": "Represents individuals participating in programs",
+            "display_name": "Individual"
+        },
+        {
+            "name": "volunteer",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "first_name",
+                    "type": "string",
+                    "description": "First name of volunteer"
+                },
+                {
+                    "name": "last_name",
+                    "type": "string",
+                    "description": "Last name of volunteer"
+                },
+                {
+                    "name": "email",
+                    "type": "string",
+                    "description": "Email address"
+                },
+                {
+                    "name": "birth_day",
+                    "type": "date",
+                    "description": "Date of birth"
+                },
+                {
+                    "name": "address",
+                    "type": "string",
+                    "description": "Physical address"
+                },
+                {
+                    "name": "phone_number",
+                    "type": "string",
+                    "description": "Contact phone number"
+                },
+                {
+                    "name": "emergency_contact_name",
+                    "type": "string",
+                    "description": "Emergency contact name"
+                },
+                {
+                    "name": "experiance_asl",
+                    "type": "string",
+                    "description": "ASL experience level"
+                },
+                {
+                    "name": "previous_experience",
+                    "type": "text",
+                    "description": "Previous volunteer experience"
+                },
+                {
+                    "name": "volunteer_form",
+                    "type": "url",
+                    "description": "URL to volunteer form PDF"
+                },
+                {
+                    "name": "individuals",
+                    "type": "relationship",
+                    "description": "Links individuals to volunteer buddies",
+                    "displayName": "buddy"
+                },
+                {
+                    "name": "events",
+                    "type": "relationship",
+                    "description": "Links volunteers to events they support",
+                    "displayName": "attended"
+                },
+                {
+                    "name": "equipment",
+                    "type": "relationship",
+                    "description": "Links volunteers to the equipment they prefer",
+                    "displayName": "likes"
+                }
+            ],
+            "description": "Volunteers who assist with programs",
+            "display_name": "Volunteer"
+        },
+        {
+            "name": "staff",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "description": "Full name of staff member"
+                },
+                {
+                    "name": "phone_number",
+                    "type": "string",
+                    "description": "Contact phone number"
+                },
+                {
+                    "name": "email",
+                    "type": "string",
+                    "description": "Email address"
+                },
+                {
+                    "name": "staff_form",
+                    "type": "url",
+                    "description": "URL to staff form PDF"
+                },
+                {
+                    "name": "individuals",
+                    "type": "relationship",
+                    "description": "Links individuals to staff buddies",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "activities",
+                    "type": "relationship",
+                    "description": "Tracks activities performed by staff",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "events",
+                    "type": "relationship",
+                    "description": "Links staff members to events they manage",
+                    "displayName": "relationship"
+                }
+            ],
+            "description": "Staff members of the organization",
+            "display_name": "Staff"
+        },
+        {
+            "name": "group",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "description": "Group name"
+                },
+                {
+                    "name": "purpose",
+                    "type": "text",
+                    "description": "Group purpose and objectives"
+                },
+                {
+                    "name": "individuals",
+                    "type": "relationship",
+                    "description": "Links individuals to their groups",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "activities",
+                    "type": "relationship",
+                    "description": "Tracks activities preferred by groups",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "progress_notes",
+                    "type": "relationship",
+                    "description": "Links progress notes to their intended groups",
+                    "displayName": "relationship"
+                }
+            ],
+            "description": "Groups or programs within the organization",
+            "display_name": "Group"
+        },
+        {
+            "name": "progressNote",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "name",
+                    "type": "text",
+                    "description": "Note content"
+                },
+                {
+                    "name": "note_scan",
+                    "type": "url",
+                    "description": "URL to scanned note document"
+                },
+                {
+                    "name": "individuals",
+                    "type": "relationship",
+                    "description": "Tracks mentions of individuals in progress notes",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "volunteers",
+                    "type": "relationship",
+                    "description": "Tracks mentions of volunteers in progress notes",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "staff",
+                    "type": "relationship",
+                    "description": "Tracks mentions of staff in progress notes",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "activities",
+                    "type": "relationship",
+                    "description": "Tracks mentions of activities in progress notes",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "equipment",
+                    "type": "relationship",
+                    "description": "Tracks mentions of equipment in progress notes",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "events",
+                    "type": "relationship",
+                    "description": "Links progress notes to events they document",
+                    "displayName": "relationship"
+                }
+            ],
+            "description": "Notes tracking progress and activities",
+            "display_name": "ProgressNote"
+        },
+        {
+            "name": "event",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "date",
+                    "type": "date",
+                    "description": "Event date"
+                },
+                {
+                    "name": "name",
+                    "type": "text",
+                    "description": "Name of the event"
+                },
+                {
+                    "name": "individuals",
+                    "type": "relationship",
+                    "description": "Links individuals to events they attend",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "volunteers",
+                    "type": "relationship",
+                    "description": "Links volunteers to events they support",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "staff",
+                    "type": "relationship",
+                    "description": "Links staff members to events they manage",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "activities",
+                    "type": "relationship",
+                    "description": "Links activities to planned events",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "equipment",
+                    "type": "relationship",
+                    "description": "Tracks equipment used at events",
+                    "displayName": "relationship"
+                }
+            ],
+            "description": "Organized events and activities",
+            "display_name": "Event"
+        },
+        {
+            "name": "activity",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "description": "Type of activity"
+                },
+                {
+                    "name": "instructions",
+                    "type": "text",
+                    "description": "Activity instructions"
+                },
+                {
+                    "name": "typical_locations",
+                    "type": "text",
+                    "description": "Common locations for activity"
+                },
+                {
+                    "name": "individuals",
+                    "type": "relationship",
+                    "description": "Tracks activities liked by individuals",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "groups",
+                    "type": "relationship",
+                    "description": "Tracks activities preferred by groups",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "events",
+                    "type": "relationship",
+                    "description": "Links activities to planned events",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "equipment",
+                    "type": "relationship",
+                    "description": "Links equipment to activities",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "staff",
+                    "type": "relationship",
+                    "description": "Tracks activities performed by staff",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "volunteers",
+                    "type": "relationship",
+                    "description": "Tracks activities performed by volunteers",
+                    "displayName": "relationship"
+                }
+            ],
+            "description": "Activities conducted during events",
+            "display_name": "Activity"
+        },
+        {
+            "name": "equipment",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "description": "Equipment serial number"
+                },
+                {
+                    "name": "location_held",
+                    "type": "string",
+                    "description": "Storage location"
+                },
+                {
+                    "name": "type",
+                    "type": "string",
+                    "description": "Type of equipment"
+                },
+                {
+                    "name": "individuals",
+                    "type": "relationship",
+                    "description": "Tracks equipment usage by individuals",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "volunteers",
+                    "type": "relationship",
+                    "description": "Tracks equipment usage by volunteers",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "events",
+                    "type": "relationship",
+                    "description": "Tracks equipment used at events",
+                    "displayName": "relationship"
+                },
+                {
+                    "name": "activities",
+                    "type": "relationship",
+                    "description": "Links equipment to activities",
+                    "displayName": "relationship"
+                }
+            ],
+            "description": "Equipment used in activities",
+            "display_name": "Equipment"
+        }
+    ]
+}

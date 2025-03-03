@@ -11,22 +11,26 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from './utils/AuthProvider';
 import { useAuthApollo } from './utils/ApolloProvider';
 import AuthModal from './components/AuthModal';
+import QueryBuilderTester from './components/tests/QueryBuilderTester';
 
 export const App = () => {
 
   const { isAuthenticated } = useAuth();
   const { jsonSchema } = useAuthApollo();
 
-  if(!isAuthenticated || !jsonSchema) {
+  if (!isAuthenticated || !jsonSchema) {
     return (
-      <AuthModal/>
+      <AuthModal />
     )
   }
 
   return (
     <SidebarProvider defaultOpen={true}>
-        <LeverApp />
-      </SidebarProvider>
+      <LeverApp />
+    </SidebarProvider>
+
+    // For debugging queries
+    // <QueryBuilderTester />
   );
 };
 

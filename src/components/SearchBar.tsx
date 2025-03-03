@@ -59,14 +59,14 @@ function useMetadataSearch(searchTerm: string, schema: any) {
         if (!data && !searchTerm) return [];
 
         // Get schema object type matches
-        const schemaMatches = schema.object_types
+        const schemaMatches = schema.entities
             .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
             .map(obj => ({
                 displayName: obj.name,
                 resultType: 'table',
                 matchedField: 'table',
-                matchedValue: obj.table_name,
-                sourceTable: obj.table_name,
+                matchedValue: obj.display_name,
+                sourceTable: obj.display_name,
                 nodeId: '',
                 typeName: ''
             }));
@@ -210,8 +210,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
     // Handle result selection
     const handleResultSelect = (result: any) => {
         // Find the corresponding object type from schema
-        const objectType = schema.object_types.find(
-            (type: any) => type.table_name === result.sourceTable
+        const objectType = schema.entities.find(
+            (type: any) => type.display_name === result.sourceTable
         );
 
         updateSearchQuery({
@@ -249,7 +249,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                                 onBlur={handleSearchBlur}
                                 placeholder="Search any field or ask AI..."
                                 className="w-full border-none bg-transparent placeholder:font-light font-base text-[14px] focus:outline-none text-portage-950"
-                            />       
+                            />
                         </div>
                     </div>
                 </div>
