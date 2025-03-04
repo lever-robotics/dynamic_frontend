@@ -14,7 +14,7 @@ export class QueryBuilder {
       query Get${type.name} {
         ${type.name} {
           __typename
-          ${fields.join('\n              ')}
+          ${fields.join('\n\t\t  ')}
         }
       }
     `;

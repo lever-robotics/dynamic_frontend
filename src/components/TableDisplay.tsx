@@ -32,8 +32,8 @@ export const TableDisplay: React.FC<{
     const query = QueryBuilder.getQueryForTable(schema, tableName);
 
     // Execute the query
-    const { data, loading, error } = useQuery(query!);
-
+    const { data, loading, error } = useQuery(query!, {fetchPolicy: "no-cache"});
+    console.log(data, error);
     // Render loading state
     if (loading) {
         return <div className="p-4">Loading data...</div>;
