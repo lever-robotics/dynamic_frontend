@@ -3,7 +3,7 @@ import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
-
+import QueryBuilderTester from './tests/QueryBuilderTester';
 // Define the search query type
 export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all';
 
@@ -84,6 +84,9 @@ export const LeverApp: React.FC = () => {
                 <div className="max-w-3xl w-full h-min overflow-y-hidden overflow-x-scroll no-scrollbar">
                     <pre className="p-4 text-sm text-gray-600">{JSON.stringify(searchQuery, null, 2)}</pre>
                 </div>
+
+                {/* For debugging queries */}
+                {/* <QueryBuilderTester schema={jsonSchema} /> */}
 
             </div>
         </div>

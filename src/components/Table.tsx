@@ -37,7 +37,9 @@ export const Table: React.FC<TableProps> = ({
     }
 
     // Get headers (excluding specified fields)
-    const headers = Object.keys(data[0]).filter(key => !excludeFields.includes(key));
+    const headers = Array.from(new Set(
+        data.flatMap(item => Object.keys(item))
+    )).filter(key => !excludeFields.includes(key));
 
     // Create matrix of data
     const matrix = data.map(item =>

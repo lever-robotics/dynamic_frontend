@@ -1,164 +1,221 @@
 // src/components/QueryBuilderTester.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@apollo/client';
 import { QueryBuilder } from '../../utils/QueryBuilder';
-import schemaData from '../../assets/common_grounds.json'; // Import your schema data
-import { print, DocumentNode } from 'graphql'; // Optional: for prettier query formatting
+import { print, parse } from 'graphql';
 
-// Define schema interface
-interface Field {
+interface SchemaEntity {
     name: string;
-    type: string;
-}
-
-interface Entity {
-    name: string;
-    fields: Field[];
+    fields: {
+        name: string;
+        type: string;
+        description: string;
+        values?: string[];
+    }[];
+    description: string;
+    display_name: string;
 }
 
 interface Schema {
-    entities: Entity[];
+    version: string;
+    entities: SchemaEntity[];
+    relationships: any[];
 }
 
-// Component props interface (if needed)
 interface QueryBuilderTesterProps {
-    // Add any props you might need
+    schema: Schema;
 }
 
-const QueryBuilderTester: React.FC<QueryBuilderTesterProps> = () => {
-    const [selectedEntity, setSelectedEntity] = useState<string>('');
-    const [queryOutput, setQueryOutput] = useState<string>('');
-    const [queryType, setQueryType] = useState<string>('table');
-    const [error, setError] = useState<string>('');
+const useQueryExecution = (
+    parsedQuery: any,
+    shouldRun: boolean,
+    queryType: 'table' | 'search',
+    searchTerm: string,
+    queryError: string
+) => {
+    const variables = queryType === 'search' ? { searchTerm: `%${searchTerm}%` } : {};
 
-    // Ensure the schema is typed
-    const typedSchema = schemaData as Schema;
+    return useQuery(parsedQuery!, {
+        skip: !parsedQuery || !shouldRun || (queryType === 'search' && !searchTerm) || !!queryError,
+        variables,
+        fetchPolicy: "no-cache"
+    });
+};
 
-    // Initialize the schema on component mount
-    useEffect(() => {
-        try {
-            // Set the schema in QueryBuilder
-            QueryBuilder.setSchema(typedSchema);
+const QueryBuilderTester: React.FC<QueryBuilderTesterProps> = ({ schema }) => {
+    const [showQuery, setShowQuery] = useState(false);
+    const [shouldRun, setShouldRun] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [queryType, setQueryType] = useState<'table' | 'search'>('table');
+    const [editedQuery, setEditedQuery] = useState<string>('');
+    const [queryError, setQueryError] = useState<string>('');
+    const [parsedQuery, setParsedQuery] = useState<any>(null);
 
-            // Set the first entity as selected by default
-            if (typedSchema.entities && typedSchema.entities.length > 0) {
-                setSelectedEntity(typedSchema.entities[0].name);
+    // Get the query based on type
+    const generatedQuery = queryType === 'table'
+        ? (schema.entities?.[0] ? QueryBuilder.getQueryForTable(schema, schema.entities[0].name) : null)
+        : QueryBuilder.buildMetadataSearchQuery(schema);
+
+    const { data, loading, error } = useQueryExecution(
+        parsedQuery,
+        shouldRun,
+        queryType,
+        searchTerm,
+        queryError
+    );
+
+    const handleLoadQuery = (type: 'table' | 'search') => {
+        setQueryType(type);
+        const query = type === 'table'
+            ? (schema.entities?.[0] ? QueryBuilder.getQueryForTable(schema, schema.entities[0].name) : null)
+            : QueryBuilder.buildMetadataSearchQuery(schema);
+
+        if (query) {
+            setEditedQuery(print(query));
+            try {
+                setParsedQuery(query);
+                setQueryError('');
+            } catch (err) {
+                setQueryError(err instanceof Error ? err.message : 'Invalid GraphQL query');
             }
-        } catch (err) {
-            setError(`Error initializing schema: ${err instanceof Error ? err.message : String(err)}`);
         }
-    }, []);
+        setShouldRun(false);
+    };
 
-    // Generate query based on selected type
-    const generateQuery = (): void => {
-        if (!selectedEntity) {
-            setError('Please select an entity first');
-            return;
-        }
-
+    const handleEditQuery = () => {
         try {
-            let result: DocumentNode | null = null;
-
-            switch (queryType) {
-                case 'table':
-                    result = QueryBuilder.getQueryForTable(schemaData, selectedEntity);
-                    break;
-                case 'connections':
-                    result = QueryBuilder.buildConnectionsQuery(schemaData, selectedEntity);
-                    break;
-                case 'search':
-                    result = QueryBuilder.buildMetadataSearchQuery(schemaData);
-                    break;
-                default:
-                    result = null;
-            }
-
-            if (result) {
-                // If using Apollo's gql and want prettier formatting
-                try {
-                    setQueryOutput(print(result));
-                } catch (err) {
-                    // Fallback if print fails
-                    if (result.loc?.source?.body) {
-                        setQueryOutput(result.loc.source.body);
-                    } else {
-                        setQueryOutput(JSON.stringify(result, null, 2));
-                    }
-                }
-            } else {
-                setQueryOutput('No query generated');
-            }
+            const parsed = parse(editedQuery);
+            setParsedQuery(parsed);
+            setQueryError('');
         } catch (err) {
-            setError(`Error generating query: ${err instanceof Error ? err.message : String(err)}`);
-            setQueryOutput('');
+            setQueryError(err instanceof Error ? err.message : 'Invalid GraphQL query');
         }
     };
 
-    useEffect(() => {
-        if (selectedEntity) {
-            generateQuery();
-        }
-    }, [queryType, selectedEntity]);
-
     return (
         <div className="p-4 max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold mb-4">GraphQL Query Builder Tester</h1>
+            <h1 className="text-2xl font-bold mb-4">GraphQL Query Tester</h1>
 
-            {error && (
-                <div className="mb-6 p-4 border rounded bg-red-50 text-red-700">
-                    {error}
-                </div>
-            )}
-
-            <div className="mb-6 p-4 border rounded">
-                <h2 className="text-lg font-semibold mb-2">Schema Loaded: {typedSchema.entities?.length || 0} entities found</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label className="block mb-1">Select Entity:</label>
-                        <select
-                            value={selectedEntity}
-                            onChange={(e) => setSelectedEntity(e.target.value)}
-                            className="mb-2 border p-2 rounded w-full"
-                        >
-                            {typedSchema.entities?.map(entity => (
-                                <option key={entity.name} value={entity.name}>{entity.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block mb-1">Query Type:</label>
-                        <select
-                            value={queryType}
-                            onChange={(e) => setQueryType(e.target.value)}
-                            className="mb-2 border p-2 rounded w-full"
-                        >
-                            <option value="table">getQueryForTable</option>
-                            <option value="connections">buildConnectionsQuery</option>
-                            <option value="search">buildMetadataSearchQuery</option>
-                        </select>
-                    </div>
-                </div>
+            <div className="mb-6 flex gap-2">
                 <button
-                    onClick={generateQuery}
-                    className="bg-green-500 text-white p-2 rounded"
+                    onClick={() => handleLoadQuery('table')}
+                    className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
                 >
-                    Regenerate Query
+                    Load Table Query
+                </button>
+                <button
+                    onClick={() => handleLoadQuery('search')}
+                    className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
+                >
+                    Load Search Query
+                </button>
+                <button
+                    onClick={() => setShowQuery(!showQuery)}
+                    className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+                >
+                    {showQuery ? 'Hide' : 'Show'} GraphQL Query
                 </button>
             </div>
 
-            {queryOutput && (
+            {queryType === 'search' && (
                 <div className="mb-6 p-4 border rounded">
-                    <h2 className="text-lg font-semibold mb-2">Generated Query</h2>
+                    <label className="block mb-2">Search Term:</label>
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="border p-2 rounded w-full"
+                        placeholder="Enter search term..."
+                    />
+                </div>
+            )}
+
+            {showQuery && (
+                <div className="mb-6 p-4 border rounded">
+                    <div className="flex justify-between items-center mb-2">
+                        <h2 className="text-lg font-semibold">GraphQL Query</h2>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    if (generatedQuery) {
+                                        setEditedQuery(print(generatedQuery));
+                                        setParsedQuery(generatedQuery);
+                                        setQueryError('');
+                                    }
+                                }}
+                                className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600"
+                            >
+                                Reset Query
+                            </button>
+                            <button
+                                onClick={handleEditQuery}
+                                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                            >
+                                Validate Query
+                            </button>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(editedQuery);
+                                }}
+                                className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+                            >
+                                Copy to Clipboard
+                            </button>
+                        </div>
+                    </div>
+                    <textarea
+                        value={editedQuery}
+                        onChange={(e) => setEditedQuery(e.target.value)}
+                        className="w-full h-64 p-4 font-mono text-sm bg-gray-100 rounded border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        placeholder="Edit your GraphQL query here..."
+                    />
+                    {queryError && (
+                        <div className="mt-2 text-red-600 text-sm">
+                            {queryError}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div className="mb-6">
+                <button
+                    onClick={() => setShouldRun(true)}
+                    disabled={!!queryError || (queryType === 'search' && !searchTerm)}
+                    className="bg-purple-500 text-white p-2 rounded hover:bg-purple-600 disabled:bg-gray-400"
+                >
+                    Run Query
+                </button>
+            </div>
+
+            {loading && (
+                <div className="p-4 bg-blue-50 text-blue-700 rounded">
+                    Loading data...
+                </div>
+            )}
+
+            {error && (
+                <div className="p-4 bg-red-50 text-red-700 rounded">
+                    <h2 className="text-xl font-bold mb-2">Query Error</h2>
+                    <p>{error.message}</p>
+                </div>
+            )}
+
+            {data && (
+                <div className="mb-6 p-4 border rounded">
+                    <div className="flex justify-between items-center mb-2">
+                        <h2 className="text-lg font-semibold">Query Result</h2>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+                            }}
+                            className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+                        >
+                            Copy Result
+                        </button>
+                    </div>
                     <pre className="bg-gray-100 p-4 rounded overflow-auto max-h-96 text-sm">
-                        {queryOutput}
+                        {JSON.stringify(data, null, 2)}
                     </pre>
-                    <button
-                        onClick={() => {
-                            navigator.clipboard.writeText(queryOutput);
-                        }}
-                        className="mt-2 bg-gray-500 text-white p-2 rounded"
-                    >
-                        Copy to Clipboard
-                    </button>
                 </div>
             )}
         </div>

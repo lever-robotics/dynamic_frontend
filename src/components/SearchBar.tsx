@@ -53,6 +53,8 @@ function useMetadataSearch(searchTerm: string, schema: any) {
         skip: !searchTerm || searchTerm.trim() === '',
     });
 
+    console.log(data);
+
 
 
     const formattedResults = React.useMemo(() => {

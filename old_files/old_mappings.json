@@ -1,0 +1,223 @@
+[
+    {
+        "entityName": "individual",
+        "operations": [
+            {
+                "map": {
+                    "column": "rowNumber",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "nodeId"
+            },
+            {
+                "map": {
+                    "column": "A",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "id"
+            },
+            {
+                "map": {
+                    "column": "D",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "first_name"
+            },
+            {
+                "map": {
+                    "column": "C",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "last_name"
+            },
+            {
+                "map": {
+                    "column": "F",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "phone_number"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "age"
+            },
+            {
+                "map": {
+                    "column": "G",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "email"
+            },
+            {
+                "map": {
+                    "column": "N",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "allergies"
+            },
+            {
+                "map": {
+                    "column": "I",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "waiver_date"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "birth_day"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "address"
+            },
+            {
+                "map": {
+                    "column": "B",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "gender"
+            },
+            {
+                "map": {
+                    "column": "K",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "ethnicity"
+            },
+            {
+                "map": {
+                    "column": "M",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "primary_diagnosis"
+            },
+            {
+                "map": {
+                    "column": "J",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "notes"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "prp_record"
+            },
+            {
+                "map": {
+                    "column": "H",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "waiver_record"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "staff"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "volunteers"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "groups"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "progress_notes"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "events"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "activities"
+            },
+            {
+                "map": {
+                    "column": "X",
+                    "sheetId": "0",
+                    "spreadsheetId": "1EfPbRMlrxzoQM7DkzB4hS37U4_nIugLTUWWKvU7tJcE"
+                },
+                "source": "sheets",
+                "fieldName": "equipment"
+            }
+        ]
+    }
+]

@@ -11,7 +11,6 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from './utils/AuthProvider';
 import { useAuthApollo } from './utils/ApolloProvider';
 import AuthModal from './components/AuthModal';
-import QueryBuilderTester from './components/tests/QueryBuilderTester';
 
 export const App = () => {
 
@@ -29,9 +28,6 @@ export const App = () => {
       <LeverApp />
     </SidebarProvider>
 
-    
-    // For debugging queries
-    // <QueryBuilderTester />
   );
 };
 
