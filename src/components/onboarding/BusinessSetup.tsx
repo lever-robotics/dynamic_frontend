@@ -15,6 +15,7 @@ export interface Integration {
   icon: string;
   description: string;
   isAvailable: boolean;
+  isConnected?: boolean;
 }
 
 interface BusinessSetupProps {
@@ -25,6 +26,7 @@ interface IntegrationsSectionProps {
   integrations: Integration[];
   isHovering: string | null;
   setIsHovering: (value: string | null) => void;
+  onConnect: (integration: Integration) => void;
 }
 
 interface IntegrationCardProps {
@@ -43,12 +45,13 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
   return (
     <article
       className={`flex gap-4 items-center p-4 rounded-xl border cursor-pointer transition-all ${!integration.isAvailable ? 'opacity-50 cursor-not-allowed' : ''
+        } ${integration.isConnected ? 'border-primary-500 bg-primary-50' : ''
         }`}
       onMouseEnter={() => integration.isAvailable && setIsHovering(integration.name)}
       onMouseLeave={() => setIsHovering(null)}
       onClick={() => integration.isAvailable && onClick()}
       style={{
-        background: isHovering === integration.name ? "#F8F9FA" : "white",
+        background: isHovering === integration.name ? "rgb(var(--primary-200))" : integration.isConnected ? "rgb(var(--primary-300))" : "white",
       }}
     >
       <img
@@ -61,9 +64,9 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
           {integration.name}
         </h3>
         <p className="text-sm text-stone-500">{integration.description}</p>
-        {/* {!integration.isAvailable && (
-          <p className="text-xs text-red-500 mt-1">Coming soon</p>
-        )} */}
+        {integration.isConnected && (
+          <p className="text-xs text-primary-600 mt-1">Connected</p>
+        )}
       </div>
     </article>
   );
@@ -73,6 +76,7 @@ const IntegrationsSection: React.FC<IntegrationsSectionProps> = ({
   integrations,
   isHovering,
   setIsHovering,
+  onConnect,
 }) => {
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
 
@@ -100,6 +104,7 @@ const IntegrationsSection: React.FC<IntegrationsSectionProps> = ({
         <IntegrationModal
           integration={selectedIntegration}
           onClose={() => setSelectedIntegration(null)}
+          onConnect={onConnect}
         />
       )}
     </section>
@@ -110,8 +115,7 @@ const BusinessSetup: React.FC<BusinessSetupProps> = ({ onClose }) => {
   const [businessName, setBusinessName] = useState("");
   const [logoUrl, setLogoUrl] = useState(defaultLogo);
   const [isHovering, setIsHovering] = useState<string | null>(null);
-
-  const integrations: Integration[] = [
+  const [integrations, setIntegrations] = useState<Integration[]>([
     {
       name: "Google Sheets",
       icon: gsIcon,
@@ -136,7 +140,17 @@ const BusinessSetup: React.FC<BusinessSetupProps> = ({ onClose }) => {
       description: "Accounting software",
       isAvailable: false,
     },
-  ];
+  ]);
+
+  const handleConnect = (integration: Integration) => {
+    setIntegrations(prev =>
+      prev.map(integ =>
+        integ.name === integration.name
+          ? { ...integ, isConnected: true }
+          : integ
+      )
+    );
+  };
 
   return (
     <main className="fixed inset-0 flex justify-center items-center w-screen h-screen bg-black bg-opacity-50 z-50">
@@ -163,6 +177,7 @@ const BusinessSetup: React.FC<BusinessSetupProps> = ({ onClose }) => {
             integrations={integrations}
             isHovering={isHovering}
             setIsHovering={setIsHovering}
+            onConnect={handleConnect}
           />
         </div>
       </section>

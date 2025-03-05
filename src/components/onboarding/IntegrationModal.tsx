@@ -2,16 +2,26 @@
 import * as React from "react";
 import { X } from "lucide-react";
 import type { Integration } from "./BusinessSetup";
+import { OdooConnect, type OdooFormData } from "./OdooConnect";
 
 interface IntegrationModalProps {
     integration: Integration;
     onClose: () => void;
+    onConnect?: (integration: Integration) => void;
 }
 
 export const IntegrationModal: React.FC<IntegrationModalProps> = ({
     integration,
     onClose,
+    onConnect,
 }) => {
+    const handleOdooSubmit = async (data: OdooFormData) => {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        onConnect?.(integration);
+        onClose();
+    };
+
     return (
         <div className="fixed inset-0 flex justify-center items-center w-screen h-screen bg-black bg-opacity-50 z-[60]">
             <div className="relative p-8 bg-white rounded-3xl max-w-[500px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] w-[90%]">
@@ -42,6 +52,8 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
                                 We're working hard to bring you this integration. Stay tuned for updates.
                             </p>
                         </div>
+                    ) : integration.name === "Odoo" ? (
+                        <OdooConnect onSubmit={handleOdooSubmit} />
                     ) : (
                         <div className="space-y-4">
                             <div className="p-4 bg-blue-50 rounded-lg">
@@ -53,8 +65,8 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
                             <button
                                 className="w-full px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                                 onClick={() => {
-                                    // Handle integration connection
-                                    console.log(`Connecting to ${integration.name}`);
+                                    onConnect?.(integration);
+                                    onClose();
                                 }}
                             >
                                 Connect {integration.name}
