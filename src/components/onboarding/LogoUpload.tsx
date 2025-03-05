@@ -42,7 +42,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
           onMouseEnter={() => setIsHovering("upload")}
           onMouseLeave={() => setIsHovering(null)}
           style={{
-            background: isHovering === "upload" ? "#2D0F8F" : "#4318D1",
+            background: isHovering === "upload" ? "rgb(1, 40, 50)" : "rgb(2, 159, 202)",
           }}
         >
           Upload Logo
