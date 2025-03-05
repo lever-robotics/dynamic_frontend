@@ -10,15 +10,13 @@ import { useState } from 'react';
 
 // For Testing
 import { useAuth } from './utils/AuthProvider';
-import { useAuthApollo } from './utils/ApolloProvider';
 import AuthModal from './components/AuthModal';
 
 export const App = () => {
   const { isAuthenticated } = useAuth();
-  const { jsonSchema } = useAuthApollo();
   const [showBusinessSetup, setShowBusinessSetup] = useState(true);
 
-  if (!isAuthenticated || !jsonSchema) {
+  if (!isAuthenticated) {
     return (
       <AuthModal />
     )

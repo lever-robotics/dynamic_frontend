@@ -81,9 +81,9 @@ export const LeverApp: React.FC = () => {
                 />
 
                 {/* Display JSON */}
-                <div className="max-w-3xl w-full h-min overflow-y-hidden overflow-x-scroll no-scrollbar">
+                {/* <div className="max-w-3xl w-full h-min overflow-y-hidden overflow-x-scroll no-scrollbar">
                     <pre className="p-4 text-sm text-gray-600">{JSON.stringify(searchQuery, null, 2)}</pre>
-                </div>
+                </div> */}
 
                 {/* For debugging queries */}
                 {/* <QueryBuilderTester schema={jsonSchema} /> */}
