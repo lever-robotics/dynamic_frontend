@@ -117,7 +117,7 @@ export const GooglePicker: React.FC<{
 			}
 
 			const { developerKey, appId, oauthToken } = await response.json();
-            console.log(developerKey,appId,oauthToken);
+			console.log(developerKey, appId, oauthToken);
 
 			// Create the picker view
 			const view = new window.google.picker.View(
@@ -229,6 +229,27 @@ export const GooglePicker: React.FC<{
 		}
 	};
 
+	// Add new test handler
+	const handleTest = async () => {
+		console.log("Starting test request...");
+		const token = await getValidToken();
+
+		try {
+			const response = await fetch("http://localhost:4000/api/blueprints/generate", {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			console.log("Response status:", response.status);
+			const data = await response.json();
+			console.log("Response data:", data);
+		} catch (error) {
+			console.error("Error during test request:", error);
+		}
+	};
+
 	return (
 		<div className="flex flex-col items-center justify-center gap-4 mb-4">
 			{!isAuthorized ? (
@@ -249,6 +270,13 @@ export const GooglePicker: React.FC<{
 					Select Spreadsheet
 				</Button>
 			)}
+			<button
+				type="button"
+				onClick={handleTest}
+				className="bg-blue-500 text-white px-4 py-2 rounded-md mb-2"
+			>
+				Test API
+			</button>
 			{/* <div className="text-xs text-gray-500">
 				Auth Status: {isAuthorized ? "Connected" : "Not Connected"}
 			</div> */}
