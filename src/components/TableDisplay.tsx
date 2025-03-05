@@ -1,5 +1,5 @@
 import React from 'react';
-import { useQuery } from '@apollo/client';
+import { gql, useQuery } from '@apollo/client';
 import { SearchQuery } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import { Table } from './Table';
@@ -37,7 +37,56 @@ export const TableDisplay: React.FC<{
     const query = QueryBuilder.getQueryForTable(schema, tableName);
 
     // Execute the query
-    const { data, loading, error } = useQuery(query!, { fetchPolicy: "no-cache" });
+	const q = gql`query SearchMetadata(
+        $searchTerm: String!,
+        $numberTerm: Int,
+        $dateTerm: Date
+      ) {
+        individual(filter: {
+          or: [
+            { nodeId: { ilike: $searchTerm } },
+            { first_name: { ilike: $searchTerm } },
+            { last_name: { ilike: $searchTerm } },
+            { phone_number: { ilike: $searchTerm } },
+            { age: { eq: $numberTerm } },
+            { email: { ilike: $searchTerm } },
+            { allergies: { ilike: $searchTerm } },
+            { waiver_date: { eq: $dateTerm } },
+            { birth_day: { eq: $dateTerm } },
+            { address: { ilike: $searchTerm } },
+            { gender: { ilike: $searchTerm } },
+            { notes: { ilike: $searchTerm } },
+            { prp_record: { ilike: $searchTerm } },
+            { waiver_record: { ilike: $searchTerm } }
+          ]
+        }) {
+          __typename
+          nodeId
+          first_name
+          last_name
+          phone_number
+          age
+          email
+          allergies
+          waiver_date
+          birth_day
+          address
+          gender
+          notes
+          prp_record
+          waiver_record
+        }
+      }`;
+
+	const { data, loading, error } = useQuery(q, {
+		variables: {
+			searchTerm: "Daniel",
+			numberTerm: 30,
+			dateTerm: "2023-11-05",
+		},
+		fetchPolicy: "no-cache",
+	});
+    // const { data, loading, error } = useQuery(query!, { fetchPolicy: "no-cache" });
     console.log(data);
 
     // Render loading state
