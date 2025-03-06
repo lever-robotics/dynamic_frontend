@@ -1,11 +1,9 @@
 import type React from 'react'
 import { useState } from 'react'
 import { useAuth } from '@/utils/AuthProvider';
-import { useAuthApollo } from '@/utils/ApolloProvider';
-import { AuthResponse } from '@supabase/supabase-js';
 
 export const AuthModal: React.FC = () => {
-    const [email, setEmail] = useState('mark.soulier@usu.edu')
+    const [email, setEmail] = useState('testgoogle@gmail.com')
     const [password, setPassword] = useState('password')
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false);
@@ -20,7 +18,7 @@ export const AuthModal: React.FC = () => {
         try {
             const authResponse = await signIn({ email, password });
             console.log(authResponse)
-            
+
         } catch (err) {
             setError('Invalid email or password')
         } finally {
