@@ -2,8 +2,12 @@ import type React from 'react'
 import { useState } from 'react'
 import { useAuth } from '@/utils/AuthProvider';
 
-export const AuthModal: React.FC = () => {
-    const [email, setEmail] = useState('testgoogle@gmail.com')
+interface AuthModalProps {
+    onSignInSuccess: () => void;
+}
+
+export const AuthModal: React.FC<AuthModalProps> = ({ onSignInSuccess }) => {
+    const [email, setEmail] = useState('mark.soulier@usu.edu')
     const [password, setPassword] = useState('password')
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false);
@@ -17,8 +21,8 @@ export const AuthModal: React.FC = () => {
         setLoading(true)
         try {
             const authResponse = await signIn({ email, password });
-            console.log(authResponse)
-
+            console.log(authResponse);
+            onSignInSuccess(); // Call the success callback after successful sign-in
         } catch (err) {
             setError('Invalid email or password')
         } finally {

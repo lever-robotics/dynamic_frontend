@@ -20,8 +20,12 @@ export interface SearchQuery {
     };
 }
 
+interface LeverAppProps {
+    setShowBusinessSetup: (show: boolean) => void;
+}
+
 // LeverApp component with search query management
-export const LeverApp: React.FC = () => {
+export const LeverApp: React.FC<LeverAppProps> = ({ setShowBusinessSetup }) => {
     // State for search query
     const [searchQuery, setSearchQuery] = useState<SearchQuery>({
         id: 0,
@@ -78,6 +82,7 @@ export const LeverApp: React.FC = () => {
                     schema={jsonSchema}
                     searchQuery={searchQuery}
                     updateSearchQuery={updateSearchQuery}
+                    setShowBusinessSetup={setShowBusinessSetup}
                 />
 
                 {/* Display JSON */}

@@ -12,13 +12,15 @@ interface DisplayDataProps {
     schema: any;
     searchQuery: SearchQuery | null;
     updateSearchQuery: (query: SearchQuery) => void;
+    setShowBusinessSetup: (show: boolean) => void;
 }
 
 // Main DisplayData component
 export const DisplayData: React.FC<DisplayDataProps> = ({
     schema,
     searchQuery,
-    updateSearchQuery
+    updateSearchQuery,
+    setShowBusinessSetup
 }) => {
     // Render different components based on search query type
     const renderDisplay = () => {
@@ -38,7 +40,7 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
             case 'all':
                 return <AllDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'settings':
-                return <SettingsDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <SettingsDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} setShowBusinessSetup={setShowBusinessSetup} />;
             default:
                 return <div className="p-4">Unknown search type</div>;
         }

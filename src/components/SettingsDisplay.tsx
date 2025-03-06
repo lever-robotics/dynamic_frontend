@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { useAuth } from "@/utils/AuthProvider";
 import { SearchQuery } from "./LeverApp";
 import { GoogleConnect } from "./GoogleConnect";
-import { GooglePicker } from "./GooglePicker";
 
 interface DisplayDataProps {
 	schema: any;
 	searchQuery: SearchQuery | null;
 	updateSearchQuery: (query: SearchQuery) => void;
+	setShowBusinessSetup: (show: boolean) => void;
 }
 
 interface Setting {
@@ -17,7 +17,7 @@ interface Setting {
 	enabled: boolean;
 }
 
-export const SettingsDisplay: React.FC<DisplayDataProps> = () => {
+export const SettingsDisplay: React.FC<DisplayDataProps> = ({ setShowBusinessSetup }) => {
 	const { signOut } = useAuth();
 	const [settings, setSettings] = useState<Setting[]>([
 		{
@@ -64,8 +64,6 @@ export const SettingsDisplay: React.FC<DisplayDataProps> = () => {
 		}
 	};
 
-
-
 	return (
 		<div className="max-w-2xl mx-auto p-4">
 			<div className="bg-white shadow rounded-lg">
@@ -86,27 +84,29 @@ export const SettingsDisplay: React.FC<DisplayDataProps> = () => {
 								</div>
 								<button
 									type="button"
-									className={`${
-										setting.enabled ? "bg-indigo-600" : "bg-gray-200"
-									} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2`}
+									className={`${setting.enabled ? "bg-primary-400" : "bg-gray-200"
+										} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2`}
 									role="switch"
 									aria-checked={setting.enabled}
 									onClick={() => handleToggle(setting.id)}
 								>
 									<span
 										aria-hidden="true"
-										className={`${
-											setting.enabled ? "translate-x-5" : "translate-x-0"
-										} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+										className={`${setting.enabled ? "translate-x-5" : "translate-x-0"
+											} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
 									/>
 								</button>
 							</div>
 						))}
 					</div>
 
-					<div className="mt-8 pt-6 border-t border-gray-200">
-						{/* <GoogleConnect /> */}
-						<GooglePicker onSelect={() => {}} />
+					<div className="mt-8 pt-6 border-t border-gray-200 space-y-4">
+						<button
+							onClick={() => setShowBusinessSetup(true)}
+							className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-400 hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400"
+						>
+							Business Setup
+						</button>
 						<button
 							onClick={handleSignOut}
 							className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"

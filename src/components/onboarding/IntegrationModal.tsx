@@ -3,6 +3,7 @@ import * as React from "react";
 import { X } from "lucide-react";
 import type { Integration } from "./BusinessSetup";
 import { OdooConnect, type OdooFormData } from "./OdooConnect";
+import { GooglePicker } from "../GooglePicker";
 
 interface IntegrationModalProps {
     integration: Integration;
@@ -18,6 +19,12 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
     const handleOdooSubmit = async (data: OdooFormData) => {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 2000));
+        onConnect?.(integration);
+        onClose();
+    };
+
+    const handleGoogleSheetSelect = (id: string, name: string) => {
+        console.log(`Selected sheet: ${name} (${id})`);
         onConnect?.(integration);
         onClose();
     };
@@ -54,6 +61,16 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
                         </div>
                     ) : integration.name === "Odoo" ? (
                         <OdooConnect onSubmit={handleOdooSubmit} />
+                    ) : integration.name === "Google Sheets" ? (
+                        <div className="space-y-4">
+                            <div className="p-4 bg-blue-50 rounded-lg">
+                                <h3 className="font-medium text-blue-900">Connect Google Sheets</h3>
+                                <p className="text-sm text-blue-700 mt-1">
+                                    Select a Google Sheet to connect with your account. You'll be able to sync and manage data directly.
+                                </p>
+                            </div>
+                            <GooglePicker onSelect={handleGoogleSheetSelect} />
+                        </div>
                     ) : (
                         <div className="space-y-4">
                             <div className="p-4 bg-blue-50 rounded-lg">
