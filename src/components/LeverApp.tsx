@@ -3,7 +3,9 @@ import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
+import { AIChatSidebar } from '../components/AIChatSidebar';
 import QueryBuilderTester from './tests/QueryBuilderTester';
+
 // Define the search query type
 export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all';
 
@@ -35,11 +37,11 @@ export const LeverApp: React.FC = () => {
 
     // Function to update search query
     const updateSearchQuery = (query: SearchQuery) => {
+        console.log('Updating search query:', query);
         setSearchQuery(query);
     };
 
     const { jsonSchema } = useAuthApollo();
-
 
     if (jsonSchema === null) {
         return (
@@ -52,21 +54,16 @@ export const LeverApp: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
-            {/* Show the schema being loaded */}
-            {jsonSchema === null && (
-                <div className="flex flex-col items-center w-full h-full p-4">
-                    <h2 className="text-xl font-bold">Loading schema...</h2>
-                </div>
-            )}
-
-            {/* Sidebar */}
+        <div className="flex flex-row items-start w-screen h-screen overflow-hidden bg-portage-50">
+            {/* Left Sidebar */}
             <SidebarComp
                 schema={jsonSchema}
                 updateSearchQuery={updateSearchQuery}
+                searchQuery={searchQuery}
             />
 
-            <div className='flex flex-col items-center w-full mr-3 bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg'>
+            {/* Middle Content Area */}
+            <div className='flex-1 flex flex-col items-center bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg my-2.5'>
                 {/* Search Bar */}
                 <SearchBar
                     schema={jsonSchema}
@@ -88,6 +85,11 @@ export const LeverApp: React.FC = () => {
                 {/* For debugging queries */}
                 {/* <QueryBuilderTester schema={jsonSchema} /> */}
 
+            </div>
+
+            {/* Right Chat Panel */}
+            <div className="w-96 h-screen border-l border-gray-200 bg-white">
+                <AIChatSidebar searchQuery={searchQuery} />
             </div>
         </div>
     );

@@ -21,14 +21,18 @@ import {
 } from "../components/ui/sidebar";
 import { AspectRatio } from "radix-ui";
 import logoImg from '../assets/cgLogo.png';
+import { AIChatSidebar } from './AIChatSidebar';
 
 // Sidebar component props
 interface SidebarProps {
     schema: any;
     updateSearchQuery: (query: SearchQuery) => void;
+    searchQuery?: SearchQuery;
 }
 
-export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery }) => {
+export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery, searchQuery }) => {
+    console.log('Sidebar searchQuery:', searchQuery);
+
     // Icon mapping for different object types
     const iconMapping: { [key: string]: any } = {
         Individual: Users,
@@ -162,6 +166,11 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
+
+            {/* AI Chat Interface */}
+            {searchQuery?.type === 'ai' && (
+                <AIChatSidebar searchQuery={searchQuery} />
+            )}
         </Sidebar>
     );
 };

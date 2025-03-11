@@ -3,7 +3,6 @@ import { SearchQuery } from './LeverApp';
 import AllDisplay from './AllDisplay';
 import TableDisplay from './TableDisplay';
 import ObjectDisplay from './ObjectDisplay';
-import AIDisplay from './AIDisplay';
 import RecommendDisplay from './RecommendDisplay';
 import SettingsDisplay from './SettingsDisplay';
 
@@ -20,6 +19,8 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
     searchQuery,
     updateSearchQuery
 }) => {
+    console.log('DisplayData searchQuery:', searchQuery);
+
     // Render different components based on search query type
     const renderDisplay = () => {
         if (!searchQuery) {
@@ -32,7 +33,8 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
             case 'table':
                 return <TableDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'ai':
-                return <AIDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                // AI display is now handled in the sidebar
+                return <div className="p-4">AI chat is available in the sidebar</div>;
             case 'recommend':
                 return <RecommendDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'all':
@@ -45,7 +47,7 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
     };
 
     return (
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto w-full px-4">
             {/* <div className="p-4">
                 <h2 className="text-xl font-bold mb-4">Search Query</h2>
                 <pre>{JSON.stringify(searchQuery, null, 2)}</pre>

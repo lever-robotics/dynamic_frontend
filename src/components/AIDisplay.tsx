@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { SearchQuery } from './LeverApp';
 import { ToolStateDisplay } from './ToolStateDisplay';
 
@@ -11,12 +11,6 @@ interface AIResponseMetadata {
     tokensUsed: number;
     processingTime: number;
     queryMetadata?: QueryMetadata;
-}
-
-interface AIResponse {
-    response: string;
-    status: 'completed' | 'error';
-    metadata?: AIResponseMetadata;
 }
 
 interface ToolState {
@@ -32,143 +26,147 @@ interface ToolState {
     parameters?: any;
 }
 
-interface DisplayDataProps {
-    schema: any;
-    searchQuery: SearchQuery | null;
-    updateSearchQuery: (query: SearchQuery) => void;
+interface DisplayState {
+    streaming: boolean;
+    llmResponse: string[];
+    toolExecutions: {
+        tool: string;
+        arguments: any;
+        result?: any;
+        timestamp: number;
+    }[];
+    finalResponse?: {
+        text: string;
+        metadata: {
+            tokensUsed: number;
+            processingTime: number;
+        };
+    };
 }
 
 export const AIDisplay: React.FC = () => {
     const [isConnected, setIsConnected] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [response, setResponse] = useState('');
+    const [displayState, setDisplayState] = useState<DisplayState>({
+        streaming: false,
+        llmResponse: [],
+        toolExecutions: []
+    });
     const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [toolStates, setToolStates] = useState<ToolState[]>([]);
-    const eventSourceRef = useRef<EventSource | null>(null);
+    const wsRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        console.log('Setting up SSE connection...');
-        const connectSSE = () => {
-            console.log('Attempting to connect to SSE...');
-            const eventSource = new EventSource('http://localhost:4000/ai/stream');
-            eventSourceRef.current = eventSource;
+        const connectWebSocket = () => {
+            console.log('Connecting to WebSocket...');
+            const ws = new WebSocket('ws://localhost:4000/ai/ws');
+            wsRef.current = ws;
 
-            eventSource.onopen = () => {
-                console.log('SSE Connection established successfully');
+            ws.onopen = () => {
+                console.log('WebSocket connected');
                 setIsConnected(true);
                 setError(null);
             };
 
-            eventSource.onmessage = (event) => {
-                console.log('Received SSE message:', event.data);
-                try {
-                    const data = JSON.parse(event.data);
-                    console.log('Parsed SSE data:', data);
-                    handleToolState(data);
-                } catch (err) {
-                    console.error('Error parsing SSE message:', err);
-                }
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                setIsConnected(false);
+                setTimeout(connectWebSocket, 5000);
             };
 
-            eventSource.onerror = (err) => {
-                console.error('SSE Connection error:', err);
-                setIsConnected(false);
-                setError('SSE Connection failed');
-                eventSource.close();
-                setTimeout(connectSSE, 5000);
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                setError('Connection error');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('Received message:', message);
+
+                    switch (message.type) {
+                        case 'llm-stream':
+                            setDisplayState(prev => ({
+                                ...prev,
+                                streaming: true,
+                                llmResponse: [...prev.llmResponse, message.data.text]
+                            }));
+                            break;
+
+                        case 'tool-execution':
+                            setDisplayState(prev => ({
+                                ...prev,
+                                toolExecutions: [...prev.toolExecutions, {
+                                    tool: message.data.tool,
+                                    arguments: message.data.arguments,
+                                    timestamp: Date.now()
+                                }]
+                            }));
+                            break;
+
+                        case 'tool-result':
+                            setDisplayState(prev => ({
+                                ...prev,
+                                toolExecutions: prev.toolExecutions.map(exec =>
+                                    exec.tool === message.data.tool
+                                        ? { ...exec, result: message.data.result }
+                                        : exec
+                                )
+                            }));
+                            break;
+
+                        case 'complete':
+                            setDisplayState(prev => ({
+                                ...prev,
+                                streaming: false,
+                                finalResponse: message.data
+                            }));
+                            break;
+
+                        case 'error':
+                            setError(message.data.message);
+                            setDisplayState(prev => ({
+                                ...prev,
+                                streaming: false
+                            }));
+                            break;
+                    }
+                } catch (err) {
+                    console.error('Error processing message:', err);
+                }
             };
         };
 
-        connectSSE();
+        connectWebSocket();
         return () => {
-            console.log('Cleaning up SSE connection...');
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
+            if (wsRef.current) {
+                wsRef.current.close();
             }
         };
     }, []);
 
-    const handleToolState = (state: ToolState) => {
-        console.log('Handling tool state:', state);
-        setToolStates(prev => {
-            // For thinking/analysis states
-            if (state.type === 'thinking' || state.type === 'analysis') {
-                console.log('Processing thinking/analysis state:', state);
-                return [...prev, {
-                    tool: state.type,
-                    status: 'in-progress',
-                    thought: state.thought || state.content
-                }];
-            }
+    const handleSearch = () => {
+        if (!searchTerm.trim() || !isConnected || !wsRef.current) return;
 
-            // For SWAPI tool states
-            if (state.tool === 'swapi-graphql') {
-                console.log('Processing SWAPI tool state:', state);
-                const existingIndex = prev.findIndex(s => s.tool === 'swapi-graphql');
-                if (existingIndex >= 0) {
-                    const newStates = [...prev];
-                    newStates[existingIndex] = state;
-                    return newStates;
-                }
-                return [...prev, state];
-            }
-
-            // For conclusion state
-            if (state.type === 'conclusion') {
-                console.log('Processing conclusion state:', state);
-                setResponse(state.summary || '');
-                return prev;
-            }
-
-            console.log('Unhandled tool state type:', state);
-            return prev;
+        setError(null);
+        setDisplayState({
+            streaming: false,
+            llmResponse: [],
+            toolExecutions: []
         });
+
+        wsRef.current.send(JSON.stringify({ task: searchTerm }));
     };
 
-    const makeAIRequest = async () => {
-        if (!searchTerm.trim()) return;
-        console.log('Making AI request with search term:', searchTerm);
-
-        setLoading(true);
-        setError(null);
-        setResponse('');
-        setToolStates([]);
-
-        try {
-            console.log('Sending fetch request to backend...');
-            const response = await fetch('http://localhost:4000/ai/process', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ task: searchTerm }),
-            });
-
-            console.log('Received response from backend:', response);
-            if (!response.ok) {
-                throw new Error('Failed to process request');
-            }
-
-            const data = await response.json();
-            console.log('Parsed response data:', data);
-            if (data.error) {
-                console.error('Error in response data:', data.error);
-                setError(data.error);
-            }
-        } catch (err) {
-            console.error('Error making AI request:', err);
-            setError(err instanceof Error ? err.message : 'An error occurred');
-        } finally {
-            setLoading(false);
+    const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            handleSearch();
         }
     };
 
     return (
         <div className="p-4 max-w-4xl mx-auto">
             <div className="mb-4 flex items-center">
-                <div className={`w-3 h-3 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-yellow-500'
-                    }`} />
+                <div className={`w-3 h-3 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`} />
                 <span className="text-sm text-gray-600">
                     {isConnected ? 'Connected' : 'Connecting...'}
                 </span>
@@ -179,22 +177,28 @@ export const AIDisplay: React.FC = () => {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     placeholder="Ask about Star Wars..."
                     className="w-full p-2 border rounded"
                 />
-                <button
-                    onClick={makeAIRequest}
-                    disabled={loading || !isConnected}
-                    className={`mt-2 px-4 py-2 bg-blue-500 text-white rounded ${(loading || !isConnected) ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                >
-                    {loading ? 'Processing...' : 'Send'}
-                </button>
             </div>
 
-            {toolStates.length > 0 && (
+            {displayState.streaming && (
+                <div className="mb-4 p-4 bg-gray-50 rounded">
+                    <div className="font-mono whitespace-pre-wrap">
+                        {displayState.llmResponse.join('')}
+                    </div>
+                </div>
+            )}
+
+            {displayState.toolExecutions.length > 0 && (
                 <div className="mb-4">
-                    <ToolStateDisplay toolStates={toolStates} />
+                    <ToolStateDisplay toolStates={displayState.toolExecutions.map(exec => ({
+                        tool: exec.tool,
+                        status: exec.result ? 'completed' : 'in-progress',
+                        parameters: exec.arguments,
+                        result: exec.result
+                    }))} />
                 </div>
             )}
 
@@ -204,9 +208,17 @@ export const AIDisplay: React.FC = () => {
                 </div>
             )}
 
-            {response && (
+            {displayState.finalResponse && (
                 <div className="p-4 bg-white rounded shadow">
-                    <pre className="whitespace-pre-wrap">{response}</pre>
+                    <pre className="whitespace-pre-wrap">{displayState.finalResponse.text}</pre>
+                    {displayState.finalResponse.metadata && (
+                        <div className="mt-4 text-sm text-gray-600">
+                            <p>Processing Time: {displayState.finalResponse.metadata.processingTime}ms</p>
+                            {displayState.finalResponse.metadata.tokensUsed > 0 && (
+                                <p>Tokens Used: {displayState.finalResponse.metadata.tokensUsed}</p>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
