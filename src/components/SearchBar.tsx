@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, KeyboardEvent } from 'react';
 import { SearchQuery, SearchQueryType } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import { useQuery } from '@apollo/client';
@@ -11,24 +11,19 @@ interface SearchBarProps {
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
-
 function useMetadataSearch(searchTerm: string, schema: any) {
+    /* Commenting out original search functionality for testing AI only
     const metadataQuery = QueryBuilder.buildMetadataSearchQuery(schema);
-
 
     const isTermContainedInSearch = (term: string) => {
         const searchLower = searchTerm.toLowerCase().replace(/\s/g, '');
         const termLower = term.toLowerCase().replace(/\s/g, '');
-
-        // Check if all characters in the search term are in the target term, 
-        // maintaining their relative order
         let searchIndex = 0;
         for (let i = 0; i < termLower.length && searchIndex < searchLower.length; i++) {
             if (termLower[i] === searchLower[searchIndex]) {
                 searchIndex++;
             }
         }
-
         return searchIndex === searchLower.length;
     };
 
@@ -52,14 +47,12 @@ function useMetadataSearch(searchTerm: string, schema: any) {
         },
         skip: !searchTerm || searchTerm.trim() === '',
     });
-
-    console.log(data);
-
-
+    */
 
     const formattedResults = React.useMemo(() => {
-        if (!data && !searchTerm) return [];
+        if (!searchTerm.trim()) return [];
 
+        /* Commenting out other search results for AI testing
         // Get schema object type matches
         const schemaMatches = schema.entities
             .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -75,13 +68,10 @@ function useMetadataSearch(searchTerm: string, schema: any) {
 
         if (!data) return schemaMatches;
 
-
-
         const dbResults = Object.entries(data)
             .flatMap(([tableName, tableData]: [string, any]) => {
                 const edges = tableData?.edges || [];
                 return edges.flatMap(({ node }) => {
-                    // First check if name fields match the search term
                     const nameMatches = [];
                     if (node.name && node.name.toLowerCase().includes(searchTerm.toLowerCase())) {
                         nameMatches.push(['name', node.name]);
@@ -93,7 +83,6 @@ function useMetadataSearch(searchTerm: string, schema: any) {
                         nameMatches.push(['last_name', node.last_name]);
                     }
 
-                    // Then check other fields
                     const otherMatches = Object.entries(node)
                         .filter(([key, value]) => {
                             if (key === 'name' || key === 'first_name' || key === 'last_name' ||
@@ -111,7 +100,6 @@ function useMetadataSearch(searchTerm: string, schema: any) {
                             }
                         });
 
-                    // Combine both name matches and other matches
                     const allMatches = [...nameMatches, ...otherMatches];
 
                     return allMatches.map(([field, value]) => ({
@@ -151,39 +139,30 @@ function useMetadataSearch(searchTerm: string, schema: any) {
             isTermContainedInSearch(option.displayName)
         );
 
-        // Combine schema matches and database results, with schema matches first
         const results = [...schemaMatches, ...dbResults, ...additionalResults];
-
-
-        //take top 4 results
         const top_results = results.slice(0, 4);
+        */
 
-        //Add AI result if search term exists
-        if (searchTerm.trim()) {
-            const aiResult = {
-                displayName: `Ask AI about: "${searchTerm}"`,
-                resultType: 'ai',
-                matchedField: 'query',
-                matchedValue: searchTerm,
-                sourceTable: 'ai',
-                nodeId: '',
-                typeName: ''
-            };
-            top_results.push(aiResult);
-        }
-
-        return top_results;
-    }, [data, searchTerm, numberTerm, dateTerm]);
+        // Only return AI result for testing
+        return [{
+            displayName: `Ask AI about: "${searchTerm}"`,
+            resultType: 'ai',
+            matchedField: 'query',
+            matchedValue: searchTerm,
+            sourceTable: 'ai',
+            nodeId: '',
+            typeName: ''
+        }];
+    }, [searchTerm]); // removed data, numberTerm, dateTerm dependencies while commented out
 
     return {
         results: formattedResults,
-        loading: loading && searchTerm.trim() !== '',
-        error
+        loading: false, // was: loading && searchTerm.trim() !== ''
+        error: null // was: error
     };
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery }) => {
-    // State for search input and potential results
     const [searchInput, setSearchInput] = useState('');
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -193,42 +172,47 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
     };
 
     const handleSearchBlur = (e: React.FocusEvent) => {
-        // If clicking within search container or results, don't blur
         if (searchContainerRef.current?.contains(e.relatedTarget as Node)) {
             return;
         }
         setIsSearchFocused(false);
     };
 
-    // Use metadata search hook
     const { results, loading } = useMetadataSearch(searchInput, schema);
 
-    // Handle input change
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchInput(value);
     };
 
-    // Handle result selection
     const handleResultSelect = (result: any) => {
-        // Find the corresponding object type from schema
+        /* Commenting out original object type finding
         const objectType = schema.entities.find(
             (type: any) => type.display_name === result.sourceTable
         );
+        */
 
         updateSearchQuery({
-            id: objectType ? objectType.id : 0,
-            type: result.resultType,
+            id: 0, // was: objectType ? objectType.id : 0
+            name: 'AI Search',
+            type: 'ai' as SearchQueryType,
             metadata: {
+                /* Commenting out other metadata
                 objectType: result.sourceTable,
                 objectID: result.nodeId,
                 other: result.displayName,
+                */
                 searchTerm: searchInput
             }
         });
-
-        // Clear input after selection
         setSearchInput('');
+    };
+
+    const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && results.length > 0) {
+            e.preventDefault();
+            handleResultSelect(results[0]);
+        }
     };
 
     return (
@@ -249,7 +233,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                                 onChange={handleInputChange}
                                 onFocus={handleSearchFocus}
                                 onBlur={handleSearchBlur}
-                                placeholder="Search any field or ask AI..."
+                                onKeyPress={handleKeyPress}
+                                placeholder="Ask AI anything..."
                                 className="w-full border-none bg-transparent placeholder:font-light font-base text-[14px] focus:outline-none text-portage-950"
                             />
                         </div>
@@ -259,7 +244,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                 {/* Floating Results Container */}
                 {searchInput.trim() !== '' && (
                     <div
-                        className={`mt-2 w-full bg-white rounded-xl ${isSearchFocused ? 'opacity-1' : 'opacity-0'}`}
+                        className={`mt-2 w-full bg-white rounded-xl shadow-lg ${isSearchFocused ? 'opacity-1' : 'opacity-0'}`}
                         tabIndex={-1}
                     >
                         {loading ? (
@@ -272,16 +257,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                                     <button
                                         key={`${result.sourceTable}-${index}`}
                                         onClick={() => handleResultSelect(result)}
-                                        className={`flex flex-col p-2 pl-5 my-2 w-full min-w-0 rounded-xl box-border transition-all hover:bg-anakiwa-200 hover:shadow-sm`}
+                                        className={`flex flex-col p-2 pl-5 my-2 w-full min-w-0 rounded-xl box-border transition-all hover:bg-anakiwa-200 hover:shadow-sm ${index === 0 ? 'bg-anakiwa-50' : ''}`}
                                     >
                                         <div className="text-lg font-medium">
                                             {result.displayName}
                                         </div>
+                                        {/* Commenting out additional result details
                                         {result.sourceTable !== 'ai' && (
                                             <div className="text-sm font-light">
                                                 {result.matchedField}: {result.matchedValue}
                                             </div>
                                         )}
+                                        */}
                                     </button>
                                 ))}
                             </>
