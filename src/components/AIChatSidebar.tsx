@@ -22,11 +22,14 @@ interface MessageSegment {
 
 interface ToolExecution {
     tool: string;
-    arguments: any;
+    arguments: {
+        query?: string;
+        [key: string]: any;
+    };
     result?: any;
+    error?: string;
     timestamp: number;
     isExpanded: boolean;
-    isResultExpanded: boolean;
     status: 'starting' | 'in-progress' | 'completed' | 'error';
 }
 
@@ -231,42 +234,70 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
         ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
+                console.log('Received message:', message);
 
                 switch (message.type) {
                     case 'llm-stream':
                         setAccumulatedText(prev => prev + message.data.text);
-                        setCurrentMessage(prev => ({
-                            text: prev.text + message.data.text,
-                            segments: [{
+                        setCurrentMessage(prev => {
+                            // Keep all existing tool segments
+                            const toolSegments = prev.segments.filter(s => s.type === 'tool');
+
+                            // Update or create the text segment
+                            const textSegment: MessageSegment = {
                                 type: 'text',
                                 content: prev.text + message.data.text
-                            }]
-                        }));
+                            };
+
+                            // Place text segment at the end
+                            const newSegments = [...toolSegments, textSegment];
+
+                            return {
+                                text: prev.text + message.data.text,
+                                segments: newSegments
+                            };
+                        });
                         scrollToBottom();
                         break;
 
                     case 'tool-execution':
-                        setCurrentMessage(prev => ({
-                            ...prev,
-                            segments: [...prev.segments.filter(s => s.type !== 'text'), {
+                        console.log('Tool execution:', message.data);
+                        setCurrentMessage(prev => {
+                            // Create new tool segment
+                            const toolSegment: MessageSegment = {
                                 type: 'tool',
                                 content: '',
                                 toolExecution: {
                                     tool: message.data.tool,
                                     arguments: message.data.arguments,
                                     timestamp: Date.now(),
-                                    isExpanded: false,
-                                    isResultExpanded: false,
+                                    isExpanded: true, // Auto-expand tool executions
                                     status: 'starting'
                                 }
-                            }, {
+                            };
+
+                            // Get existing text content
+                            const existingText = prev.segments.find(s => s.type === 'text')?.content || prev.text;
+
+                            // Create text segment with existing content
+                            const textSegment: MessageSegment = {
                                 type: 'text',
-                                content: accumulatedText
-                            }]
-                        }));
+                                content: existingText
+                            };
+
+                            // Keep existing tool segments and add new one
+                            const existingToolSegments = prev.segments.filter(s => s.type === 'tool');
+                            const newSegments = [...existingToolSegments, toolSegment, textSegment];
+
+                            return {
+                                ...prev,
+                                segments: newSegments
+                            };
+                        });
                         break;
 
                     case 'tool-result':
+                        console.log('Tool result:', message.data);
                         setCurrentMessage(prev => {
                             const updatedSegments = prev.segments.map(segment => {
                                 if (
@@ -280,20 +311,17 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                                         toolExecution: {
                                             ...segment.toolExecution,
                                             result: message.data.result,
-                                            status: 'completed' as const
+                                            error: message.data.error,
+                                            status: message.data.error ? 'error' : 'completed'
                                         }
                                     };
                                 }
                                 return segment;
                             });
 
-                            // Keep text segment at the end
-                            const textSegment = updatedSegments.find(s => s.type === 'text');
-                            const nonTextSegments = updatedSegments.filter(s => s.type !== 'text');
-
                             return {
                                 ...prev,
-                                segments: [...nonTextSegments, textSegment!]
+                                segments: updatedSegments
                             };
                         });
                         break;
@@ -308,6 +336,21 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                             setCurrentMessage({ text: '', segments: [] });
                             setAccumulatedText('');
                         }
+                        break;
+
+                    case 'error':
+                        console.error('Error from server:', message.data);
+                        // Add error message to the chat
+                        setMessages(prev => [...prev, {
+                            type: 'assistant',
+                            content: `Error: ${message.data.message}`,
+                            segments: [{
+                                type: 'text',
+                                content: `Error: ${message.data.message}${message.data.details ? `\n\nDetails: ${message.data.details}` : ''}`
+                            }]
+                        }]);
+                        setCurrentMessage({ text: '', segments: [] });
+                        setAccumulatedText('');
                         break;
                 }
             } catch (err) {
@@ -363,27 +406,6 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
         ));
     };
 
-    const toggleToolResult = (messageIndex: number, segmentIndex: number) => {
-        setMessages(prev => prev.map((msg, mIdx) =>
-            mIdx === messageIndex
-                ? {
-                    ...msg,
-                    segments: msg.segments.map((segment, sIdx) =>
-                        sIdx === segmentIndex && segment.type === 'tool'
-                            ? {
-                                ...segment,
-                                toolExecution: {
-                                    ...segment.toolExecution!,
-                                    isResultExpanded: !segment.toolExecution!.isResultExpanded
-                                }
-                            }
-                            : segment
-                    )
-                }
-                : msg
-        ));
-    };
-
     const renderMessageContent = (message: Message, messageIndex: number) => {
         return message.segments.map((segment, segmentIndex) => {
             if (segment.type === 'text') {
@@ -399,75 +421,43 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                 );
             } else if (segment.type === 'tool' && segment.toolExecution) {
                 const tool = segment.toolExecution;
+                const isGraphQL = tool.tool === 'graphql';
+                const hasQuery = isGraphQL && tool.arguments?.query;
+                const hasResult = tool.result !== undefined || tool.error !== undefined;
                 const statusColor = getStatusColor(tool.status);
-                const isCompleted = tool.status === 'completed';
 
                 return (
-                    <div key={segmentIndex} className="my-2">
-                        <button
-                            onClick={() => toggleToolExecution(messageIndex, segmentIndex)}
-                            className={`w-full text-left p-2 rounded-lg border transition-colors duration-200 ${tool.isExpanded
-                                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                : `${statusColor} hover:bg-blue-100`
-                                }`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium">Tool: {tool.tool}</span>
-                                <span className={`text-xs px-2 py-1 rounded-full ${tool.isExpanded ? 'bg-blue-600' : ''
-                                    }`}>
-                                    {tool.status}
-                                </span>
-                            </div>
-                        </button>
+                    <div key={segmentIndex} className="my-4 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                        {/* Tool Status Header */}
+                        <div className={`px-4 py-2 ${statusColor} flex justify-between items-center`}>
+                            <span className="font-medium">Tool: {tool.tool}</span>
+                            <span className="text-sm">{tool.status}</span>
+                        </div>
 
-                        {tool.isExpanded && (
-                            <div className="mt-2 text-sm border-l-4 border-blue-500 pl-4">
-                                <div className="text-gray-700 font-medium">Command:</div>
-                                <div className="prose prose-sm max-w-none">
-                                    <ReactMarkdown
-                                        remarkPlugins={[remarkGfm]}
-                                        components={MarkdownComponents}
-                                    >
-                                        {`\`\`\`javascript\n${tool.tool}(${JSON.stringify(tool.arguments, null, 2)})\n\`\`\``}
-                                    </ReactMarkdown>
-                                </div>
+                        {/* Query Section */}
+                        {hasQuery && (
+                            <div className="bg-blue-50 p-4">
+                                <div className="font-medium text-blue-700 mb-2">GraphQL Query</div>
+                                <pre className="bg-white p-3 rounded overflow-x-auto border border-blue-100">
+                                    <code className="text-sm text-blue-800 whitespace-pre-wrap">
+                                        {tool.arguments.query}
+                                    </code>
+                                </pre>
                             </div>
                         )}
 
-                        {tool.result && (
-                            <>
-                                <button
-                                    onClick={() => toggleToolResult(messageIndex, segmentIndex)}
-                                    className={`w-full text-left p-2 mt-2 rounded-lg border transition-colors duration-200 ${tool.isResultExpanded
-                                        ? 'bg-green-500 text-white hover:bg-green-600'
-                                        : 'bg-green-50 hover:bg-green-100 border-green-200'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-medium">Result: {tool.tool}</span>
-                                        <span className={`text-xs px-2 py-1 rounded-full ${tool.isResultExpanded ? 'bg-green-600' : 'text-green-600'
-                                            }`}>
-                                            completed
-                                        </span>
-                                    </div>
-                                </button>
-
-                                {tool.isResultExpanded && (
-                                    <div className="mt-2 text-sm border-l-4 border-green-500 pl-4">
-                                        <div className="text-gray-700 font-medium">Output:</div>
-                                        <div className="prose prose-sm max-w-none">
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkGfm]}
-                                                components={MarkdownComponents}
-                                            >
-                                                {typeof tool.result === 'string'
-                                                    ? `\`\`\`\n${tool.result}\n\`\`\``
-                                                    : `\`\`\`json\n${JSON.stringify(tool.result, null, 2)}\n\`\`\``}
-                                            </ReactMarkdown>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
+                        {/* Result/Error Section */}
+                        {hasResult && (
+                            <div className={`${tool.error ? 'bg-red-50' : 'bg-green-50'} p-4 border-t border-gray-200`}>
+                                <div className={`font-medium ${tool.error ? 'text-red-700' : 'text-green-700'} mb-2`}>
+                                    {tool.error ? 'Error' : 'Response'}
+                                </div>
+                                <pre className={`bg-white p-3 rounded overflow-x-auto border ${tool.error ? 'border-red-100' : 'border-green-100'}`}>
+                                    <code className={`text-sm ${tool.error ? 'text-red-800' : 'text-green-800'} whitespace-pre-wrap`}>
+                                        {tool.error || JSON.stringify(tool.result, null, 2)}
+                                    </code>
+                                </pre>
+                            </div>
                         )}
                     </div>
                 );
