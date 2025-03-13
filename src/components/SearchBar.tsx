@@ -43,6 +43,7 @@ function useMetadataSearch(searchTerm: string, schema: any) {
             dateTerm = searchTerm;
         }
     }
+    console.log("query",metadataQuery);
 
     const { data, loading, error } = useQuery(metadataQuery, {
         variables: {
@@ -53,7 +54,7 @@ function useMetadataSearch(searchTerm: string, schema: any) {
         skip: !searchTerm || searchTerm.trim() === '',
     });
 
-    console.log(data);
+    console.log("data",data);
 
 
 
@@ -75,57 +76,70 @@ function useMetadataSearch(searchTerm: string, schema: any) {
 
         if (!data) return schemaMatches;
 
+        const dbResults = Object.entries(data).flatMap(([entityName, entityData]: [string, any]) => {
+            console.log("entityName",entityName);
+            console.log("entityData",entityData);
+            return entityData.map((entity: any) => ({
+                displayName: entity.name || `${entity.first_name} ${entity.last_name}`,
+                resultType: 'object',
+                matchedField: 'name',
+                matchedValue: entity.name || `${entity.first_name} ${entity.last_name}`,
+                sourceTable: entityName,
+                nodeId: entity.nodeId,
+                typeName: entity.__typename
+            }));
+        });
 
+        // const dbResults = Object.entries(data)
+        //     .flatMap(([tableName, tableData]: [string, any]) => {
+        //         console.log("tableName",tableName);
+        //         console.log("tableData",tableData);
+        //         const edges = tableData?.edges || [];
+        //         return edges.flatMap(({ node }) => {
+        //             // First check if name fields match the search term
+        //             const nameMatches = [];
+        //             if (node.name && node.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        //                 nameMatches.push(['name', node.name]);
+        //             }
+        //             if (node.first_name && node.first_name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        //                 nameMatches.push(['first_name', node.first_name]);
+        //             }
+        //             if (node.last_name && node.last_name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        //                 nameMatches.push(['last_name', node.last_name]);
+        //             }
 
-        const dbResults = Object.entries(data)
-            .flatMap(([tableName, tableData]: [string, any]) => {
-                const edges = tableData?.edges || [];
-                return edges.flatMap(({ node }) => {
-                    // First check if name fields match the search term
-                    const nameMatches = [];
-                    if (node.name && node.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        nameMatches.push(['name', node.name]);
-                    }
-                    if (node.first_name && node.first_name.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        nameMatches.push(['first_name', node.first_name]);
-                    }
-                    if (node.last_name && node.last_name.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        nameMatches.push(['last_name', node.last_name]);
-                    }
+        //             // Then check other fields
+        //             const otherMatches = Object.entries(node)
+        //                 .filter(([key, value]) => {
+        //                     if (key === 'name' || key === 'first_name' || key === 'last_name' ||
+        //                         key === '__typename' || key === 'nodeId') return false;
 
-                    // Then check other fields
-                    const otherMatches = Object.entries(node)
-                        .filter(([key, value]) => {
-                            if (key === 'name' || key === 'first_name' || key === 'last_name' ||
-                                key === '__typename' || key === 'nodeId') return false;
+        //                     const stringValue = String(value).toLowerCase();
+        //                     const searchLower = searchTerm.toLowerCase();
 
-                            const stringValue = String(value).toLowerCase();
-                            const searchLower = searchTerm.toLowerCase();
+        //                     if (typeof value === 'number') {
+        //                         return numberTerm !== null && value === numberTerm;
+        //                     } else if (value instanceof Date || stringValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        //                         return dateTerm !== null && stringValue.includes(searchTerm);
+        //                     } else {
+        //                         return stringValue.includes(searchLower);
+        //                     }
+        //                 });
 
-                            if (typeof value === 'number') {
-                                return numberTerm !== null && value === numberTerm;
-                            } else if (value instanceof Date || stringValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                                return dateTerm !== null && stringValue.includes(searchTerm);
-                            } else {
-                                return stringValue.includes(searchLower);
-                            }
-                        });
-
-                    // Combine both name matches and other matches
-                    const allMatches = [...nameMatches, ...otherMatches];
-
-                    return allMatches.map(([field, value]) => ({
-                        displayName: node.name || `${node.first_name} ${node.last_name}`,
-                        matchedField: field,
-                        resultType: 'object',
-                        matchedValue: value,
-                        sourceTable: tableName.replace('Collection', ''),
-                        nodeId: node.nodeId,
-                        typeName: node.__typename
-                    }));
-                });
-            })
-            .filter(Boolean);
+        //             // Combine both name matches and other matches
+        //             const allMatches = [...nameMatches, ...otherMatches];
+        //             return allMatches.map(([field, value]) => ({
+        //                 displayName: node.name || `${node.first_name} ${node.last_name}`,
+        //                 matchedField: field,
+        //                 resultType: 'object',
+        //                 matchedValue: value,
+        //                 sourceTable: tableName.replace('Collection', ''),
+        //                 nodeId: node.nodeId,
+        //                 typeName: node.__typename
+        //             }));
+        //         });
+        //     })
+        //     .filter(Boolean);
 
         // Additional static results
         const additionalResults = [
@@ -202,6 +216,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
 
     // Use metadata search hook
     const { results, loading } = useMetadataSearch(searchInput, schema);
+    console.log("results",results);
 
     // Handle input change
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,12 +228,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
     const handleResultSelect = (result: any) => {
         // Find the corresponding object type from schema
         const objectType = schema.entities.find(
-            (type: any) => type.display_name === result.sourceTable
+            (type: any) => type.display_name.toLowerCase() === result.sourceTable.toLowerCase()
         );
-
         updateSearchQuery({
             id: objectType ? objectType.id : 0,
-            type: result.resultType,
+            type: result.resultType as SearchQueryType,
+            name: result.displayName,
             metadata: {
                 objectType: result.sourceTable,
                 objectID: result.nodeId,
@@ -226,6 +241,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                 searchTerm: searchInput
             }
         });
+
+        // export interface SearchQuery {
+        //     id: number;
+        //     name: string;
+        //     type: SearchQueryType;
+        //     metadata?: {
+        //         objectID?: string; //Their node ID defined by graphQL
+        //         objectType?: string; //Their objectType which is table_name for now.
+        //         searchTerm?: string; //Their search term, used for AI.
+        //         other?: string;
+        //     };
+        // }
 
         // Clear input after selection
         setSearchInput('');

@@ -9,8 +9,9 @@ import ConnectionSpreadsheet from './ConnectionsData';
 export function useObjectData(schema: any, objectId: string, typeName: string) {
     // Generate connections query for the specific object type
     const connectionsQuery = QueryBuilder.buildConnectionsQuery(schema, typeName);
-
+    console.log("connectionsQuery",connectionsQuery);
     // Execute the query
+    console.log("objectId",objectId);
     const { data, loading, error } = useQuery(connectionsQuery!, {
         variables: { nodeId: objectId },
         skip: !objectId || !typeName
@@ -20,7 +21,7 @@ export function useObjectData(schema: any, objectId: string, typeName: string) {
 
     // Extract and return processed data
     return {
-        data: data?.node,
+        data,
         loading,
         error
     };
@@ -39,11 +40,14 @@ export const ObjectDisplay: React.FC<{
     );
 
     // Use custom hook to fetch object data and connections
-    const { data: nodeData, loading, error } = useObjectData(
+    const { data, loading, error } = useObjectData(
         schema,
         searchQuery.metadata?.objectID!,
         objectType!
     );
+    // console.log("searchQuery",searchQuery);
+    console.log("data",data);
+    // console.log("nodeData",nodeData);
 
     // Render loading state
     if (loading) {
@@ -61,32 +65,34 @@ export const ObjectDisplay: React.FC<{
     }
 
     // If no node data, show no data message
-    if (!nodeData) {
+    if (!data) {
         return <div className="p-4">No data available</div>;
     }
 
     // Get collections from the data
-    const collections = Object.entries(nodeData)
-        .filter(([key]) => key.endsWith('Collection'));
+    const entityData = Object.values(data)[0][0];
+    console.log("entityData",entityData);
+    // const collections = Object.entries(data)
+    //     .filter(([key]) => key.endsWith('Collection'));
 
     return (
         <div className="flex flex-col items-center w-full">
             <div className="flex flex-col justify-start gap-10 max-w-3xl">
                 {/* Main entity data */}
                 <MainEntityData
-                    data={nodeData}
-                    typename={nodeData.__typename}
+                    data={entityData}
+                    typename={objectType}
                 />
 
                 {/* Connection data */}
-                {collections.map(([collectionName, collection]: [string, any]) => (
+                {/* {collections.map(([collectionName, collection]: [string, any]) => (
                     <ConnectionSpreadsheet
                         key={collectionName}
                         collectionName={collectionName}
                         edges={collection.edges}
                         updateSearchQuery={updateSearchQuery}
                     />
-                ))}
+                ))} */}
             </div>
         </div>
     );

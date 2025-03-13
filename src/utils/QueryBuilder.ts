@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class QueryBuilder {
 
   static getQueryForTable(schema: any, tableName: string) {
@@ -100,18 +101,27 @@ export class QueryBuilder {
         }`;
       });
 
-    const fullQueryString = `
-    query GetNodeConnections($nodeId: ID!) {
-      node(nodeId: $nodeId) {
-        ... on ${typeName} {
+      const fullQueryString = `
+      query GetNodeConnections($nodeId: ID!) {
+        ${typeName} (filter: { nodeId: { eq: $nodeId } }) {
           ${typeFields}
           ${relationshipQueries.join('\n')}
         }
       }
-    }
-  `;
+      `;
 
-    // console.log(fullQueryString);
+  //   const fullQueryString = `
+  //   query GetNodeConnections($nodeId: ID!) {
+  //     node(nodeId: $nodeId) {
+  //       ... on ${typeName} {
+  //         ${typeFields}
+  //         ${relationshipQueries.join('\n')}
+  //       }
+  //     }
+  //   }
+  // `;
+
+    console.log(fullQueryString);
 
     return gql(fullQueryString);
   }
