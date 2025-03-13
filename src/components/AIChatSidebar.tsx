@@ -178,14 +178,16 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
         segments: MessageSegment[];
     }>({ text: '', segments: [] });
     const [autoScroll, setAutoScroll] = useState(true);
+    const [userHasScrolled, setUserHasScrolled] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const [accumulatedText, setAccumulatedText] = useState('');
+    const lastScrollPosition = useRef(0);
 
     const scrollToBottom = () => {
-        if (autoScroll) {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (autoScroll && messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     };
 
@@ -197,17 +199,29 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
         const handleScroll = () => {
             const { scrollTop, scrollHeight, clientHeight } = container;
             const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
-            setAutoScroll(isAtBottom);
+
+            // Only update autoScroll if we're at the bottom
+            if (isAtBottom) {
+                setAutoScroll(true);
+            } else {
+                setAutoScroll(false);
+            }
+
+            // Track if user has manually scrolled
+            if (!userHasScrolled) {
+                setUserHasScrolled(true);
+            }
         };
 
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [userHasScrolled]);
 
     // Reset auto-scroll when user sends a new message
     useEffect(() => {
         if (messages.length > 0 && messages[messages.length - 1].type === 'user') {
             setAutoScroll(true);
+            setUserHasScrolled(false);
         }
     }, [messages]);
 
@@ -388,6 +402,12 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
     };
 
     const toggleToolExecution = (messageIndex: number, segmentIndex: number) => {
+        // Store current scroll position before update
+        const container = messagesContainerRef.current;
+        if (container) {
+            lastScrollPosition.current = container.scrollTop;
+        }
+
         setMessages(prev => prev.map((msg, mIdx) =>
             mIdx === messageIndex
                 ? {
@@ -406,6 +426,13 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                 }
                 : msg
         ));
+
+        // Restore scroll position after state update
+        requestAnimationFrame(() => {
+            if (container) {
+                container.scrollTop = lastScrollPosition.current;
+            }
+        });
     };
 
     const renderMessageContent = (message: Message, messageIndex: number) => {
@@ -423,21 +450,26 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                 );
             } else if (segment.type === 'tool' && segment.toolExecution) {
                 const tool = segment.toolExecution;
-                const isGraphQL = tool.tool === 'graphql';
-                const hasQuery = isGraphQL && tool.arguments?.query;
-                const hasResult = tool.result !== undefined || tool.error !== undefined;
                 const statusColor = getStatusColor(tool.status);
 
                 return (
                     <div key={segmentIndex} className="my-4 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                         {/* Tool Status Header */}
-                        <div className={`px-4 py-2 ${statusColor} flex justify-between items-center`}>
+                        <div
+                            className={`px-4 py-2 ${statusColor} flex justify-between items-center cursor-pointer`}
+                            onClick={() => toggleToolExecution(messageIndex, segmentIndex)}
+                        >
                             <span className="font-medium">Tool: {tool.tool}</span>
-                            <span className="text-sm">{tool.status}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm">{tool.status}</span>
+                                <span className="text-sm">
+                                    {tool.isExpanded ? '▼' : '▶'}
+                                </span>
+                            </div>
                         </div>
 
                         {/* Query Section */}
-                        {tool.arguments?.query && (
+                        {tool.isExpanded && tool.arguments?.query && (
                             <div className="bg-blue-50 p-4">
                                 <div className="font-medium text-blue-700 mb-2">GraphQL Query</div>
                                 <pre className="bg-white p-3 rounded overflow-x-auto border border-blue-100">
@@ -451,7 +483,7 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                         )}
 
                         {/* Result/Error Section */}
-                        {hasResult && (
+                        {tool.isExpanded && (tool.result !== undefined || tool.error) && (
                             <div className={`${tool.error ? 'bg-red-50' : 'bg-green-50'} p-4 border-t border-gray-200`}>
                                 <div className={`font-medium ${tool.error ? 'text-red-700' : 'text-green-700'} mb-2`}>
                                     {tool.error ? 'Error' : 'Response'}
