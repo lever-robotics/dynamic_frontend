@@ -7,6 +7,7 @@ import ObjectDisplay from './ObjectDisplay';
 import AIDisplay from './AIDisplay';
 import RecommendDisplay from './RecommendDisplay';
 import SettingsDisplay from './SettingsDisplay';
+import KnowledgeGraph from './KnowledgeGraph';
 
 // Display component props
 interface DisplayDataProps {
@@ -40,6 +41,8 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
                 return <AllDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'settings':
                 return <SettingsDisplay />;
+            case 'graph':
+                return <KnowledgeGraph blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             default:
                 return <div className="p-4">Unknown search type</div>;
         }

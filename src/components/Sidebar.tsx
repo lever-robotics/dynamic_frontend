@@ -7,7 +7,8 @@ import {
     Activity,
     Box,
     Settings,
-    Award
+    Award,
+    Network
 } from 'lucide-react';
 import type { SearchQuery, SearchQueryType } from './LeverApp';
 import {
@@ -22,15 +23,24 @@ import {
 import { AspectRatio } from "radix-ui";
 import logoImg from '../assets/cgLogo.png';
 import type { Blueprint } from "@/types/blueprint";
+import type { LucideIcon } from 'lucide-react';
+
 // Sidebar component props
 interface SidebarProps {
     blueprint: Blueprint;
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
+interface SidebarItem {
+    title: string;
+    id: number;
+    type: SearchQueryType;
+    icon: LucideIcon;
+}
+
 export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQuery }) => {
     // Icon mapping for different object types
-    const iconMapping: { [key: string]: any } = {
+    const iconMapping: { [key: string]: LucideIcon } = {
         Individual: Users,
         Volunteer: Users,
         Staff: Users,
@@ -47,23 +57,30 @@ export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQue
     };
 
     // Extract object types from schema
-    const schemaItems = blueprint.entities.map((type: any) => ({
+    const schemaItems: SidebarItem[] = blueprint.entities.map((type: any) => ({
         title: type.name,
         id: `${type.name}`,  // Generate unique ID from name,
         type: 'table' as SearchQueryType,
         icon: getIconForType(type.name)
     }));
 
-    const recommendationsItem = {
+    const recommendationsItem: SidebarItem = {
         title: 'Recommendations',
         id: 101,
         type: 'recommend' as SearchQueryType,
         icon: Award
     };
 
-    const settingsItem = {
-        title: 'Settings',
+    const graphItem: SidebarItem = {
+        title: 'Knowledge Graph',
         id: 102,
+        type: 'graph' as SearchQueryType,
+        icon: Network
+    };
+
+    const settingsItem: SidebarItem = {
+        title: 'Settings',
+        id: 103,
         type: 'settings' as SearchQueryType,
         icon: Settings
     };
@@ -78,7 +95,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQue
         });
     };
 
-    const handleItemClick = (item: any) => {
+    const handleItemClick = (item: SidebarItem) => {
         updateSearchQuery({
             type: item.type,
             name: item.title,
@@ -135,6 +152,14 @@ export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQue
                                 >
                                     <recommendationsItem.icon className="w-4 h-4" />
                                     <span>{recommendationsItem.title}</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    onClick={() => handleItemClick(graphItem)}
+                                >
+                                    <graphItem.icon className="w-4 h-4" />
+                                    <span>{graphItem.title}</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         </SidebarMenu>

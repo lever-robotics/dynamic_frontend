@@ -6,7 +6,7 @@ import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
 import QueryBuilderTester from './tests/QueryBuilderTester';
 // Define the search query type
-export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all';
+export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all' | 'graph';
 
 // Define the search query structure
 export interface SearchQuery {
