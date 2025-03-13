@@ -20,17 +20,19 @@ interface MessageSegment {
     toolExecution?: ToolExecution;
 }
 
+type ToolExecutionStatus = 'starting' | 'in-progress' | 'completed' | 'error';
+
 interface ToolExecution {
     tool: string;
     arguments: {
-        query?: string;
+        query?: string | { query: string };
         [key: string]: any;
     };
     result?: any;
     error?: string;
     timestamp: number;
     isExpanded: boolean;
-    status: 'starting' | 'in-progress' | 'completed' | 'error';
+    status: ToolExecutionStatus;
 }
 
 // Primary color: bg-blue-500 hover:bg-blue-600
@@ -240,21 +242,33 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                     case 'llm-stream':
                         setAccumulatedText(prev => prev + message.data.text);
                         setCurrentMessage(prev => {
-                            // Keep all existing tool segments
-                            const toolSegments = prev.segments.filter(s => s.type === 'tool');
+                            // Get the last segment
+                            const lastSegment = prev.segments[prev.segments.length - 1];
 
-                            // Update or create the text segment
-                            const textSegment: MessageSegment = {
-                                type: 'text',
-                                content: prev.text + message.data.text
-                            };
+                            // If the last segment is a text segment, append to it
+                            if (lastSegment?.type === 'text') {
+                                const updatedSegments = [...prev.segments];
+                                updatedSegments[updatedSegments.length - 1] = {
+                                    ...lastSegment,
+                                    content: lastSegment.content + message.data.text
+                                };
 
-                            // Place text segment at the end
-                            const newSegments = [...toolSegments, textSegment];
+                                return {
+                                    text: prev.text + message.data.text,
+                                    segments: updatedSegments
+                                };
+                            }
 
+                            // If not, create a new text segment
                             return {
                                 text: prev.text + message.data.text,
-                                segments: newSegments
+                                segments: [
+                                    ...prev.segments,
+                                    {
+                                        type: 'text',
+                                        content: message.data.text
+                                    }
+                                ]
                             };
                         });
                         scrollToBottom();
@@ -263,35 +277,23 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                     case 'tool-execution':
                         console.log('Tool execution:', message.data);
                         setCurrentMessage(prev => {
-                            // Create new tool segment
+                            const toolExecution: ToolExecution = {
+                                tool: message.data.tool,
+                                arguments: message.data.arguments,
+                                timestamp: Date.now(),
+                                isExpanded: true,
+                                status: 'starting' as ToolExecutionStatus
+                            };
+
                             const toolSegment: MessageSegment = {
                                 type: 'tool',
                                 content: '',
-                                toolExecution: {
-                                    tool: message.data.tool,
-                                    arguments: message.data.arguments,
-                                    timestamp: Date.now(),
-                                    isExpanded: true, // Auto-expand tool executions
-                                    status: 'starting'
-                                }
+                                toolExecution
                             };
-
-                            // Get existing text content
-                            const existingText = prev.segments.find(s => s.type === 'text')?.content || prev.text;
-
-                            // Create text segment with existing content
-                            const textSegment: MessageSegment = {
-                                type: 'text',
-                                content: existingText
-                            };
-
-                            // Keep existing tool segments and add new one
-                            const existingToolSegments = prev.segments.filter(s => s.type === 'tool');
-                            const newSegments = [...existingToolSegments, toolSegment, textSegment];
 
                             return {
                                 ...prev,
-                                segments: newSegments
+                                segments: [...prev.segments, toolSegment]
                             };
                         });
                         break;
@@ -312,7 +314,7 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                                             ...segment.toolExecution,
                                             result: message.data.result,
                                             error: message.data.error,
-                                            status: message.data.error ? 'error' : 'completed'
+                                            status: message.data.error ? 'error' as ToolExecutionStatus : 'completed' as ToolExecutionStatus
                                         }
                                     };
                                 }
@@ -435,12 +437,14 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
                         </div>
 
                         {/* Query Section */}
-                        {hasQuery && (
+                        {tool.arguments?.query && (
                             <div className="bg-blue-50 p-4">
                                 <div className="font-medium text-blue-700 mb-2">GraphQL Query</div>
                                 <pre className="bg-white p-3 rounded overflow-x-auto border border-blue-100">
                                     <code className="text-sm text-blue-800 whitespace-pre-wrap">
-                                        {tool.arguments.query}
+                                        {typeof tool.arguments.query === 'string'
+                                            ? tool.arguments.query
+                                            : tool.arguments.query.query}
                                     </code>
                                 </pre>
                             </div>
