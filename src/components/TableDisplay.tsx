@@ -1,23 +1,23 @@
-import React from 'react';
+import type React from 'react';
 import { gql, useQuery } from '@apollo/client';
-import { SearchQuery } from './LeverApp';
+import type { SearchQuery } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import { Table } from './Table';
-
+import type { Blueprint, Entity } from '@/types/blueprint';
 interface TableData {
     nodeId: number;
     [key: string]: string | number;
 }
 
 export const TableDisplay: React.FC<{
-    schema: any;
-    searchQuery: SearchQuery | null;
+    blueprint: Blueprint;
+    searchQuery: SearchQuery;
     updateSearchQuery: (query: SearchQuery) => void;
-}> = ({ schema, searchQuery, updateSearchQuery }) => {
+}> = ({ blueprint, searchQuery, updateSearchQuery }) => {
     // Find the object type that matches the search query ID
-
-    const matchedObjectType = schema.entities.find(
-        (type: any) => type.name === searchQuery?.id
+    console.log("searchQuery", searchQuery);
+    const matchedObjectType = blueprint.entities.find(
+        (entity: Entity) => entity.name === searchQuery?.name
     );
 
     // If no matching object type found, render an error
@@ -34,60 +34,60 @@ export const TableDisplay: React.FC<{
     const tableName = matchedObjectType.name;
 
     // Generate query for the specific table
-    const query = QueryBuilder.getQueryForTable(schema, tableName);
+    const query = QueryBuilder.getQueryForTable(matchedObjectType);
 
     // Execute the query
-	const q = gql`query SearchMetadata(
-        $searchTerm: String!,
-        $numberTerm: Int,
-        $dateTerm: Date
-      ) {
-        individual(filter: {
-          or: [
-            { nodeId: { ilike: $searchTerm } },
-            { first_name: { ilike: $searchTerm } },
-            { last_name: { ilike: $searchTerm } },
-            { phone_number: { ilike: $searchTerm } },
-            { age: { eq: $numberTerm } },
-            { email: { ilike: $searchTerm } },
-            { allergies: { ilike: $searchTerm } },
-            { waiver_date: { eq: $dateTerm } },
-            { birth_day: { eq: $dateTerm } },
-            { address: { ilike: $searchTerm } },
-            { gender: { ilike: $searchTerm } },
-            { notes: { ilike: $searchTerm } },
-            { prp_record: { ilike: $searchTerm } },
-            { waiver_record: { ilike: $searchTerm } }
-          ]
-        }) {
-          __typename
-          nodeId
-          first_name
-          last_name
-          phone_number
-          age
-          email
-          allergies
-          waiver_date
-          birth_day
-          address
-          gender
-          notes
-          prp_record
-          waiver_record
-        }
-      }`;
-
-	const { data, loading, error } = useQuery(q, {
-		variables: {
-			searchTerm: "Daniel",
-			numberTerm: 30,
-			dateTerm: "2023-11-05",
-		},
-		fetchPolicy: "no-cache",
-	});
-    // const { data, loading, error } = useQuery(query!, { fetchPolicy: "no-cache" });
-    console.log(data);
+	// const q = gql`query SearchMetadata(
+    //     $searchTerm: String!,
+    //     $numberTerm: Int,
+    //     $dateTerm: Date
+    //   ) {
+    //     individual(filter: {
+    //       or: [
+    //         { nodeId: { ilike: $searchTerm } },
+    //         { first_name: { ilike: $searchTerm } },
+    //         { last_name: { ilike: $searchTerm } },
+    //         { phone_number: { ilike: $searchTerm } },
+    //         { age: { eq: $numberTerm } },
+    //         { email: { ilike: $searchTerm } },
+    //         { allergies: { ilike: $searchTerm } },
+    //         { waiver_date: { eq: $dateTerm } },
+    //         { birth_day: { eq: $dateTerm } },
+    //         { address: { ilike: $searchTerm } },
+    //         { gender: { ilike: $searchTerm } },
+    //         { notes: { ilike: $searchTerm } },
+    //         { prp_record: { ilike: $searchTerm } },
+    //         { waiver_record: { ilike: $searchTerm } }
+    //       ]
+    //     }) {
+    //       __typename
+    //       nodeId
+    //       first_name
+    //       last_name
+    //       phone_number
+    //       age
+    //       email
+    //       allergies
+    //       waiver_date
+    //       birth_day
+    //       address
+    //       gender
+    //       notes
+    //       prp_record
+    //       waiver_record
+    //     }
+    //   }`;
+// console.log("q", q);
+	// const { data, loading, error } = useQuery(q, {
+	// 	variables: {
+	// 		searchTerm: "Daniel",
+	// 		numberTerm: 30,
+	// 		dateTerm: "2023-11-05",
+	// 	},
+	// 	fetchPolicy: "no-cache",
+	// });
+    const { data, loading, error } = useQuery(query, { fetchPolicy: "no-cache" });
+    console.log("data", data);
 
     // Render loading state
     if (loading) {
@@ -113,11 +113,11 @@ export const TableDisplay: React.FC<{
         // Keep nodeId for selection handling
         transformedItem.nodeId = item.nodeId;
         // Add all other fields
-        Object.entries(item).forEach(([key, value]) => {
+        for (const [key, value] of Object.entries(item)) {
             if (key !== 'nodeId') {
                 transformedItem[key] = value;
             }
-        });
+        }
         return transformedItem;
     });
 

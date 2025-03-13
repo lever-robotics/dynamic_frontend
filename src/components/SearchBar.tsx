@@ -1,19 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { SearchQuery, SearchQueryType } from './LeverApp';
+import type { SearchQuery, SearchQueryType } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import { useQuery } from '@apollo/client';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useRef } from 'react';
-
+import type { Blueprint } from "@/types/blueprint";
 // Search Bar component props
 interface SearchBarProps {
-    schema: any;
+    blueprint: Blueprint;
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
 
-function useMetadataSearch(searchTerm: string, schema: any) {
-    const metadataQuery = QueryBuilder.buildMetadataSearchQuery(schema);
+function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
+    const metadataQuery = QueryBuilder.buildMetadataSearchQuery(blueprint);
 
 
     const isTermContainedInSearch = (term: string) => {
@@ -33,13 +33,13 @@ function useMetadataSearch(searchTerm: string, schema: any) {
     };
 
     // Try to parse the search term as a number if possible
-    const numberTerm = !isNaN(parseInt(searchTerm)) ? parseInt(searchTerm) : null;
+    const numberTerm = !Number.isNaN(Number.parseInt(searchTerm)) ? Number.parseInt(searchTerm) : null;
 
     // Try to parse the search term as a date if it matches date format
     let dateTerm = null;
     if (searchTerm.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const dateObj = new Date(searchTerm);
-        if (!isNaN(dateObj.getTime())) {
+        if (!Number.isNaN(dateObj.getTime())) {
             dateTerm = searchTerm;
         }
     }
@@ -54,22 +54,20 @@ function useMetadataSearch(searchTerm: string, schema: any) {
         skip: !searchTerm || searchTerm.trim() === '',
     });
 
-    console.log("data",data);
-
 
 
     const formattedResults = React.useMemo(() => {
         if (!data && !searchTerm) return [];
 
         // Get schema object type matches
-        const schemaMatches = schema.entities
+        const schemaMatches = blueprint.entities
             .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
             .map(obj => ({
-                displayName: obj.name,
+                displayName: obj.displayName,
                 resultType: 'table',
                 matchedField: 'table',
-                matchedValue: obj.display_name,
-                sourceTable: obj.display_name,
+                matchedValue: obj.displayName,
+                sourceTable: obj.displayName,
                 nodeId: '',
                 typeName: ''
             }));
@@ -80,10 +78,10 @@ function useMetadataSearch(searchTerm: string, schema: any) {
             console.log("entityName",entityName);
             console.log("entityData",entityData);
             return entityData.map((entity: any) => ({
-                displayName: entity.name || `${entity.first_name} ${entity.last_name}`,
+                displayName: entity.name || `${entity.firstName} ${entity.lastName}`,
                 resultType: 'object',
                 matchedField: 'name',
-                matchedValue: entity.name || `${entity.first_name} ${entity.last_name}`,
+                matchedValue: entity.name || `${entity.firstName} ${entity.lastName}`,
                 sourceTable: entityName,
                 nodeId: entity.nodeId,
                 typeName: entity.__typename
@@ -187,7 +185,7 @@ function useMetadataSearch(searchTerm: string, schema: any) {
         }
 
         return top_results;
-    }, [data, searchTerm, numberTerm, dateTerm]);
+    }, [data, searchTerm, numberTerm, dateTerm, ]);
 
     return {
         results: formattedResults,
@@ -196,11 +194,13 @@ function useMetadataSearch(searchTerm: string, schema: any) {
     };
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQuery }) => {
     // State for search input and potential results
     const [searchInput, setSearchInput] = useState('');
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const { results, loading } = useMetadataSearch(searchInput, blueprint);
+    console.log("results",results);
 
     const handleSearchFocus = () => {
         setIsSearchFocused(true);
@@ -215,8 +215,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
     };
 
     // Use metadata search hook
-    const { results, loading } = useMetadataSearch(searchInput, schema);
-    console.log("results",results);
 
     // Handle input change
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,11 +225,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
     // Handle result selection
     const handleResultSelect = (result: any) => {
         // Find the corresponding object type from schema
-        const objectType = schema.entities.find(
-            (type: any) => type.display_name.toLowerCase() === result.sourceTable.toLowerCase()
-        );
+        // const objectType = blueprint.entities.find(
+        //     (type: any) => type.display_name.toLowerCase() === result.sourceTable.toLowerCase()
+        // );
         updateSearchQuery({
-            id: objectType ? objectType.id : 0,
             type: result.resultType as SearchQueryType,
             name: result.displayName,
             metadata: {
@@ -242,17 +239,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
             }
         });
 
-        // export interface SearchQuery {
-        //     id: number;
-        //     name: string;
-        //     type: SearchQueryType;
-        //     metadata?: {
-        //         objectID?: string; //Their node ID defined by graphQL
-        //         objectType?: string; //Their objectType which is table_name for now.
-        //         searchTerm?: string; //Their search term, used for AI.
-        //         other?: string;
-        //     };
-        // }
 
         // Clear input after selection
         setSearchInput('');
@@ -297,9 +283,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                             <>
                                 {results.map((result, index) => (
                                     <button
+                                        type="button"
                                         key={`${result.sourceTable}-${index}`}
                                         onClick={() => handleResultSelect(result)}
-                                        className={`flex flex-col p-2 pl-5 my-2 w-full min-w-0 rounded-xl box-border transition-all hover:bg-anakiwa-200 hover:shadow-sm`}
+                                        className="flex flex-col p-2 pl-5 my-2 w-full min-w-0 rounded-xl box-border transition-all hover:bg-anakiwa-200 hover:shadow-sm"
                                     >
                                         <div className="text-lg font-medium">
                                             {result.displayName}

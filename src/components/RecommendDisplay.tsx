@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { SearchQuery } from './LeverApp';
+import type { SearchQuery } from './LeverApp';
+import type { Blueprint } from '@/types/blueprint';
 
 interface DisplayDataProps {
-    schema: any;
+    blueprint: Blueprint;
     searchQuery: SearchQuery | null;
     updateSearchQuery: (query: SearchQuery) => void;
 }
@@ -40,16 +41,16 @@ const useRecommend = () => {
     return { data, loading, error, makeRecommendRequest };
 };
 
-export const RecommendDisplay: React.FC<DisplayDataProps> = ({ schema, searchQuery, updateSearchQuery }) => {
+export const RecommendDisplay: React.FC<DisplayDataProps> = ({ blueprint, searchQuery, updateSearchQuery }) => {
     const { data, loading, error, makeRecommendRequest } = useRecommend();
 
     React.useEffect(() => {
         makeRecommendRequest();
-    }, []);
+    }, [makeRecommendRequest]);
 
     const handleQuestionClick = (question: string) => {
         updateSearchQuery({
-            id: 0,
+            name: '',
             type: 'ai',
             metadata: {
                 searchTerm: question
@@ -84,7 +85,8 @@ export const RecommendDisplay: React.FC<DisplayDataProps> = ({ schema, searchQue
                     <div className="space-y-3">
                         {data.recommendations.map((recommendation, index) => (
                             <button
-                                key={index}
+                                type="button"
+                                key={recommendation}
                                 onClick={() => handleQuestionClick(recommendation)}
                                 className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 
                                          transition-colors duration-150 flex items-start group"

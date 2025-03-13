@@ -6,11 +6,11 @@ import { AuthProvider } from './utils/AuthProvider.tsx'
 import AuthApolloProvider from './utils/ApolloProvider.tsx'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // <StrictMode>
     <AuthProvider>
       <AuthApolloProvider>
         <App />
       </AuthApolloProvider>
     </AuthProvider>
-  </StrictMode>,
+  // </StrictMode>,
 )

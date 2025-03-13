@@ -1,19 +1,16 @@
+import type { Blueprint, Entity } from '@/types/blueprint';
 import { gql } from '@apollo/client';
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class QueryBuilder {
 
-  static getQueryForTable(schema: any, tableName: string) {
-    const type = schema.entities.find(t => t.name === tableName);
-    if (!type) {
-      return null;
-    }
+  static getQueryForTable(entity: Entity) {
 
-    const fields = type.fields.filter(f => f.type !== 'relationship').map(field => field.name);
+    const fields = entity.fields.filter(f => f.type !== 'relationship').map(field => field.name);
 
     const queryString = `
-      query Get${type.name} {
-        ${type.name} {
+      query Get${entity.name} {
+        ${entity.name} {
           __typename
           ${fields.join('\n\t\t  ')}
         }
@@ -24,19 +21,19 @@ export class QueryBuilder {
     return gql(queryString);
   }
 
-  static buildMetadataSearchQuery(schema: any) {
-    const searchQueries = schema.entities.map(type => {
+  static buildMetadataSearchQuery(blueprint: Blueprint) {
+    const searchQueries = blueprint.entities.map(entity => {
       // Get all fields except ID
-      const searchableFields = type.fields.filter(f => f.type !== 'relationship').filter(field => field.name !== 'id');
+      const searchableFields = entity.fields.filter(f => f.type !== 'relationship').filter(field => field.name !== 'id');
 
       // Get the name field for display
-      const nameField = type.fields.find(f => f.name === 'name' || f.name === 'first_name');
+      const nameField = entity.fields.find(f => f.name === 'name' || f.name === 'firstName');
       if (!nameField) return null;
 
       // Create different filters based on field type
       const fieldFilters = searchableFields.map(field => {
         switch (field.type) {
-          case 'integer':
+          case 'number':
             return `{ ${field.name}: { eq: $numberTerm } }`;
           case 'date':
             return `{ ${field.name}: { eq: $dateTerm } }`;
@@ -46,7 +43,7 @@ export class QueryBuilder {
       }).join(', ');
 
       return `
-      ${type.name}(filter: {
+      ${entity.name}(filter: {
           or: [${fieldFilters}]
       }) {
             __typename
@@ -66,9 +63,9 @@ export class QueryBuilder {
     return gql(queryString);
   }
 
-  static buildConnectionsQuery(schema: any, typeName: string) {
+  static buildConnectionsQuery(blueprint: Blueprint, typeName: string) {
     // Find the type object to get its name and fields
-    const typeObj = schema.entities.find(t => t.name === typeName);
+    const typeObj = blueprint.entities.find(t => t.name === typeName);
     if (!typeObj) {
       console.warn(`Type object not found for: ${typeName}`);
       return null;
@@ -84,7 +81,7 @@ export class QueryBuilder {
     const relationshipQueries = typeObj.fields
       .filter(f => f.type === 'relationship')
       .map(relField => {
-        const relatedTypeObj = schema.entities.find(t => t.name === relField.name);
+        const relatedTypeObj = blueprint.entities.find(t => t.name === relField.name);
         if (!relatedTypeObj) {
           console.warn(`Related type object not found for: ${relField.name}`);
           return '';

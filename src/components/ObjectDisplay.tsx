@@ -1,18 +1,34 @@
-import React from 'react';
+import type React from 'react';
 import { useQuery } from '@apollo/client';
-import { SearchQuery } from './LeverApp';
+import type { SearchQuery } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import MainEntityData from './MainEntityData';
 import ConnectionSpreadsheet from './ConnectionsData';
+import type { Blueprint, GraphQLResponse } from '@/types/blueprint';
 
 // Custom hook for fetching object data and connections
-export function useObjectData(schema: any, objectId: string, typeName: string) {
+export function useObjectData(blueprint: Blueprint, objectId: string | undefined, typeName: string | undefined): GraphQLResponse {
     // Generate connections query for the specific object type
-    const connectionsQuery = QueryBuilder.buildConnectionsQuery(schema, typeName);
-    console.log("connectionsQuery",connectionsQuery);
+    if(!typeName) {
+        return {
+            data: null,
+            loading: false,
+            error: new Error('No type name found')
+        };
+    }
+
+    const connectionsQuery = QueryBuilder.buildConnectionsQuery(blueprint, typeName);
+
+    if(!connectionsQuery) {
+        return {
+            data: null,
+            loading: false,
+            error: new Error('No connections query found')
+            };
+    }
+
     // Execute the query
-    console.log("objectId",objectId);
-    const { data, loading, error } = useQuery(connectionsQuery!, {
+    const { data, loading, error } = useQuery(connectionsQuery, {
         variables: { nodeId: objectId },
         skip: !objectId || !typeName
     });
@@ -29,25 +45,26 @@ export function useObjectData(schema: any, objectId: string, typeName: string) {
 
 // ObjectDisplay component
 export const ObjectDisplay: React.FC<{
-    schema: any;
+    blueprint: Blueprint;
     searchQuery: SearchQuery;
     updateSearchQuery: (query: SearchQuery) => void;
-}> = ({ schema, searchQuery, updateSearchQuery }) => {
+}> = ({ blueprint, searchQuery, updateSearchQuery }) => {
     // Find object type from schema using the objectType in search query metadata
     const objectType = searchQuery.metadata?.objectType;
-    const objectDef = schema.entities.find(
+    const objectDef = blueprint.entities.find(
         (type: any) => type.name === objectType
     );
 
     // Use custom hook to fetch object data and connections
     const { data, loading, error } = useObjectData(
-        schema,
-        searchQuery.metadata?.objectID!,
-        objectType!
+        blueprint,
+        searchQuery.metadata?.objectID,
+        objectType
     );
-    // console.log("searchQuery",searchQuery);
-    console.log("data",data);
-    // console.log("nodeData",nodeData);
+
+    if(!objectType) {
+        return <div className="p-4">No object type found</div>;
+    }
 
     // Render loading state
     if (loading) {

@@ -1,5 +1,6 @@
-import React from 'react';
-import { SearchQuery } from './LeverApp';
+import type React from 'react';
+import type { SearchQuery } from './LeverApp';
+import type { Blueprint } from '@/types/blueprint';
 import AllDisplay from './AllDisplay';
 import TableDisplay from './TableDisplay';
 import ObjectDisplay from './ObjectDisplay';
@@ -9,14 +10,14 @@ import SettingsDisplay from './SettingsDisplay';
 
 // Display component props
 interface DisplayDataProps {
-    schema: any;
+    blueprint: Blueprint;
     searchQuery: SearchQuery | null;
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
 // Main DisplayData component
 export const DisplayData: React.FC<DisplayDataProps> = ({
-    schema,
+    blueprint,
     searchQuery,
     updateSearchQuery
 }) => {
@@ -25,20 +26,20 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
         if (!searchQuery) {
             return <div className="p-4">No search query selected</div>;
         }
-
+        console.log("searchQuery.type", searchQuery.type);
         switch (searchQuery.type) {
             case 'object':
-                return <ObjectDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <ObjectDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'table':
-                return <TableDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <TableDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'ai':
-                return <AIDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <AIDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'recommend':
-                return <RecommendDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <RecommendDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'all':
-                return <AllDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <AllDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'settings':
-                return <SettingsDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <SettingsDisplay />;
             default:
                 return <div className="p-4">Unknown search type</div>;
         }

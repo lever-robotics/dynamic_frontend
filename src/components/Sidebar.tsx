@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import {
     Users,
     Group,
@@ -9,7 +9,7 @@ import {
     Settings,
     Award
 } from 'lucide-react';
-import { SearchQuery, SearchQueryType } from './LeverApp';
+import type { SearchQuery, SearchQueryType } from './LeverApp';
 import {
     Sidebar,
     SidebarContent,
@@ -21,14 +21,14 @@ import {
 } from "../components/ui/sidebar";
 import { AspectRatio } from "radix-ui";
 import logoImg from '../assets/cgLogo.png';
-
+import type { Blueprint } from "@/types/blueprint";
 // Sidebar component props
 interface SidebarProps {
-    schema: any;
+    blueprint: Blueprint;
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
-export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery }) => {
+export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQuery }) => {
     // Icon mapping for different object types
     const iconMapping: { [key: string]: any } = {
         Individual: Users,
@@ -47,7 +47,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
     };
 
     // Extract object types from schema
-    const schemaItems = schema.entities.map((type: any) => ({
+    const schemaItems = blueprint.entities.map((type: any) => ({
         title: type.name,
         id: `${type.name}`,  // Generate unique ID from name,
         type: 'table' as SearchQueryType,
@@ -70,7 +70,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
 
     const handleLogoClick = () => {
         updateSearchQuery({
-            id: 0,
             type: 'all',
             name: '',
             metadata: {
@@ -81,9 +80,8 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
 
     const handleItemClick = (item: any) => {
         updateSearchQuery({
-            id: item.id,
             type: item.type,
-            name: item.name,
+            name: item.title,
             metadata: {
                 other: item.title.toLowerCase()
             }
@@ -92,7 +90,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery 
 
     const handleSettingsClick = () => {
         updateSearchQuery({
-            id: settingsItem.id,
             type: settingsItem.type,
             name: '',
             metadata: {
