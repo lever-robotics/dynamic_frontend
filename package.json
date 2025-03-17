@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://lever-robotics.github.io/dynamic-frontend",
+  "homepage": "https://lever-robotics.github.io/dynamic_frontend",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
