@@ -1,15 +1,13 @@
-import React from 'react';
+import type React from 'react';
 import { Table } from './Table';
-import { SearchQuery } from './LeverApp';
+import type { SearchQuery } from './LeverApp';
 
 interface ConnectionSpreadsheetProps {
-    collectionName: string;
     edges: any[];
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
 const ConnectionSpreadsheet: React.FC<ConnectionSpreadsheetProps> = ({ 
-    collectionName, 
     edges, 
     updateSearchQuery 
 }) => {

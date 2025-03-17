@@ -1,7 +1,6 @@
 import type React from "react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@apollo/client";
-import Spreadsheet from "react-spreadsheet";
 import type { SearchQuery } from "./LeverApp";
 import { QueryBuilder } from "../utils/QueryBuilder";
 import { Table } from "./Table";
@@ -62,7 +61,7 @@ export const AllDisplay: React.FC<{
 		return (
 			<div className="p-4 text-red-600">
 				<h2 className="text-xl font-bold mb-4">Errors</h2>
-				{errors.map((error, index) => (
+				{errors.map((error) => (
 					<div key={error.tableName}>
 						<strong>{error.tableName}:</strong> {error.error?.message}
 					</div>

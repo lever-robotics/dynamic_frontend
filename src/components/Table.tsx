@@ -49,7 +49,7 @@ export const Table: React.FC<TableProps> = ({
         }))
     );
 
-    const handleSelection = (selection: SpreadsheetSelection | null) => {
+    const handleSelection = (selection) => {
         if (!selection || !updateSearchQuery) return;
         console.log('Selection:', selection);
         console.log('Type:', selection.type);
@@ -69,7 +69,7 @@ export const Table: React.FC<TableProps> = ({
 
         if (rowData) {
             const newQuery: SearchQuery = {
-                id: 0,
+                name: '',
                 type: 'object',
                 metadata: {
                     objectID: rowData.nodeId, // Using nodeId directly instead of falling back to id

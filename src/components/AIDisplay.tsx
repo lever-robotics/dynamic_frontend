@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import type { SearchQuery } from './LeverApp';
-import type { Blueprint } from '@/types/blueprint';
 
 interface DisplayDataProps {
-    blueprint: Blueprint;
     searchQuery: SearchQuery | null;
-    updateSearchQuery: (query: SearchQuery) => void;
 }
 
 interface AIResponse {
@@ -40,7 +37,7 @@ const useAI = () => {
     return { data, loading, error, makeAIRequest };
 };
 
-export const AIDisplay: React.FC<DisplayDataProps> = ({ blueprint, searchQuery, updateSearchQuery }) => {
+export const AIDisplay: React.FC<DisplayDataProps> = ({ searchQuery }) => {
     const { data, loading, error, makeAIRequest } = useAI();
 
     React.useEffect(() => {

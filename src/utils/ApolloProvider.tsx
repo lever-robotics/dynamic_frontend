@@ -62,12 +62,12 @@ const AuthApolloProvider = ({
 	const fetchUserSchema = async (userId: string) => {
 		try {
 			// Fetch both schemas in parallel
-			const [schemaResponse, blueprintResponse] = await Promise.all([
-				supabase
-					.from('user_configs')
-					.select('schema')
-					.eq('user_id', userId)
-					.single(),
+			const [blueprintResponse] = await Promise.all([
+				// supabase
+				// 	.from('user_configs')
+				// 	.select('schema')
+				// 	.eq('user_id', userId)
+				// 	.single(),
 				supabase
 					.from('user_configs')
 					.select('blueprint')
@@ -136,29 +136,29 @@ function createAuthLink(getValidToken: () => Promise<string | null | undefined>)
 	});
 }
 
-function createValidationLink(schema: GraphQLSchema) {
-	return new ApolloLink((operation, forward) => {
-		return new Observable((observer) => {
-			const query = operation.query.loc?.source.body || "";
+// function createValidationLink(schema: GraphQLSchema) {
+// 	return new ApolloLink((operation, forward) => {
+// 		return new Observable((observer) => {
+// 			const query = operation.query.loc?.source.body || "";
 
-			graphql({ schema, source: query })
-				.then((result) => {
-					if (result.errors && result.errors.length > 0) {
-						console.error("GraphQL Query Validation Errors:", result.errors);
-						observer.error(
-							new Error(result.errors.map((e) => e.message).join(", ")),
-						);
-					} else {
-						forward(operation).subscribe({
-							next: observer.next.bind(observer),
-							error: observer.error.bind(observer),
-							complete: observer.complete.bind(observer),
-						});
-					}
-				})
-				.catch((err) => observer.error(err));
-		});
-	});
-}
+// 			graphql({ schema, source: query })
+// 				.then((result) => {
+// 					if (result.errors && result.errors.length > 0) {
+// 						console.error("GraphQL Query Validation Errors:", result.errors);
+// 						observer.error(
+// 							new Error(result.errors.map((e) => e.message).join(", ")),
+// 						);
+// 					} else {
+// 						forward(operation).subscribe({
+// 							next: observer.next.bind(observer),
+// 							error: observer.error.bind(observer),
+// 							complete: observer.complete.bind(observer),
+// 						});
+// 					}
+// 				})
+// 				.catch((err) => observer.error(err));
+// 		});
+// 	});
+// }
 
 export default AuthApolloProvider;

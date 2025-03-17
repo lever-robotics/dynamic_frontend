@@ -11,9 +11,8 @@ import {
 } from 'reactflow';
 import type { Node, Edge } from 'reactflow';
 import "reactflow/dist/style.css";
-import type { SearchQuery } from "./LeverApp";
 import { QueryBuilder } from "../utils/QueryBuilder";
-import type { Blueprint, Entity } from "@/types/blueprint";
+import type { Blueprint, Entity, Field } from "@/types/blueprint";
 
 interface EntityData {
     nodeId: string;
@@ -75,9 +74,7 @@ const nodeTypes = {
 
 export const KnowledgeGraph: React.FC<{
     blueprint: Blueprint;
-    searchQuery: SearchQuery | null;
-    updateSearchQuery: (query: SearchQuery) => void;
-}> = ({ blueprint, searchQuery, updateSearchQuery }) => {
+}> = ({ blueprint }) => {
     // State to track expanded nodes
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -170,7 +167,7 @@ export const KnowledgeGraph: React.FC<{
 
         // Create edges based on relationships
         blueprint.entities.forEach((entity: Entity) => {
-            entity.fields.forEach((field: { type: string; name: string }) => {
+            entity.fields.forEach((field: Field) => {
                 if (field.type === "relationship") {
                     nodes.forEach((node, i) => {
                         if (i < nodes.length - 1) {

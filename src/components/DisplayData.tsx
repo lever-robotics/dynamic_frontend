@@ -34,7 +34,7 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
             case 'table':
                 return <TableDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'ai':
-                return <AIDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <AIDisplay searchQuery={searchQuery} />;
             case 'recommend':
                 return <RecommendDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'all':
@@ -42,7 +42,7 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
             case 'settings':
                 return <SettingsDisplay />;
             case 'graph':
-                return <KnowledgeGraph blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <KnowledgeGraph blueprint={blueprint} />;
             default:
                 return <div className="p-4">Unknown search type</div>;
         }

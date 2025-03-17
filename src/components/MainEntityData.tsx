@@ -2,10 +2,9 @@ import React from 'react';
 
 interface MainEntityDataProps {
     data: any;
-    typename: string;
 }
 
-const MainEntityData: React.FC<MainEntityDataProps> = ({ data, typename }) => {
+const MainEntityData: React.FC<MainEntityDataProps> = ({ data }) => {
     const mainData = Object.entries(data).filter(
         ([key, value]) => !key.endsWith("Collection") && !key.startsWith("__") && value !== null
     );

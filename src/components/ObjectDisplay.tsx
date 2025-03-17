@@ -3,7 +3,6 @@ import { useQuery } from '@apollo/client';
 import type { SearchQuery } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import MainEntityData from './MainEntityData';
-import ConnectionSpreadsheet from './ConnectionsData';
 import type { Blueprint, GraphQLResponse } from '@/types/blueprint';
 
 // Custom hook for fetching object data and connections
@@ -48,12 +47,12 @@ export const ObjectDisplay: React.FC<{
     blueprint: Blueprint;
     searchQuery: SearchQuery;
     updateSearchQuery: (query: SearchQuery) => void;
-}> = ({ blueprint, searchQuery, updateSearchQuery }) => {
+}> = ({ blueprint, searchQuery }) => {
     // Find object type from schema using the objectType in search query metadata
     const objectType = searchQuery.metadata?.objectType;
-    const objectDef = blueprint.entities.find(
-        (type: any) => type.name === objectType
-    );
+    // const objectDef = blueprint.entities.find(
+    //     (type: any) => type.name === objectType
+    // );
 
     // Use custom hook to fetch object data and connections
     const { data, loading, error } = useObjectData(
@@ -98,7 +97,6 @@ export const ObjectDisplay: React.FC<{
                 {/* Main entity data */}
                 <MainEntityData
                     data={entityData}
-                    typename={objectType}
                 />
 
                 {/* Connection data */}

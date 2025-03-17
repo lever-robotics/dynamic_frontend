@@ -33,7 +33,7 @@ interface SidebarProps {
 
 interface SidebarItem {
     title: string;
-    id: number;
+    // id: number;
     type: SearchQueryType;
     icon: LucideIcon;
 }
@@ -59,28 +59,28 @@ export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQue
     // Extract object types from schema
     const schemaItems: SidebarItem[] = blueprint.entities.map((type: any) => ({
         title: type.name,
-        id: `${type.name}`,  // Generate unique ID from name,
+        // id: `${type.name}`,  // Generate unique ID from name,
         type: 'table' as SearchQueryType,
         icon: getIconForType(type.name)
     }));
 
     const recommendationsItem: SidebarItem = {
         title: 'Recommendations',
-        id: 101,
+        // id: 101,
         type: 'recommend' as SearchQueryType,
         icon: Award
     };
 
     const graphItem: SidebarItem = {
         title: 'Knowledge Graph',
-        id: 102,
+        // id: 102,
         type: 'graph' as SearchQueryType,
         icon: Network
     };
 
     const settingsItem: SidebarItem = {
         title: 'Settings',
-        id: 103,
+        // id: 103,
         type: 'settings' as SearchQueryType,
         icon: Settings
     };
@@ -137,7 +137,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQue
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {schemaItems.map((item) => (
-                                <SidebarMenuItem key={item.id}>
+                                <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton
                                         onClick={() => handleItemClick(item)}
                                     >
