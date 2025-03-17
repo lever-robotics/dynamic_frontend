@@ -235,8 +235,8 @@ export const GooglePicker: React.FC<{
 		const token = await getValidToken();
 
 		try {
-			const response = await fetch("http://localhost:4000/api/blueprints/generate", {
-				method: "POST",
+			const response = await fetch("http://localhost:4000/api/test", {
+				method: "GET",
 				headers: {
 					Authorization: `Bearer ${token}`,
 				},
@@ -275,7 +275,7 @@ export const GooglePicker: React.FC<{
 				onClick={handleTest}
 				className="bg-blue-500 text-white px-4 py-2 rounded-md mb-2"
 			>
-				Test API
+				Test API *
 			</button>
 			{/* <div className="text-xs text-gray-500">
 				Auth Status: {isAuthorized ? "Connected" : "Not Connected"}
