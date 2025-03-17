@@ -1,36 +1,34 @@
-// src/App.tsx
-import React, { useState } from "react";
-import { ApolloProvider } from "@apollo/client";
-import client from "./utils/apolloClient";
-import { DataDisplay } from "./components/DataDisplay";
-import { AppSidebar } from "./components/app-sidebar";
-import "./index.css";
+// import { client } from './config/apollo-client';
+import { LeverApp } from './components/LeverApp';
 import { SidebarProvider } from "@/components/ui/sidebar";
+import BusinessSetup from './components/onboarding/BusinessSetup';
+import { useState } from 'react';
 
-function App() {
-  const [tableToDisplay, setTableToDisplay] = useState<string | null>(null);
+// For Testing
+import { useAuth } from './utils/AuthProvider';
+import AuthModal from './components/AuthModal';
 
-  const handleTableSelect = (tableName: string) => {
-    if (tableName === 'settings') {
-      console.log('Settings clicked');
-      return;
-    }
-    setTableToDisplay(tableName);
-  };
+export const App = () => {
+  const { isAuthenticated } = useAuth();
+  const [showBusinessSetup, setShowBusinessSetup] = useState(true);
+
+  if (!isAuthenticated) {
+    return (
+      <AuthModal />
+    )
+  }
+
+  if (showBusinessSetup) {
+    return (
+      <BusinessSetup onClose={() => setShowBusinessSetup(false)} />
+    );
+  }
 
   return (
-    <ApolloProvider client={client}>
-      <SidebarProvider defaultIsOpen={true}   >
-        <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
-          <AppSidebar onTableSelect={handleTableSelect} />
-            <DataDisplay
-              onTableSelect={handleTableSelect}
-              tableToDisplay={tableToDisplay}
-            />
-        </div>
-      </SidebarProvider>
-    </ApolloProvider>
+    <SidebarProvider defaultOpen={true}>
+      <LeverApp />
+    </SidebarProvider>
   );
-}
+};
 
 export default App;

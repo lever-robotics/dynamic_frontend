@@ -1,0 +1,103 @@
+{
+    "version": "1.0.0",
+    "entities": [
+        {
+            "name": "individual",
+            "fields": [
+                {
+                    "name": "nodeId",
+                    "type": "string",
+                    "description": "Unique identifier with all the identities"
+                },
+                {
+                    "name": "id",
+                    "type": "integer",
+                    "description": "Unique identifier"
+                },
+                {
+                    "name": "first_name",
+                    "type": "string",
+                    "description": "First name of individual"
+                },
+                {
+                    "name": "last_name",
+                    "type": "string",
+                    "description": "Last name of individual"
+                },
+                {
+                    "name": "phone_number",
+                    "type": "string",
+                    "description": "Contact phone number"
+                },
+                {
+                    "name": "age",
+                    "type": "integer",
+                    "description": "Age of individual"
+                },
+                {
+                    "name": "email",
+                    "type": "string",
+                    "description": "Email address"
+                },
+                {
+                    "name": "allergies",
+                    "type": "string",
+                    "description": "List out all the allergies of the individuals"
+                },
+                {
+                    "name": "waiver_date",
+                    "type": "date",
+                    "description": "Date waiver was signed"
+                },
+                {
+                    "name": "birth_day",
+                    "type": "date",
+                    "description": "Date of birth"
+                },
+                {
+                    "name": "address",
+                    "type": "string",
+                    "description": "Physical address"
+                },
+                {
+                    "name": "gender",
+                    "type": "enum",
+                    "values": [
+                        "Male",
+                        "Female",
+                        "Other"
+                    ],
+                    "description": "Gender identity"
+                },
+                {
+                    "name": "ethnicity",
+                    "type": "text",
+                    "description": "Ethnicity of individual"
+                },
+                {
+                    "name": "primary_diagnosis",
+                    "type": "text",
+                    "description": "Primary diagnosis of individual"
+                },
+                {
+                    "name": "notes",
+                    "type": "text",
+                    "description": "General notes"
+                },
+                {
+                    "name": "prp_record",
+                    "type": "url",
+                    "description": "URL to PRP record PDF"
+                },
+                {
+                    "name": "waiver_record",
+                    "type": "url",
+                    "description": "URL to waiver record PDF"
+                }
+            ],
+            "description": "Represents individuals participating in programs",
+            "display_name": "Individual"
+        }
+    ],
+    "relationships": []
+}

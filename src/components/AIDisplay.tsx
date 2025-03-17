@@ -1,32 +1,80 @@
-import React from 'react';
-import { useAI } from '../hooks/useAI';
+import React, { useState } from 'react';
+import type { SearchQuery } from './LeverApp';
 
-interface AIDisplayProps {
-    searchQuery: string;
+interface DisplayDataProps {
+    searchQuery: SearchQuery | null;
 }
 
 interface AIResponse {
     message: string;
 }
 
-export const AIDisplay: React.FC<AIDisplayProps> = ({ searchQuery }) => {
-    const { data, loading, error, makeAIRequest } = useAI<AIResponse>();
+const useAI = () => {
+    const [data, setData] = useState<AIResponse | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    // Make the request when searchQuery changes
-    React.useEffect(() => {
-        if (searchQuery) {
-            makeAIRequest(searchQuery);
+    const makeAIRequest = async (searchText: string) => {
+        try {
+            setLoading(true);
+            setError(null);
+            setData(null);
+
+            const response = await fetch(`http://127.0.0.1:5000/api?param=${encodeURIComponent(searchText)}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            setData(result);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+        } finally {
+            setLoading(false);
         }
-    }, [searchQuery]);
+    };
 
-    if (loading) return <div className="p-4">Loading AI response...</div>;
-    if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
-    if (!data) return null;
+    return { data, loading, error, makeAIRequest };
+};
+
+export const AIDisplay: React.FC<DisplayDataProps> = ({ searchQuery }) => {
+    const { data, loading, error, makeAIRequest } = useAI();
+
+    React.useEffect(() => {
+        if (searchQuery?.metadata?.searchTerm) {
+            makeAIRequest(searchQuery.metadata.searchTerm);
+        }
+    }, [searchQuery?.metadata?.searchTerm, makeAIRequest]);
+
+    if (loading) {
+        return (
+            <div className="p-4">
+                <h2 className="text-xl font-bold">AI Search</h2>
+                <div className="mt-4">Loading AI response...</div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4">
+                <h2 className="text-xl font-bold">AI Search</h2>
+                <div className="mt-4 text-red-500">Error: {error}</div>
+            </div>
+        );
+    }
 
     return (
-        <div className="bg-white rounded-lg shadow-lg p-4 mt-4">
-            <h3 className="text-lg font-semibold mb-2">AI Response</h3>
-            <p className="text-gray-700">{data.message}</p>
+        <div className="p-4">
+            <h2 className="text-xl font-bold">AI Search</h2>
+            <div className="bg-white rounded-lg shadow-lg p-4 mt-4">
+                <h3 className="text-lg font-semibold mb-2">AI Response</h3>
+                <p className="text-gray-700">
+                    {data?.message || 'No response yet'}
+                </p>
+            </div>
         </div>
     );
 };
+
+export default AIDisplay;

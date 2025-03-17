@@ -1,6 +1,7 @@
 @import "@radix-ui/colors/sky.css";
 @import "@radix-ui/colors/gray.css";
 @import "@radix-ui/colors/sky-alpha.css";
+@import 'reactflow/dist/style.css';
 
 @tailwind base;
 @tailwind components;
@@ -17,6 +18,7 @@
   max-width: 100%;
   overflow-x: auto;
 }
+
 .react-spreadsheet-table {
   width: 100% !important;
 }
@@ -106,7 +108,7 @@ body {
   width: 100vw;
   min-width: 320px;
   min-height: 100vh;
-  
+
   @apply h-full w-full overflow-hidden;
 }
 
@@ -138,23 +140,32 @@ body {
 }
 
 @layer utilities {
+
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
-      display: none;
+    display: none;
   }
- /* Hide scrollbar for IE, Edge and Firefox */
+
+  /* Hide scrollbar for IE, Edge and Firefox */
   .no-scrollbar {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
-}
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
 }
 
+:root {
+  --primary-color: #6b46c1;
+  /* Your desired purple */
+  --primary-color-dark: #553c9a;
+  /* Darker shade for hover */
+}
 
 @layer base {
   :root {
 
-    --radius: 0.5rem
-  ;
+    --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -171,7 +182,9 @@ body {
 
     --sidebar-border: 220 13% 91%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%}
+    --sidebar-ring: 217.2 91.2% 59.8%
+  }
+
   .dark {
 
     --sidebar-background: 240 5.9% 10%;
@@ -188,5 +201,6 @@ body {
 
     --sidebar-border: 240 3.7% 15.9%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%}
+    --sidebar-ring: 217.2 91.2% 59.8%
+  }
 }
