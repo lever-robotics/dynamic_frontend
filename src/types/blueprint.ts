@@ -33,6 +33,13 @@ export const fieldSchema = z.object({
 	description: z.string(),
 });
 
+// export type ReturnedField = z.infer<typeof returnedFieldSchema>;
+// export const returnedFieldSchema = z.object({
+// 	name: z.string(),
+// 	displayName: z.string(),
+// 	type: dataTypeSchema,
+// });
+
 export type Entity = z.infer<typeof entitySchema>;
 export const entitySchema = z.object({
 	name: z.string(),
@@ -40,6 +47,14 @@ export const entitySchema = z.object({
 	description: z.string(),
 	fields: z.array(fieldSchema),
 });
+
+// export type ReturnedEntity = z.infer<typeof returnedEntitySchema>;
+// export const returnedEntitySchema = z.object({
+// 	name: z.string(),
+// 	displayName: z.string(),
+// 	description: z.string(),
+// 	fields: z.array(returnedFieldSchema),
+// });
 
 export type Relationship = z.infer<typeof relationshipSchema>;
 export const relationshipSchema = z.object({

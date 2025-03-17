@@ -27,8 +27,7 @@ export class QueryBuilder {
       const searchableFields = entity.fields.filter(f => f.type !== 'relationship').filter(field => field.name !== 'id');
 
       // Get the name field for display
-      const nameField = entity.fields.find(f => f.name === 'name' || f.name === 'firstName');
-      if (!nameField) return null;
+   
 
       // Create different filters based on field type
       const fieldFilters = searchableFields.map(field => {
@@ -47,7 +46,6 @@ export class QueryBuilder {
           or: [${fieldFilters}]
       }) {
             __typename
-            ${nameField.name}
             ${searchableFields.map(f => f.name).join('\n                  ')}
         }
     `;

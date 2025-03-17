@@ -4,7 +4,7 @@ import { QueryBuilder } from '../utils/QueryBuilder';
 import { useQuery } from '@apollo/client';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useRef } from 'react';
-import type { Blueprint } from "@/types/blueprint";
+import type { Blueprint, Entity } from "@/types/blueprint";
 // Search Bar component props
 interface SearchBarProps {
     blueprint: Blueprint;
@@ -14,6 +14,7 @@ interface SearchBarProps {
 
 function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
     const metadataQuery = QueryBuilder.buildMetadataSearchQuery(blueprint);
+    console.log("metadataQuery",metadataQuery);
 
 
     const isTermContainedInSearch = (term: string) => {
@@ -54,7 +55,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         skip: !searchTerm || searchTerm.trim() === '',
     });
 
-
+    console.log("data",data);
 
     const formattedResults = React.useMemo(() => {
         if (!data && !searchTerm) return [];
@@ -75,17 +76,33 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         if (!data) return schemaMatches;
 
         const dbResults = Object.entries(data).flatMap(([entityName, entityData]: [string, any]) => {
-            console.log("entityName",entityName);
-            console.log("entityData",entityData);
-            return entityData.map((entity: any) => ({
-                displayName: entity.name || `${entity.firstName} ${entity.lastName}`,
-                resultType: 'object',
-                matchedField: 'name',
-                matchedValue: entity.name || `${entity.firstName} ${entity.lastName}`,
-                sourceTable: entityName,
-                nodeId: entity.nodeId,
-                typeName: entity.__typename
-            }));
+            return entityData.map((entity: any) => {
+                const result = Object.entries(entity).find(([fieldName, fieldValue]: [string, any]) => {
+                    if(typeof fieldValue === "string") {
+                        if (fieldValue.toLowerCase().includes(searchTerm.toLowerCase())) {
+                            return [fieldName, fieldValue];
+                        }
+                    } else if (typeof fieldValue === "object" && fieldValue !== null && fieldValue.constructor.name === "Date") {
+                        if (dateTerm && fieldValue.toLocaleDateString().toLowerCase().includes(dateTerm.toLowerCase())) {
+                            return [fieldName, fieldValue];
+                        }
+                    } else  {
+                        if (numberTerm && fieldValue.toString().toLowerCase().includes(numberTerm.toString().toLowerCase())) {
+                            return [fieldName, fieldValue];
+                        }
+                    }
+                });
+                const [fieldName, fieldValue] = result || ['',''];
+                return {
+                    displayName: entityName,
+                    resultType: 'object',
+                    matchedField: fieldName,
+                    matchedValue: fieldValue,
+                    sourceTable: entityName,
+                    nodeId: entity.nodeId,
+                    typeName: entity.__typename
+                };
+            });
         });
 
         // const dbResults = Object.entries(data)
@@ -228,6 +245,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
         // const objectType = blueprint.entities.find(
         //     (type: any) => type.display_name.toLowerCase() === result.sourceTable.toLowerCase()
         // );
+        console.log("result\n\n",result);
         updateSearchQuery({
             type: result.resultType as SearchQueryType,
             name: result.displayName,
