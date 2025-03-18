@@ -3,9 +3,11 @@ import { SearchQuery } from './LeverApp';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Highlight, themes } from 'prism-react-renderer';
+import { useAuth } from '../utils/AuthProvider';
 
 interface AIChatSidebarProps {
     searchQuery: SearchQuery;
+    onClose: () => void;
 }
 
 interface Message {
@@ -169,21 +171,26 @@ const processText = (text: string) => {
     return processedText;
 };
 
-export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => {
+export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery, onClose }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isConnected, setIsConnected] = useState(false);
-    const [currentInput, setCurrentInput] = useState('');
     const [currentMessage, setCurrentMessage] = useState<{
         text: string;
         segments: MessageSegment[];
     }>({ text: '', segments: [] });
     const [autoScroll, setAutoScroll] = useState(true);
     const [userHasScrolled, setUserHasScrolled] = useState(false);
+    const [connectionError, setConnectionError] = useState<string | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const [accumulatedText, setAccumulatedText] = useState('');
     const lastScrollPosition = useRef(0);
+    const { getValidToken, isAuthenticated } = useAuth();
+    const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+    const isConnectingRef = useRef(false);
+    const hasSentInitialMessageRef = useRef(false);
+    const clientIdRef = useRef<string | null>(null);
 
     const scrollToBottom = () => {
         if (autoScroll && messagesEndRef.current) {
@@ -225,215 +232,317 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
         }
     }, [messages]);
 
-    useEffect(() => {
-        const ws = new WebSocket('ws://localhost:4000/ai/ws');
-        wsRef.current = ws;
+    const connectWebSocket = async () => {
+        // Prevent multiple simultaneous connection attempts
+        if (isConnectingRef.current) {
+            console.log('🔄 Connection attempt already in progress, skipping...');
+            return;
+        }
 
-        ws.onopen = () => {
-            setIsConnected(true);
-            const searchTerm = searchQuery.metadata?.searchTerm;
-            if (searchTerm) {
-                ws.send(JSON.stringify({ task: searchTerm }));
-                setMessages(prev => [...prev, {
-                    type: 'user',
-                    content: searchTerm,
-                    segments: [{ type: 'text', content: searchTerm }]
-                }]);
-                setCurrentMessage({ text: '', segments: [] });
-                setAccumulatedText('');
+        console.log('🔄 Attempting to connect to WebSocket...');
+        isConnectingRef.current = true;
+
+        if (!isAuthenticated) {
+            console.log('❌ WebSocket connection failed: User not authenticated');
+            setConnectionError('Please authenticate to connect to AI chat');
+            isConnectingRef.current = false;
+            return;
+        }
+
+        try {
+            const token = await getValidToken();
+            if (!token) {
+                console.log('❌ WebSocket connection failed: No valid token');
+                setConnectionError('Authentication token not available');
+                isConnectingRef.current = false;
+                return;
             }
-        };
 
-        ws.onclose = () => setIsConnected(false);
-        ws.onerror = (error) => console.error('WebSocket error:', error);
+            // Close existing connection if any
+            if (wsRef.current) {
+                console.log('🔌 Closing existing connection...');
+                wsRef.current.close();
+            }
 
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                console.log('Received message:', message);
+            console.log('🔑 Got valid token, creating WebSocket connection...');
+            const wsUrl = `ws://127.0.0.1:4000/ai/ws?token=${token}`;
+            console.log('🔗 Connecting to:', wsUrl);
 
-                switch (message.type) {
-                    case 'llm-stream':
-                        setAccumulatedText(prev => prev + message.data.text);
-                        setCurrentMessage(prev => {
-                            // Get the last segment
-                            const lastSegment = prev.segments[prev.segments.length - 1];
+            const ws = new WebSocket(wsUrl);
+            wsRef.current = ws;
 
-                            // If the last segment is a text segment, append to it
-                            if (lastSegment?.type === 'text') {
-                                const updatedSegments = [...prev.segments];
-                                updatedSegments[updatedSegments.length - 1] = {
-                                    ...lastSegment,
-                                    content: lastSegment.content + message.data.text
+            ws.onopen = () => {
+                console.log('✅ WebSocket connection established');
+                setIsConnected(true);
+                isConnectingRef.current = false;
+                hasSentInitialMessageRef.current = false;
+                console.log('🔍 Ready to send initial message:', {
+                    hasSearchTerm: !!searchQuery.metadata?.searchTerm,
+                    hasSentInitialMessage: hasSentInitialMessageRef.current
+                });
+            };
+
+            ws.onclose = (event) => {
+                console.log('🔌 WebSocket connection closed:', {
+                    code: event.code,
+                    reason: event.reason,
+                    wasClean: event.wasClean,
+                    clientId: clientIdRef.current
+                });
+                setIsConnected(false);
+                isConnectingRef.current = false;
+                clientIdRef.current = null;
+            };
+
+            ws.onerror = (error) => {
+                console.error('❌ WebSocket error:', {
+                    error,
+                    readyState: ws.readyState,
+                    url: ws.url,
+                    clientId: clientIdRef.current
+                });
+                setConnectionError('Connection error occurred');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('📥 WebSocket message received:', {
+                        type: message.type,
+                        clientId: message.clientId,
+                        data: message.data,
+                        timestamp: new Date().toISOString(),
+                        readyState: ws.readyState
+                    });
+
+                    switch (message.type) {
+                        case 'auth_response':
+                            if (message.status === 'success') {
+                                console.log('✅ Authentication successful:', {
+                                    clientId: message.clientId,
+                                    timestamp: new Date().toISOString()
+                                });
+                                setIsConnected(true);
+                                setConnectionError(null);
+                                clientIdRef.current = message.clientId;
+                                console.log('📝 Client ID received:', message.clientId);
+
+                                // Send initial search term only once after successful authentication
+                                const searchTerm = searchQuery.metadata?.searchTerm;
+                                if (searchTerm && !hasSentInitialMessageRef.current) {
+                                    console.log('📤 Sending initial search term:', {
+                                        searchTerm,
+                                        clientId: clientIdRef.current,
+                                        wsReadyState: ws.readyState,
+                                        timestamp: new Date().toISOString()
+                                    });
+                                    ws.send(JSON.stringify({ task: searchTerm }));
+                                    setMessages(prev => [...prev, {
+                                        type: 'user',
+                                        content: searchTerm,
+                                        segments: [{ type: 'text', content: searchTerm }]
+                                    }]);
+                                    setCurrentMessage({ text: '', segments: [] });
+                                    setAccumulatedText('');
+                                    hasSentInitialMessageRef.current = true;
+                                }
+                            } else {
+                                console.error('❌ Authentication failed:', {
+                                    error: message.error,
+                                    timestamp: new Date().toISOString()
+                                });
+                                setConnectionError(message.error);
+                                setIsConnected(false);
+                                clientIdRef.current = null;
+                            }
+                            break;
+
+                        case 'message_received':
+                            console.log('✅ Backend acknowledged message receipt:', {
+                                clientId: message.clientId,
+                                task: message.task,
+                                timestamp: new Date().toISOString()
+                            });
+                            break;
+
+                        case 'tool-execution':
+                            console.log('🛠️ Tool execution received:', {
+                                clientId: clientIdRef.current,
+                                tool: message.data.tool,
+                                arguments: message.data.arguments,
+                                timestamp: new Date().toISOString()
+                            });
+                            setCurrentMessage(prev => {
+                                const toolExecution: ToolExecution = {
+                                    tool: message.data.tool,
+                                    arguments: message.data.arguments,
+                                    timestamp: Date.now(),
+                                    isExpanded: true,
+                                    status: 'starting' as ToolExecutionStatus
+                                };
+
+                                const toolSegment: MessageSegment = {
+                                    type: 'tool',
+                                    content: '',
+                                    toolExecution
                                 };
 
                                 return {
-                                    text: prev.text + message.data.text,
+                                    ...prev,
+                                    segments: [...prev.segments, toolSegment]
+                                };
+                            });
+                            break;
+
+                        case 'tool-result':
+                            console.log('✅ Tool result received:', {
+                                clientId: clientIdRef.current,
+                                tool: message.data.tool,
+                                result: message.data.result,
+                                timestamp: new Date().toISOString()
+                            });
+                            setCurrentMessage(prev => {
+                                const updatedSegments = prev.segments.map(segment => {
+                                    if (
+                                        segment.type === 'tool' &&
+                                        segment.toolExecution &&
+                                        segment.toolExecution.tool === message.data.tool &&
+                                        !segment.toolExecution.result
+                                    ) {
+                                        return {
+                                            ...segment,
+                                            toolExecution: {
+                                                ...segment.toolExecution,
+                                                result: message.data.result,
+                                                error: message.data.error,
+                                                status: message.data.error ? 'error' as ToolExecutionStatus : 'completed' as ToolExecutionStatus
+                                            }
+                                        };
+                                    }
+                                    return segment;
+                                });
+
+                                return {
+                                    ...prev,
                                     segments: updatedSegments
                                 };
-                            }
-
-                            // If not, create a new text segment
-                            return {
-                                text: prev.text + message.data.text,
-                                segments: [
-                                    ...prev.segments,
-                                    {
-                                        type: 'text',
-                                        content: message.data.text
-                                    }
-                                ]
-                            };
-                        });
-                        scrollToBottom();
-                        break;
-
-                    case 'tool-execution':
-                        console.log('Tool execution:', message.data);
-                        setCurrentMessage(prev => {
-                            const toolExecution: ToolExecution = {
-                                tool: message.data.tool,
-                                arguments: message.data.arguments,
-                                timestamp: Date.now(),
-                                isExpanded: true,
-                                status: 'starting' as ToolExecutionStatus
-                            };
-
-                            const toolSegment: MessageSegment = {
-                                type: 'tool',
-                                content: '',
-                                toolExecution
-                            };
-
-                            return {
-                                ...prev,
-                                segments: [...prev.segments, toolSegment]
-                            };
-                        });
-                        break;
-
-                    case 'tool-result':
-                        console.log('Tool result:', message.data);
-                        setCurrentMessage(prev => {
-                            const updatedSegments = prev.segments.map(segment => {
-                                if (
-                                    segment.type === 'tool' &&
-                                    segment.toolExecution &&
-                                    segment.toolExecution.tool === message.data.tool &&
-                                    !segment.toolExecution.result
-                                ) {
-                                    return {
-                                        ...segment,
-                                        toolExecution: {
-                                            ...segment.toolExecution,
-                                            result: message.data.result,
-                                            error: message.data.error,
-                                            status: message.data.error ? 'error' as ToolExecutionStatus : 'completed' as ToolExecutionStatus
-                                        }
-                                    };
-                                }
-                                return segment;
                             });
+                            break;
 
-                            return {
-                                ...prev,
-                                segments: updatedSegments
-                            };
-                        });
-                        break;
+                        case 'llm-stream':
+                            console.log('📥 LLM stream received:', {
+                                clientId: clientIdRef.current,
+                                text: message.data.text,
+                                isComplete: message.data.isComplete,
+                                timestamp: new Date().toISOString()
+                            });
+                            if (message.data.text) {
+                                setAccumulatedText(prev => prev + message.data.text);
+                                setCurrentMessage(prev => {
+                                    // Get the last segment
+                                    const lastSegment = prev.segments[prev.segments.length - 1];
 
-                    case 'complete':
-                        if (currentMessage.text || currentMessage.segments.length > 0) {
+                                    // If the last segment is a text segment, append to it
+                                    if (lastSegment?.type === 'text') {
+                                        const updatedSegments = [...prev.segments];
+                                        updatedSegments[updatedSegments.length - 1] = {
+                                            ...lastSegment,
+                                            content: lastSegment.content + message.data.text
+                                        };
+
+                                        return {
+                                            text: prev.text + message.data.text,
+                                            segments: updatedSegments
+                                        };
+                                    }
+
+                                    // If not, create a new text segment
+                                    return {
+                                        text: prev.text + message.data.text,
+                                        segments: [
+                                            ...prev.segments,
+                                            {
+                                                type: 'text',
+                                                content: message.data.text
+                                            }
+                                        ]
+                                    };
+                                });
+                                scrollToBottom();
+                            }
+                            break;
+
+                        case 'complete':
+                            console.log('✅ Message complete received:', {
+                                clientId: clientIdRef.current,
+                                response: message.data.response,
+                                metadata: message.data.metadata,
+                                timestamp: new Date().toISOString()
+                            });
+                            if (currentMessage.text || currentMessage.segments.length > 0) {
+                                setMessages(prev => [...prev, {
+                                    type: 'assistant',
+                                    content: currentMessage.text,
+                                    segments: currentMessage.segments
+                                }]);
+                                setCurrentMessage({ text: '', segments: [] });
+                                setAccumulatedText('');
+                            }
+                            break;
+
+                        case 'error':
+                            console.error('❌ Error received:', {
+                                clientId: clientIdRef.current,
+                                error: message.data.message,
+                                details: message.data.details,
+                                timestamp: new Date().toISOString()
+                            });
+                            // Add error message to the chat
                             setMessages(prev => [...prev, {
                                 type: 'assistant',
-                                content: currentMessage.text,
-                                segments: currentMessage.segments
+                                content: `Error: ${message.data.message}`,
+                                segments: [{
+                                    type: 'text',
+                                    content: `Error: ${message.data.message}${message.data.details ? `\n\nDetails: ${message.data.details}` : ''}`
+                                }]
                             }]);
                             setCurrentMessage({ text: '', segments: [] });
                             setAccumulatedText('');
-                        }
-                        break;
-
-                    case 'error':
-                        console.error('Error from server:', message.data);
-                        // Add error message to the chat
-                        setMessages(prev => [...prev, {
-                            type: 'assistant',
-                            content: `Error: ${message.data.message}`,
-                            segments: [{
-                                type: 'text',
-                                content: `Error: ${message.data.message}${message.data.details ? `\n\nDetails: ${message.data.details}` : ''}`
-                            }]
-                        }]);
-                        setCurrentMessage({ text: '', segments: [] });
-                        setAccumulatedText('');
-                        break;
+                            break;
+                    }
+                } catch (err) {
+                    console.error('❌ Error processing message:', {
+                        error: err instanceof Error ? err.message : 'Unknown error',
+                        timestamp: new Date().toISOString()
+                    });
                 }
-            } catch (err) {
-                console.error('Error processing message:', err);
-            }
-        };
+            };
+        } catch (error) {
+            console.error('Error connecting to WebSocket:', error);
+            setConnectionError('Failed to establish connection');
+            isConnectingRef.current = false;
+        }
+    };
 
+    // Clean up WebSocket connection when component unmounts or closes
+    useEffect(() => {
         return () => {
             if (wsRef.current) {
+                console.log('🔌 Cleaning up WebSocket connection...');
                 wsRef.current.close();
             }
-        };
-    }, [searchQuery.metadata?.searchTerm]);
-
-    const handleSendMessage = () => {
-        if (!currentInput.trim() || !isConnected || !wsRef.current) return;
-
-        wsRef.current.send(JSON.stringify({ task: currentInput }));
-        setMessages(prev => [...prev, {
-            type: 'user',
-            content: currentInput,
-            segments: [{ type: 'text', content: currentInput }]
-        }]);
-        setCurrentMessage({ text: '', segments: [] });
-        setCurrentInput('');
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    };
-
-    const toggleToolExecution = (messageIndex: number, segmentIndex: number) => {
-        // Store current scroll position before update
-        const container = messagesContainerRef.current;
-        if (container) {
-            lastScrollPosition.current = container.scrollTop;
-        }
-
-        setMessages(prev => prev.map((msg, mIdx) =>
-            mIdx === messageIndex
-                ? {
-                    ...msg,
-                    segments: msg.segments.map((segment, sIdx) =>
-                        sIdx === segmentIndex && segment.type === 'tool'
-                            ? {
-                                ...segment,
-                                toolExecution: {
-                                    ...segment.toolExecution!,
-                                    isExpanded: !segment.toolExecution!.isExpanded
-                                }
-                            }
-                            : segment
-                    )
-                }
-                : msg
-        ));
-
-        // Restore scroll position after state update
-        requestAnimationFrame(() => {
-            if (container) {
-                container.scrollTop = lastScrollPosition.current;
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
             }
-        });
-    };
+        };
+    }, []);
+
+    // Connect WebSocket when component mounts and is authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            connectWebSocket();
+        }
+    }, [isAuthenticated]);
 
     const renderMessageContent = (message: Message, messageIndex: number) => {
         return message.segments.map((segment, segmentIndex) => {
@@ -502,13 +611,58 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
         });
     };
 
+    const toggleToolExecution = (messageIndex: number, segmentIndex: number) => {
+        // Store current scroll position before update
+        const container = messagesContainerRef.current;
+        if (container) {
+            lastScrollPosition.current = container.scrollTop;
+        }
+
+        setMessages(prev => prev.map((msg, mIdx) =>
+            mIdx === messageIndex
+                ? {
+                    ...msg,
+                    segments: msg.segments.map((segment, sIdx) =>
+                        sIdx === segmentIndex && segment.type === 'tool'
+                            ? {
+                                ...segment,
+                                toolExecution: {
+                                    ...segment.toolExecution!,
+                                    isExpanded: !segment.toolExecution!.isExpanded
+                                }
+                            }
+                            : segment
+                    )
+                }
+                : msg
+        ));
+
+        // Restore scroll position after state update
+        requestAnimationFrame(() => {
+            if (container) {
+                container.scrollTop = lastScrollPosition.current;
+            }
+        });
+    };
+
     return (
-        <div className="h-full flex flex-col">
-            <div className="p-2 border-b">
+        <div className="h-full flex flex-col ai-chat-sidebar">
+            <div className="p-2 border-b flex justify-between items-center">
                 <div className={`flex items-center ${isConnected ? 'text-green-600' : 'text-yellow-600'}`}>
                     <div className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-600' : 'bg-yellow-600'}`} />
                     {isConnected ? 'Connected' : 'Connecting...'}
                 </div>
+                <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700"
+                >
+                    ✕
+                </button>
+                {connectionError && (
+                    <div className="text-red-600 text-sm mt-1">
+                        {connectionError}
+                    </div>
+                )}
             </div>
 
             <div
@@ -546,17 +700,14 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery }) => 
 
             <div className="p-4 border-t">
                 <textarea
-                    value={currentInput}
-                    onChange={(e) => setCurrentInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type your message..."
-                    className="w-full p-2 border rounded-lg resize-none"
+                    disabled
+                    placeholder="Use the search bar to ask questions..."
+                    className="w-full p-2 border rounded-lg resize-none bg-gray-50"
                     rows={3}
                 />
                 <button
-                    onClick={handleSendMessage}
-                    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg w-full hover:bg-blue-600"
-                    disabled={!isConnected}
+                    disabled
+                    className="mt-2 px-4 py-2 bg-gray-300 text-gray-500 rounded-lg w-full cursor-not-allowed"
                 >
                     Send
                 </button>

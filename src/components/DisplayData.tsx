@@ -1,25 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SearchQuery } from './LeverApp';
 import AllDisplay from './AllDisplay';
 import TableDisplay from './TableDisplay';
 import ObjectDisplay from './ObjectDisplay';
 import RecommendDisplay from './RecommendDisplay';
 import SettingsDisplay from './SettingsDisplay';
+import { AIChatSidebar } from './AIChatSidebar';
 
 // Display component props
 interface DisplayDataProps {
     schema: any;
     searchQuery: SearchQuery | null;
     updateSearchQuery: (query: SearchQuery) => void;
+    onAIChatVisibilityChange: (show: boolean) => void;
 }
 
 // Main DisplayData component
 export const DisplayData: React.FC<DisplayDataProps> = ({
     schema,
     searchQuery,
-    updateSearchQuery
+    updateSearchQuery,
+    onAIChatVisibilityChange
 }) => {
-    console.log('DisplayData searchQuery:', searchQuery);
+    const [showAIChat, setShowAIChat] = useState(false);
+    const [currentAISearchQuery, setCurrentAISearchQuery] = useState<SearchQuery | null>(null);
+
+    // Handle new search queries
+    React.useEffect(() => {
+        if (searchQuery?.type === 'ai') {
+            // Set the new search query and show the chat
+            setCurrentAISearchQuery(searchQuery);
+            setShowAIChat(true);
+            onAIChatVisibilityChange(true);
+        }
+    }, [searchQuery, onAIChatVisibilityChange]);
+
+    const handleCloseSidebar = () => {
+        setShowAIChat(false);
+        onAIChatVisibilityChange(false);
+        // Clear the current AI search query to ensure a fresh start next time
+        setCurrentAISearchQuery(null);
+    };
 
     // Render different components based on search query type
     const renderDisplay = () => {
@@ -33,7 +54,6 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
             case 'table':
                 return <TableDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'ai':
-                // AI display is now handled in the sidebar
                 return <div className="p-4">AI chat is available in the sidebar</div>;
             case 'recommend':
                 return <RecommendDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
@@ -47,12 +67,27 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
     };
 
     return (
-        <div className="flex-1 overflow-auto w-full px-4">
+        <div className="flex-1 overflow-auto w-full px-4 relative">
             {/* <div className="p-4">
                 <h2 className="text-xl font-bold mb-4">Search Query</h2>
                 <pre>{JSON.stringify(searchQuery, null, 2)}</pre>
             </div> */}
             {renderDisplay()}
+            <div className={`fixed right-0 top-0 h-full w-96 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${showAIChat ? 'translate-x-0' : 'translate-x-full'}`}>
+                {showAIChat && currentAISearchQuery && (
+                    <AIChatSidebar
+                        searchQuery={currentAISearchQuery}
+                        onClose={handleCloseSidebar}
+                    />
+                )}
+            </div>
+            {/* Add a semi-transparent overlay when sidebar is open */}
+            {showAIChat && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-25 z-40"
+                    onClick={handleCloseSidebar}
+                />
+            )}
         </div>
     );
 };

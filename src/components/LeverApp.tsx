@@ -3,7 +3,6 @@ import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
-import { AIChatSidebar } from '../components/AIChatSidebar';
 import QueryBuilderTester from './tests/QueryBuilderTester';
 
 // Define the search query type
@@ -35,6 +34,9 @@ export const LeverApp: React.FC = () => {
         },
     });
 
+    // Add state for AI chat visibility
+    const [showAIChat, setShowAIChat] = useState(false);
+
     // Function to update search query
     const updateSearchQuery = (query: SearchQuery) => {
         console.log('Updating search query:', query);
@@ -63,7 +65,7 @@ export const LeverApp: React.FC = () => {
             />
 
             {/* Middle Content Area */}
-            <div className='flex-1 flex flex-col items-center bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg my-2.5'>
+            <div className={`flex-1 flex flex-col items-center bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg my-2.5 transition-all duration-300 ${showAIChat ? 'mr-96' : ''}`}>
                 {/* Search Bar */}
                 <SearchBar
                     schema={jsonSchema}
@@ -75,6 +77,7 @@ export const LeverApp: React.FC = () => {
                     schema={jsonSchema}
                     searchQuery={searchQuery}
                     updateSearchQuery={updateSearchQuery}
+                    onAIChatVisibilityChange={setShowAIChat}
                 />
 
                 {/* Display JSON */}
@@ -84,12 +87,6 @@ export const LeverApp: React.FC = () => {
 
                 {/* For debugging queries */}
                 {/* <QueryBuilderTester schema={jsonSchema} /> */}
-
-            </div>
-
-            {/* Right Chat Panel */}
-            <div className="w-96 h-screen border-l border-gray-200 bg-white">
-                <AIChatSidebar searchQuery={searchQuery} />
             </div>
         </div>
     );

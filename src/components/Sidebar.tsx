@@ -21,7 +21,6 @@ import {
 } from "../components/ui/sidebar";
 import { AspectRatio } from "radix-ui";
 import logoImg from '../assets/cgLogo.png';
-import { AIChatSidebar } from './AIChatSidebar';
 
 // Sidebar component props
 interface SidebarProps {
@@ -166,11 +165,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery,
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
-
-            {/* AI Chat Interface */}
-            {searchQuery?.type === 'ai' && (
-                <AIChatSidebar searchQuery={searchQuery} />
-            )}
         </Sidebar>
     );
 };
