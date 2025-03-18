@@ -26,6 +26,7 @@ declare global {
 	}
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const GooglePicker: React.FC<{
 	onSelect: (id: string, name: string) => void;
 }> = ({ onSelect }) => {
@@ -39,7 +40,7 @@ export const GooglePicker: React.FC<{
 		const token = await getValidToken();
 		try {
 			const response = await fetch(
-				"http://localhost:4000/api/auth/google/status",
+				`${API_BASE_URL}/auth/google/status`,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -104,7 +105,7 @@ export const GooglePicker: React.FC<{
 		try {
 			// Get configuration from your backend
 			const response = await fetch(
-				"http://localhost:4000/api/auth/google/picker-config",
+				`${API_BASE_URL}/auth/google/picker-config`,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -161,7 +162,7 @@ export const GooglePicker: React.FC<{
 			// Send the selection to your backend
 			try {
 				const response = await fetch(
-					"http://localhost:4000/api/auth/google/picker-selection",
+					`${API_BASE_URL}/auth/google/picker-selection`,
 					{
 						method: "POST",
 						headers: {
@@ -191,7 +192,7 @@ export const GooglePicker: React.FC<{
 		const token = await getValidToken();
 
 		try {
-			const response = await fetch("http://localhost:4000/api/auth/google", {
+			const response = await fetch(`${API_BASE_URL}/auth/google`, {
 				method: "GET",
 				headers: {
 					Authorization: `Bearer ${token}`,
@@ -235,7 +236,7 @@ export const GooglePicker: React.FC<{
 		const token = await getValidToken();
 
 		try {
-			const response = await fetch("http://localhost:4000/api/test", {
+			const response = await fetch(`${API_BASE_URL}/api/test`, {
 				method: "GET",
 				headers: {
 					Authorization: `Bearer ${token}`,

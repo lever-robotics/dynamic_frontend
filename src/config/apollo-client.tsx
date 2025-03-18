@@ -2,6 +2,8 @@ import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/clien
 import { onError } from '@apollo/client/link/error';
 import { setContext } from '@apollo/client/link/context';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 // Add error logging
 const errorLink = onError(({ graphQLErrors, networkError }) => {
     if (graphQLErrors)
@@ -14,7 +16,7 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 });
 
 const httpLink = createHttpLink({
-    uri: 'http://localhost:4000/graphql',
+    uri: `${API_BASE_URL}/graphql`,
 });
 
 const authLink = setContext((_, { headers }) => {

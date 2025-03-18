@@ -1,13 +1,13 @@
 import { useAuth } from "../utils/AuthProvider";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const GoogleConnect = () => {
 	const { getValidToken } = useAuth();
-
 	const handleGoogleAuth = async () => {
 		const token = await getValidToken();
 
 		try {
-			const response = await fetch("http://localhost:4000/api/auth/google", {
+			const response = await fetch(`${API_BASE_URL}/auth/google`, {
 				method: "GET",
 				headers: {
 					Authorization: `Bearer ${token}`,
@@ -41,7 +41,7 @@ export const GoogleConnect = () => {
 		const token = await getValidToken();
 
 		try {
-			const response = await fetch("http://localhost:4000/api/test", {
+			const response = await fetch(`${API_BASE_URL}/api/test`, {
 				method: "GET",
 				headers: {
 					Authorization: `Bearer ${token}`,

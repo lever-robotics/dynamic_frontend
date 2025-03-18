@@ -17,6 +17,8 @@ import { supabase } from "./SupabaseClient";
 import { useEffect } from "react";
 import type { Blueprint } from "@/types/blueprint";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 const typeDefs = gql`# GraphQL Schema
       type Query {
         me: User
@@ -97,7 +99,7 @@ const AuthApolloProvider = ({
 
 	const authLink = createAuthLink(getValidToken);
 	const httpLink = createHttpLink({
-		uri: "http://localhost:4000/graphql",
+		uri: `${API_BASE_URL}/graphql`,
 	});
 
 	const client = new ApolloClient({
