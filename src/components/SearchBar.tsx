@@ -4,16 +4,16 @@ import { QueryBuilder } from '../utils/QueryBuilder';
 import { useQuery } from '@apollo/client';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useRef } from 'react';
-
+import type { Blueprint } from "@/types/blueprint";
 // Search Bar component props
 interface SearchBarProps {
-    schema: any;
+    blueprint: Blueprint;
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
-function useMetadataSearch(searchTerm: string, schema: any) {
-    /* Commenting out original search functionality for testing AI only
-    const metadataQuery = QueryBuilder.buildMetadataSearchQuery(schema);
+function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
+    const metadataQuery = QueryBuilder.buildMetadataSearchQuery(blueprint);
+
 
     const isTermContainedInSearch = (term: string) => {
         const searchLower = searchTerm.toLowerCase().replace(/\s/g, '');
@@ -28,16 +28,17 @@ function useMetadataSearch(searchTerm: string, schema: any) {
     };
 
     // Try to parse the search term as a number if possible
-    const numberTerm = !isNaN(parseInt(searchTerm)) ? parseInt(searchTerm) : null;
+    const numberTerm = !Number.isNaN(Number.parseInt(searchTerm)) ? Number.parseInt(searchTerm) : null;
 
     // Try to parse the search term as a date if it matches date format
     let dateTerm = null;
     if (searchTerm.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const dateObj = new Date(searchTerm);
-        if (!isNaN(dateObj.getTime())) {
+        if (!Number.isNaN(dateObj.getTime())) {
             dateTerm = searchTerm;
         }
     }
+    console.log("query",metadataQuery);
 
     const { data, loading, error } = useQuery(metadataQuery, {
         variables: {
@@ -54,66 +55,84 @@ function useMetadataSearch(searchTerm: string, schema: any) {
 
         /* Commenting out other search results for AI testing
         // Get schema object type matches
-        const schemaMatches = schema.entities
+        const schemaMatches = blueprint.entities
             .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
             .map(obj => ({
-                displayName: obj.name,
+                displayName: obj.displayName,
                 resultType: 'table',
                 matchedField: 'table',
-                matchedValue: obj.display_name,
-                sourceTable: obj.display_name,
+                matchedValue: obj.displayName,
+                sourceTable: obj.displayName,
                 nodeId: '',
                 typeName: ''
             }));
 
         if (!data) return schemaMatches;
 
-        const dbResults = Object.entries(data)
-            .flatMap(([tableName, tableData]: [string, any]) => {
-                const edges = tableData?.edges || [];
-                return edges.flatMap(({ node }) => {
-                    const nameMatches = [];
-                    if (node.name && node.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        nameMatches.push(['name', node.name]);
-                    }
-                    if (node.first_name && node.first_name.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        nameMatches.push(['first_name', node.first_name]);
-                    }
-                    if (node.last_name && node.last_name.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        nameMatches.push(['last_name', node.last_name]);
-                    }
+        const dbResults = Object.entries(data).flatMap(([entityName, entityData]: [string, any]) => {
+            console.log("entityName",entityName);
+            console.log("entityData",entityData);
+            return entityData.map((entity: any) => ({
+                displayName: entity.name || `${entity.firstName} ${entity.lastName}`,
+                resultType: 'object',
+                matchedField: 'name',
+                matchedValue: entity.name || `${entity.firstName} ${entity.lastName}`,
+                sourceTable: entityName,
+                nodeId: entity.nodeId,
+                typeName: entity.__typename
+            }));
+        });
 
-                    const otherMatches = Object.entries(node)
-                        .filter(([key, value]) => {
-                            if (key === 'name' || key === 'first_name' || key === 'last_name' ||
-                                key === '__typename' || key === 'nodeId') return false;
+        // const dbResults = Object.entries(data)
+        //     .flatMap(([tableName, tableData]: [string, any]) => {
+        //         console.log("tableName",tableName);
+        //         console.log("tableData",tableData);
+        //         const edges = tableData?.edges || [];
+        //         return edges.flatMap(({ node }) => {
+        //             // First check if name fields match the search term
+        //             const nameMatches = [];
+        //             if (node.name && node.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        //                 nameMatches.push(['name', node.name]);
+        //             }
+        //             if (node.first_name && node.first_name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        //                 nameMatches.push(['first_name', node.first_name]);
+        //             }
+        //             if (node.last_name && node.last_name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        //                 nameMatches.push(['last_name', node.last_name]);
+        //             }
 
-                            const stringValue = String(value).toLowerCase();
-                            const searchLower = searchTerm.toLowerCase();
+        //             // Then check other fields
+        //             const otherMatches = Object.entries(node)
+        //                 .filter(([key, value]) => {
+        //                     if (key === 'name' || key === 'first_name' || key === 'last_name' ||
+        //                         key === '__typename' || key === 'nodeId') return false;
 
-                            if (typeof value === 'number') {
-                                return numberTerm !== null && value === numberTerm;
-                            } else if (value instanceof Date || stringValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                                return dateTerm !== null && stringValue.includes(searchTerm);
-                            } else {
-                                return stringValue.includes(searchLower);
-                            }
-                        });
+        //                     const stringValue = String(value).toLowerCase();
+        //                     const searchLower = searchTerm.toLowerCase();
 
-                    const allMatches = [...nameMatches, ...otherMatches];
+        //                     if (typeof value === 'number') {
+        //                         return numberTerm !== null && value === numberTerm;
+        //                     } else if (value instanceof Date || stringValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        //                         return dateTerm !== null && stringValue.includes(searchTerm);
+        //                     } else {
+        //                         return stringValue.includes(searchLower);
+        //                     }
+        //                 });
 
-                    return allMatches.map(([field, value]) => ({
-                        displayName: node.name || `${node.first_name} ${node.last_name}`,
-                        matchedField: field,
-                        resultType: 'object',
-                        matchedValue: value,
-                        sourceTable: tableName.replace('Collection', ''),
-                        nodeId: node.nodeId,
-                        typeName: node.__typename
-                    }));
-                });
-            })
-            .filter(Boolean);
+        //             // Combine both name matches and other matches
+        //             const allMatches = [...nameMatches, ...otherMatches];
+        //             return allMatches.map(([field, value]) => ({
+        //                 displayName: node.name || `${node.first_name} ${node.last_name}`,
+        //                 matchedField: field,
+        //                 resultType: 'object',
+        //                 matchedValue: value,
+        //                 sourceTable: tableName.replace('Collection', ''),
+        //                 nodeId: node.nodeId,
+        //                 typeName: node.__typename
+        //             }));
+        //         });
+        //     })
+        //     .filter(Boolean);
 
         // Additional static results
         const additionalResults = [
@@ -143,17 +162,22 @@ function useMetadataSearch(searchTerm: string, schema: any) {
         const top_results = results.slice(0, 4);
         */
 
-        // Only return AI result for testing
-        return [{
-            displayName: `Ask AI about: "${searchTerm}"`,
-            resultType: 'ai',
-            matchedField: 'query',
-            matchedValue: searchTerm,
-            sourceTable: 'ai',
-            nodeId: '',
-            typeName: ''
-        }];
-    }, [searchTerm]); // removed data, numberTerm, dateTerm dependencies while commented out
+        //Add AI result if search term exists
+        if (searchTerm.trim()) {
+            const aiResult = {
+                displayName: `Ask AI about: "${searchTerm}"`,
+                resultType: 'ai',
+                matchedField: 'query',
+                matchedValue: searchTerm,
+                sourceTable: 'ai',
+                nodeId: '',
+                typeName: ''
+            };
+            top_results.push(aiResult);
+        }
+
+        return top_results;
+    }, [data, searchTerm, numberTerm, dateTerm, ]);
 
     return {
         results: formattedResults,
@@ -162,10 +186,13 @@ function useMetadataSearch(searchTerm: string, schema: any) {
     };
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQuery }) => {
+    // State for search input and potential results
     const [searchInput, setSearchInput] = useState('');
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const { results, loading } = useMetadataSearch(searchInput, blueprint);
+    console.log("results",results);
 
     const handleSearchFocus = () => {
         setIsSearchFocused(true);
@@ -178,7 +205,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
         setIsSearchFocused(false);
     };
 
-    const { results, loading } = useMetadataSearch(searchInput, schema);
+    // Use metadata search hook
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -186,16 +213,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
     };
 
     const handleResultSelect = (result: any) => {
-        /* Commenting out original object type finding
-        const objectType = schema.entities.find(
-            (type: any) => type.display_name === result.sourceTable
-        );
-        */
-
+        // Find the corresponding object type from schema
+        // const objectType = blueprint.entities.find(
+        //     (type: any) => type.display_name.toLowerCase() === result.sourceTable.toLowerCase()
+        // );
         updateSearchQuery({
-            id: 0, // was: objectType ? objectType.id : 0
-            name: 'AI Search',
-            type: 'ai' as SearchQueryType,
+            type: result.resultType as SearchQueryType,
+            name: result.displayName,
             metadata: {
                 /* Commenting out other metadata
                 objectType: result.sourceTable,
@@ -205,6 +229,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                 searchTerm: searchInput
             }
         });
+
+
+        // Clear input after selection
         setSearchInput('');
     };
 
@@ -255,9 +282,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({ schema, updateSearchQuery 
                             <>
                                 {results.map((result, index) => (
                                     <button
+                                        type="button"
                                         key={`${result.sourceTable}-${index}`}
                                         onClick={() => handleResultSelect(result)}
-                                        className={`flex flex-col p-2 pl-5 my-2 w-full min-w-0 rounded-xl box-border transition-all hover:bg-anakiwa-200 hover:shadow-sm ${index === 0 ? 'bg-anakiwa-50' : ''}`}
+                                        className="flex flex-col p-2 pl-5 my-2 w-full min-w-0 rounded-xl box-border transition-all hover:bg-anakiwa-200 hover:shadow-sm"
                                     >
                                         <div className="text-lg font-medium">
                                             {result.displayName}

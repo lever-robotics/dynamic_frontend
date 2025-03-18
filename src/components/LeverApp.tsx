@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
@@ -6,11 +7,10 @@ import { useAuthApollo } from '../utils/ApolloProvider';
 import QueryBuilderTester from './tests/QueryBuilderTester';
 
 // Define the search query type
-export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all';
+export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all' | 'graph';
 
 // Define the search query structure
 export interface SearchQuery {
-    id: number;
     name: string;
     type: SearchQueryType;
     metadata?: {
@@ -25,7 +25,6 @@ export interface SearchQuery {
 export const LeverApp: React.FC = () => {
     // State for search query
     const [searchQuery, setSearchQuery] = useState<SearchQuery>({
-        id: 0,
         type: 'all',
         name: '',
         metadata: {
@@ -43,9 +42,10 @@ export const LeverApp: React.FC = () => {
         setSearchQuery(query);
     };
 
-    const { jsonSchema } = useAuthApollo();
+    const { blueprint } = useAuthApollo();
 
-    if (jsonSchema === null) {
+
+    if (blueprint === null) {
         return (
             <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
                 <div className="flex flex-col items-center w-full h-full p-4">
@@ -56,10 +56,17 @@ export const LeverApp: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-row items-start w-screen h-screen overflow-hidden bg-portage-50">
-            {/* Left Sidebar */}
+        <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
+            {/* Show the schema being loaded */}
+            {blueprint === null && (
+                <div className="flex flex-col items-center w-full h-full p-4">
+                    <h2 className="text-xl font-bold">Loading schema...</h2>
+                </div>
+            )}
+
+            {/* Sidebar */}
             <SidebarComp
-                schema={jsonSchema}
+                blueprint={blueprint}
                 updateSearchQuery={updateSearchQuery}
                 searchQuery={searchQuery}
             />
@@ -68,13 +75,13 @@ export const LeverApp: React.FC = () => {
             <div className={`flex-1 flex flex-col items-center bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg my-2.5 transition-all duration-300 ${showAIChat ? 'mr-96' : ''}`}>
                 {/* Search Bar */}
                 <SearchBar
-                    schema={jsonSchema}
+                    blueprint={blueprint}
                     updateSearchQuery={updateSearchQuery}
                 />
 
                 {/* Display Data */}
                 <DisplayData
-                    schema={jsonSchema}
+                    blueprint={blueprint}
                     searchQuery={searchQuery}
                     updateSearchQuery={updateSearchQuery}
                     onAIChatVisibilityChange={setShowAIChat}

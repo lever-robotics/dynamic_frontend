@@ -1,14 +1,16 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { useAuth } from "@/utils/AuthProvider";
-import { SearchQuery } from "./LeverApp";
+import type { SearchQuery } from "./LeverApp";
 import { GoogleConnect } from "./GoogleConnect";
 import { GooglePicker } from "./GooglePicker";
+import type { Blueprint } from "@/types/blueprint";
 
-interface DisplayDataProps {
-	schema: any;
-	searchQuery: SearchQuery | null;
-	updateSearchQuery: (query: SearchQuery) => void;
-}
+// interface DisplayDataProps {
+// 	blueprint: Blueprint;
+// 	searchQuery: SearchQuery | null;
+// 	updateSearchQuery: (query: SearchQuery) => void;
+// }
 
 interface Setting {
 	id: string;
@@ -17,7 +19,7 @@ interface Setting {
 	enabled: boolean;
 }
 
-export const SettingsDisplay: React.FC<DisplayDataProps> = () => {
+export const SettingsDisplay: React.FC = () => {
 	const { signOut } = useAuth();
 	const [settings, setSettings] = useState<Setting[]>([
 		{
@@ -108,6 +110,7 @@ export const SettingsDisplay: React.FC<DisplayDataProps> = () => {
 						{/* <GoogleConnect /> */}
 						<GooglePicker onSelect={() => {}} />
 						<button
+							type="button"
 							onClick={handleSignOut}
 							className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
 						>

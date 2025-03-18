@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import {
     Users,
     Group,
@@ -7,9 +7,10 @@ import {
     Activity,
     Box,
     Settings,
-    Award
+    Award,
+    Network
 } from 'lucide-react';
-import { SearchQuery, SearchQueryType } from './LeverApp';
+import type { SearchQuery, SearchQueryType } from './LeverApp';
 import {
     Sidebar,
     SidebarContent,
@@ -21,19 +22,26 @@ import {
 } from "../components/ui/sidebar";
 import { AspectRatio } from "radix-ui";
 import logoImg from '../assets/cgLogo.png';
+import type { Blueprint } from "@/types/blueprint";
+import type { LucideIcon } from 'lucide-react';
 
 // Sidebar component props
 interface SidebarProps {
-    schema: any;
+    blueprint: Blueprint;
     updateSearchQuery: (query: SearchQuery) => void;
     searchQuery?: SearchQuery;
 }
 
-export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery, searchQuery }) => {
-    console.log('Sidebar searchQuery:', searchQuery);
+interface SidebarItem {
+    title: string;
+    id: number;
+    type: SearchQueryType;
+    icon: LucideIcon;
+}
 
+export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQuery }) => {
     // Icon mapping for different object types
-    const iconMapping: { [key: string]: any } = {
+    const iconMapping: { [key: string]: LucideIcon } = {
         Individual: Users,
         Volunteer: Users,
         Staff: Users,
@@ -50,30 +58,36 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery,
     };
 
     // Extract object types from schema
-    const schemaItems = schema.entities.map((type: any) => ({
+    const schemaItems: SidebarItem[] = blueprint.entities.map((type: any) => ({
         title: type.name,
         id: `${type.name}`,  // Generate unique ID from name,
         type: 'table' as SearchQueryType,
         icon: getIconForType(type.name)
     }));
 
-    const recommendationsItem = {
+    const recommendationsItem: SidebarItem = {
         title: 'Recommendations',
         id: 101,
         type: 'recommend' as SearchQueryType,
         icon: Award
     };
 
-    const settingsItem = {
-        title: 'Settings',
+    const graphItem: SidebarItem = {
+        title: 'Knowledge Graph',
         id: 102,
+        type: 'graph' as SearchQueryType,
+        icon: Network
+    };
+
+    const settingsItem: SidebarItem = {
+        title: 'Settings',
+        id: 103,
         type: 'settings' as SearchQueryType,
         icon: Settings
     };
 
     const handleLogoClick = () => {
         updateSearchQuery({
-            id: 0,
             type: 'all',
             name: '',
             metadata: {
@@ -82,11 +96,10 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery,
         });
     };
 
-    const handleItemClick = (item: any) => {
+    const handleItemClick = (item: SidebarItem) => {
         updateSearchQuery({
-            id: item.id,
             type: item.type,
-            name: item.name,
+            name: item.title,
             metadata: {
                 other: item.title.toLowerCase()
             }
@@ -95,7 +108,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery,
 
     const handleSettingsClick = () => {
         updateSearchQuery({
-            id: settingsItem.id,
             type: settingsItem.type,
             name: '',
             metadata: {
@@ -141,6 +153,14 @@ export const SidebarComp: React.FC<SidebarProps> = ({ schema, updateSearchQuery,
                                 >
                                     <recommendationsItem.icon className="w-4 h-4" />
                                     <span>{recommendationsItem.title}</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    onClick={() => handleItemClick(graphItem)}
+                                >
+                                    <graphItem.icon className="w-4 h-4" />
+                                    <span>{graphItem.title}</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         </SidebarMenu>

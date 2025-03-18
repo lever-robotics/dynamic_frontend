@@ -5,11 +5,12 @@ import TableDisplay from './TableDisplay';
 import ObjectDisplay from './ObjectDisplay';
 import RecommendDisplay from './RecommendDisplay';
 import SettingsDisplay from './SettingsDisplay';
+import KnowledgeGraph from './KnowledgeGraph';
 import { AIChatSidebar } from './AIChatSidebar';
 
 // Display component props
 interface DisplayDataProps {
-    schema: any;
+    blueprint: Blueprint;
     searchQuery: SearchQuery | null;
     updateSearchQuery: (query: SearchQuery) => void;
     onAIChatVisibilityChange: (show: boolean) => void;
@@ -17,7 +18,7 @@ interface DisplayDataProps {
 
 // Main DisplayData component
 export const DisplayData: React.FC<DisplayDataProps> = ({
-    schema,
+    blueprint,
     searchQuery,
     updateSearchQuery,
     onAIChatVisibilityChange
@@ -47,20 +48,22 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
         if (!searchQuery) {
             return <div className="p-4">No search query selected</div>;
         }
-
+        console.log("searchQuery.type", searchQuery.type);
         switch (searchQuery.type) {
             case 'object':
-                return <ObjectDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <ObjectDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'table':
-                return <TableDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <TableDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'ai':
                 return <div className="p-4">AI chat is available in the sidebar</div>;
             case 'recommend':
-                return <RecommendDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <RecommendDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'all':
-                return <AllDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <AllDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'settings':
-                return <SettingsDisplay schema={schema} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
+                return <SettingsDisplay />;
+            case 'graph':
+                return <KnowledgeGraph blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             default:
                 return <div className="p-4">Unknown search type</div>;
         }

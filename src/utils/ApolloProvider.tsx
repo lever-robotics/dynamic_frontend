@@ -15,6 +15,7 @@ import { makeExecutableSchema } from "@graphql-tools/schema";
 import { createContext, useContext, useState } from "react";
 import { supabase } from "./SupabaseClient";
 import { useEffect } from "react";
+import type { Blueprint } from "@/types/blueprint";
 
 const typeDefs = gql`# GraphQL Schema
       type Query {
@@ -32,7 +33,7 @@ const initialSchema = makeExecutableSchema({ typeDefs });
 interface ValidationProviderContextType {
 	fetchUserSchema: (userId: string) => Promise<void>;
 	schema: GraphQLSchema;
-	jsonSchema: any | null; // Add JSON schema to context
+	blueprint: any | null;
 }
 
 const ValidationProviderContext = createContext<
@@ -43,7 +44,7 @@ const AuthApolloProvider = ({
 	children,
 }: { children: React.ReactNode }) => {
 	const [schema, setSchema] = useState<GraphQLSchema>(initialSchema);
-	const [jsonSchema, setJsonSchema] = useState<any | null>(null);
+	const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
 	const { getValidToken, userId } = useAuth();
 
 	const updateSchema = (schema: string) => {
@@ -61,7 +62,7 @@ const AuthApolloProvider = ({
 	const fetchUserSchema = async (userId: string) => {
 		try {
 			// Fetch both schemas in parallel
-			const [schemaResponse, jsonSchemaResponse] = await Promise.all([
+			const [schemaResponse, blueprintResponse] = await Promise.all([
 				supabase
 					.from('user_configs')
 					.select('schema')
@@ -82,12 +83,12 @@ const AuthApolloProvider = ({
 			// }
 
 			// Handle JSON schema
-			if (jsonSchemaResponse.error) {
-				console.error("Error fetching JSON schema:", jsonSchemaResponse.error);
-			} else if (jsonSchemaResponse.data) {
-				const newSchema = jsonSchemaResponse.data.blueprint;
-				console.log('JSON Schema:', newSchema);
-				setJsonSchema(newSchema)
+			if (blueprintResponse.error) {
+				console.error("Error fetching blueprint:", blueprintResponse.error);
+			} else if (blueprintResponse.data) {
+				const newBlueprint = blueprintResponse.data.blueprint;
+				console.log('Blueprint:', newBlueprint);
+				setBlueprint(newBlueprint)
 			}
 		} catch (error) {
 			console.error("Error fetching schemas:", error);
@@ -96,7 +97,7 @@ const AuthApolloProvider = ({
 
 	const authLink = createAuthLink(getValidToken);
 	const httpLink = createHttpLink({
-		uri: "http://localhost:4001/graphql",
+		uri: "http://localhost:4000/graphql",
 	});
 
 	const client = new ApolloClient({
@@ -108,7 +109,7 @@ const AuthApolloProvider = ({
 	});
 
 	return (
-		<ValidationProviderContext.Provider value={{ fetchUserSchema, schema, jsonSchema }}>
+		<ValidationProviderContext.Provider value={{ fetchUserSchema, schema, blueprint }}>
 			<ApolloProvider client={client}>{children}</ApolloProvider>
 		</ValidationProviderContext.Provider>
 	);
