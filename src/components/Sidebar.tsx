@@ -21,7 +21,7 @@ import {
     SidebarMenuButton
 } from "../components/ui/sidebar";
 import { AspectRatio } from "radix-ui";
-import logoImg from '../assets/cgLogo.png';
+import logoImg from '@/assets/cgLogo.png';
 import type { Blueprint } from "@/types/blueprint";
 import type { LucideIcon } from 'lucide-react';
 

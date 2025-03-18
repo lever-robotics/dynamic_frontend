@@ -3,11 +3,11 @@ import * as React from "react";
 import { useState } from "react";
 import { BusinessInfoSection } from "./BusinessInfoSection";
 import { X } from "lucide-react";
-import gsIcon from "../../assets/gs.png";
-import odooIcon from "../../assets/odoo.png";
-import shopifyIcon from "../../assets/shopify.png";
-import quickBooksIcon from "../../assets/quick_books.png";
-import defaultLogo from "../../assets/default_business_logo.png";
+import gsIcon from "@/assets/gs.png";
+import odooIcon from "@/assets/odoo.png";
+import shopifyIcon from "@/assets/shopify.png";
+import quickBooksIcon from "@/assets/quick_books.png";
+import defaultLogo from "@/assets/default_business_logo.png";
 import { IntegrationModal } from "./IntegrationModal";
 
 export interface Integration {
