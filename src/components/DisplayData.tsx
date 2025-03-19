@@ -7,6 +7,7 @@ import RecommendDisplay from './RecommendDisplay';
 import SettingsDisplay from './SettingsDisplay';
 import KnowledgeGraph from './KnowledgeGraph';
 import { AIChatSidebar } from './AIChatSidebar';
+import { Blueprint } from '@/types/blueprint';
 
 // Display component props
 interface DisplayDataProps {
