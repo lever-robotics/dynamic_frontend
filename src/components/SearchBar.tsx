@@ -55,7 +55,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
     const formattedResults = React.useMemo(() => {
         if (!searchTerm.trim()) return [];
 
-        /* Commenting out other search results for AI testing
+        // Commenting out other search results for AI testing
         // Get schema object type matches
         const schemaMatches = blueprint.entities
             .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -178,7 +178,6 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
 
         const results = [...schemaMatches, ...dbResults, ...additionalResults];
         const top_results = results.slice(0, 4);
-        */
 
         //Add AI result if search term exists
         if (searchTerm.trim()) {

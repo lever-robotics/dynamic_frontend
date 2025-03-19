@@ -4,6 +4,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Highlight, themes } from 'prism-react-renderer';
 import { useAuth } from '../utils/AuthProvider';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 
 interface AIChatSidebarProps {
     searchQuery: SearchQuery;
@@ -265,7 +267,7 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery, onClo
             }
 
             console.log('🔑 Got valid token, creating WebSocket connection...');
-            const wsUrl = `ws://127.0.0.1:4000/ai/ws?token=${token}`;
+            const wsUrl = `${API_BASE_URL}/ai/ws?token=${token}`;
             console.log('🔗 Connecting to:', wsUrl);
 
             const ws = new WebSocket(wsUrl);
