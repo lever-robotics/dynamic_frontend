@@ -13,7 +13,7 @@ interface SearchBarProps {
 
 function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
     const metadataQuery = QueryBuilder.buildMetadataSearchQuery(blueprint);
-    console.log("metadataQuery",metadataQuery);
+    console.log("metadataQuery", metadataQuery);
 
 
     const isTermContainedInSearch = (term: string) => {
@@ -39,7 +39,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
             dateTerm = searchTerm;
         }
     }
-    console.log("query",metadataQuery);
+    console.log("query", metadataQuery);
 
     const { data, loading, error } = useQuery(metadataQuery, {
         variables: {
@@ -50,7 +50,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         skip: !searchTerm || searchTerm.trim() === '',
     });
 
-    console.log("data",data);
+    console.log("data", data);
 
     const formattedResults = React.useMemo(() => {
         if (!searchTerm.trim()) return [];
@@ -73,8 +73,9 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
 
         const dbResults = Object.entries(data).flatMap(([entityName, entityData]: [string, any]) => {
             return entityData.map((entity: any) => {
+                console.log("entity", entity);
                 const result = Object.entries(entity).find(([fieldName, fieldValue]: [string, any]) => {
-                    if(typeof fieldValue === "string") {
+                    if (typeof fieldValue === "string") {
                         if (fieldValue.toLowerCase().includes(searchTerm.toLowerCase())) {
                             return [fieldName, fieldValue];
                         }
@@ -82,15 +83,15 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
                         if (dateTerm && fieldValue.toLocaleDateString().toLowerCase().includes(dateTerm.toLowerCase())) {
                             return [fieldName, fieldValue];
                         }
-                    } else  {
+                    } else {
                         if (numberTerm && fieldValue.toString().toLowerCase().includes(numberTerm.toString().toLowerCase())) {
                             return [fieldName, fieldValue];
                         }
                     }
                 });
-                const [fieldName, fieldValue] = result || ['',''];
+                const [fieldName, fieldValue] = result || ['', ''];
                 return {
-                    displayName: entityName,
+                    displayName: entity.name || `${entity.firstName} ${entity.lastName}`,
                     resultType: 'object',
                     matchedField: fieldName,
                     matchedValue: fieldValue,
@@ -100,6 +101,8 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
                 };
             });
         });
+
+
 
         // const dbResults = Object.entries(data)
         //     .flatMap(([tableName, tableData]: [string, any]) => {
@@ -194,7 +197,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         }
 
         return top_results;
-    }, [data, searchTerm, numberTerm, dateTerm, ]);
+    }, [data, searchTerm, numberTerm, dateTerm,]);
 
     return {
         results: formattedResults,
@@ -209,7 +212,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const { results, loading } = useMetadataSearch(searchInput, blueprint);
-    console.log("results",results);
+    console.log("results", results);
 
     const handleSearchFocus = () => {
         setIsSearchFocused(true);
@@ -234,7 +237,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
         // const objectType = blueprint.entities.find(
         //     (type: any) => type.display_name.toLowerCase() === result.sourceTable.toLowerCase()
         // );
-        console.log("result\n\n",result);
+        console.log("result\n\n", result);
         updateSearchQuery({
             type: result.resultType as SearchQueryType,
             name: result.displayName,
@@ -308,13 +311,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
                                         <div className="text-lg font-medium">
                                             {result.displayName}
                                         </div>
-                                        {/* Commenting out additional result details
                                         {result.sourceTable !== 'ai' && (
                                             <div className="text-sm font-light">
                                                 {result.matchedField}: {result.matchedValue}
                                             </div>
                                         )}
-                                        */}
                                     </button>
                                 ))}
                             </>
