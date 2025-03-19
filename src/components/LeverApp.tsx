@@ -4,6 +4,8 @@ import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
+import QueryBuilderTester from './tests/QueryBuilderTester';
+
 // Define the search query type
 export type SearchQueryType = 'object' | 'table' | 'ai' | 'recommend' | 'settings' | 'all' | 'graph';
 
@@ -31,8 +33,12 @@ export const LeverApp: React.FC = () => {
         },
     });
 
+    // Add state for AI chat visibility
+    const [showAIChat, setShowAIChat] = useState(false);
+
     // Function to update search query
     const updateSearchQuery = (query: SearchQuery) => {
+        console.log('Updating search query:', query);
         setSearchQuery(query);
     };
 
@@ -62,9 +68,11 @@ export const LeverApp: React.FC = () => {
             <SidebarComp
                 blueprint={blueprint}
                 updateSearchQuery={updateSearchQuery}
+                searchQuery={searchQuery}
             />
 
-            <div className='flex flex-col items-center w-full mr-3 bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg'>
+            {/* Middle Content Area */}
+            <div className={`flex-1 flex flex-col items-center bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg my-2.5 transition-all duration-300 ${showAIChat ? 'mr-96' : ''}`}>
                 {/* Search Bar */}
                 <SearchBar
                     blueprint={blueprint}
@@ -76,6 +84,7 @@ export const LeverApp: React.FC = () => {
                     blueprint={blueprint}
                     searchQuery={searchQuery}
                     updateSearchQuery={updateSearchQuery}
+                    onAIChatVisibilityChange={setShowAIChat}
                 />
 
                 {/* Display JSON */}
@@ -85,7 +94,6 @@ export const LeverApp: React.FC = () => {
 
                 {/* For debugging queries */}
                 {/* <QueryBuilderTester schema={jsonSchema} /> */}
-
             </div>
         </div>
     );

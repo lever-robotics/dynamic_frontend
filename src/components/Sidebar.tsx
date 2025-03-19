@@ -29,6 +29,7 @@ import type { LucideIcon } from 'lucide-react';
 interface SidebarProps {
     blueprint: Blueprint;
     updateSearchQuery: (query: SearchQuery) => void;
+    searchQuery?: SearchQuery;
 }
 
 interface SidebarItem {

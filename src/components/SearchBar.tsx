@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import type { SearchQuery, SearchQueryType } from './LeverApp';
+import React, { useState, useCallback, KeyboardEvent } from 'react';
+import { SearchQuery, SearchQueryType } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import { useQuery } from '@apollo/client';
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
@@ -11,7 +11,6 @@ interface SearchBarProps {
     updateSearchQuery: (query: SearchQuery) => void;
 }
 
-
 function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
     const metadataQuery = QueryBuilder.buildMetadataSearchQuery(blueprint);
     console.log("metadataQuery",metadataQuery);
@@ -20,16 +19,12 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
     const isTermContainedInSearch = (term: string) => {
         const searchLower = searchTerm.toLowerCase().replace(/\s/g, '');
         const termLower = term.toLowerCase().replace(/\s/g, '');
-
-        // Check if all characters in the search term are in the target term, 
-        // maintaining their relative order
         let searchIndex = 0;
         for (let i = 0; i < termLower.length && searchIndex < searchLower.length; i++) {
             if (termLower[i] === searchLower[searchIndex]) {
                 searchIndex++;
             }
         }
-
         return searchIndex === searchLower.length;
     };
 
@@ -58,8 +53,9 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
     console.log("data",data);
 
     const formattedResults = React.useMemo(() => {
-        if (!data && !searchTerm) return [];
+        if (!searchTerm.trim()) return [];
 
+        /* Commenting out other search results for AI testing
         // Get schema object type matches
         const schemaMatches = blueprint.entities
             .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -180,12 +176,9 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
             isTermContainedInSearch(option.displayName)
         );
 
-        // Combine schema matches and database results, with schema matches first
         const results = [...schemaMatches, ...dbResults, ...additionalResults];
-
-
-        //take top 4 results
         const top_results = results.slice(0, 4);
+        */
 
         //Add AI result if search term exists
         if (searchTerm.trim()) {
@@ -206,8 +199,8 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
 
     return {
         results: formattedResults,
-        loading: loading && searchTerm.trim() !== '',
-        error
+        loading: false, // was: loading && searchTerm.trim() !== ''
+        error: null // was: error
     };
 }
 
@@ -224,7 +217,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
     };
 
     const handleSearchBlur = (e: React.FocusEvent) => {
-        // If clicking within search container or results, don't blur
         if (searchContainerRef.current?.contains(e.relatedTarget as Node)) {
             return;
         }
@@ -233,13 +225,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
 
     // Use metadata search hook
 
-    // Handle input change
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchInput(value);
     };
 
-    // Handle result selection
     const handleResultSelect = (result: any) => {
         // Find the corresponding object type from schema
         // const objectType = blueprint.entities.find(
@@ -250,9 +240,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
             type: result.resultType as SearchQueryType,
             name: result.displayName,
             metadata: {
+                /* Commenting out other metadata
                 objectType: result.sourceTable,
                 objectID: result.nodeId,
                 other: result.displayName,
+                */
                 searchTerm: searchInput
             }
         });
@@ -260,6 +252,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
 
         // Clear input after selection
         setSearchInput('');
+    };
+
+    const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && results.length > 0) {
+            e.preventDefault();
+            handleResultSelect(results[0]);
+        }
     };
 
     return (
@@ -280,7 +279,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
                                 onChange={handleInputChange}
                                 onFocus={handleSearchFocus}
                                 onBlur={handleSearchBlur}
-                                placeholder="Search any field or ask AI..."
+                                onKeyPress={handleKeyPress}
+                                placeholder="Ask AI anything..."
                                 className="w-full border-none bg-transparent placeholder:font-light font-base text-[14px] focus:outline-none text-portage-950"
                             />
                         </div>
@@ -290,7 +290,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
                 {/* Floating Results Container */}
                 {searchInput.trim() !== '' && (
                     <div
-                        className={`mt-2 w-full bg-white rounded-xl ${isSearchFocused ? 'opacity-1' : 'opacity-0'}`}
+                        className={`mt-2 w-full bg-white rounded-xl shadow-lg ${isSearchFocused ? 'opacity-1' : 'opacity-0'}`}
                         tabIndex={-1}
                     >
                         {loading ? (
@@ -309,11 +309,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
                                         <div className="text-lg font-medium">
                                             {result.displayName}
                                         </div>
+                                        {/* Commenting out additional result details
                                         {result.sourceTable !== 'ai' && (
                                             <div className="text-sm font-light">
                                                 {result.matchedField}: {result.matchedValue}
                                             </div>
                                         )}
+                                        */}
                                     </button>
                                 ))}
                             </>
