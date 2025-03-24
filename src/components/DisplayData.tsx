@@ -56,7 +56,7 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
             case 'table':
                 return <TableDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'ai':
-                return <div className="p-4">AI chat is available in the sidebar</div>;
+                return <div></div>;
             case 'recommend':
                 return <RecommendDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'all':
@@ -77,7 +77,7 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
                 <pre>{JSON.stringify(searchQuery, null, 2)}</pre>
             </div> */}
             {renderDisplay()}
-            <div className={`fixed right-0 top-0 h-full w-96 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${showAIChat ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed right-0 top-0 h-full w-[499px] bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${showAIChat ? 'translate-x-0' : 'translate-x-full'}`}>
                 {showAIChat && currentAISearchQuery && (
                     <AIChatSidebar
                         searchQuery={currentAISearchQuery}
