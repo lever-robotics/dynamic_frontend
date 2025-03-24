@@ -1,9 +1,10 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
+import { Blueprint } from '@/types/blueprint';
 // import QueryBuilderTester from './tests/QueryBuilderTester';
 
 // Define the search query type
