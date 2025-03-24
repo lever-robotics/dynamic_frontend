@@ -271,13 +271,13 @@ export const GooglePicker: React.FC<{
 					Select Spreadsheet
 				</Button>
 			)}
-			<button
+			{/* <button
 				type="button"
 				onClick={handleTest}
 				className="bg-blue-500 text-white px-4 py-2 rounded-md mb-2"
 			>
 				Test API *
-			</button>
+			</button> */}
 			{/* <div className="text-xs text-gray-500">
 				Auth Status: {isAuthorized ? "Connected" : "Not Connected"}
 			</div> */}

@@ -117,7 +117,7 @@ const BusinessSetup: React.FC<BusinessSetupProps> = ({ onClose }) => {
   const [isHovering, setIsHovering] = useState<string | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
-      name: "Google Sheets",
+      name: "Google",
       icon: gsIcon,
       description: "Connect your spreadsheets",
       isAvailable: true,

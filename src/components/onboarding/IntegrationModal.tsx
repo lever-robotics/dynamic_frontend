@@ -3,6 +3,7 @@ import * as React from "react";
 import { X } from "lucide-react";
 import type { Integration } from "./BusinessSetup";
 import { OdooConnect, type OdooFormData } from "./OdooConnect";
+import { GooglePicker } from "../GooglePicker";
 
 interface IntegrationModalProps {
     integration: Integration;
@@ -52,6 +53,8 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
                                 We're working hard to bring you this integration. Stay tuned for updates.
                             </p>
                         </div>
+                    ) : integration.name === "Google" ? (
+                        <GooglePicker onSelect={() => { }} />
                     ) : integration.name === "Odoo" ? (
                         <OdooConnect onSubmit={handleOdooSubmit} />
                     ) : (
