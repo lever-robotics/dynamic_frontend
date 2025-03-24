@@ -62,7 +62,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         skip: !debouncedSearchTerm || debouncedSearchTerm.trim() === '',
     });
 
-    
+
 
     console.log("data", data);
 
@@ -196,7 +196,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         const results = [...schemaMatches, ...dbResults, ...additionalResults];
         const top_results = results.slice(0, 4);
 
-        if(debouncedSearchTerm === "") {
+        if (debouncedSearchTerm === "") {
             return {
                 results: [],
                 loading: false,
@@ -269,7 +269,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
                 objectID: result.nodeId,
                 other: result.displayName,
                 */
-               objectID: result.nodeId,
+                objectID: result.nodeId,
                 searchTerm: searchInput,
                 objectType: result.typeName,
                 other: result.sourceTable
@@ -282,9 +282,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
     };
 
     const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && results.length > 0) {
+        const resultsArray = Array.isArray(results) ? results : results.results;
+        if (e.key === 'Enter' && resultsArray.length > 0) {
             e.preventDefault();
-            handleResultSelect(results[0]);
+            handleResultSelect(resultsArray[0]);
         }
     };
 
@@ -326,7 +327,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
                             </div>
                         ) : (
                             <>
-                                {results.map((result, index) => (
+                                {(Array.isArray(results) ? results : results.results).map((result, index) => (
                                     <button
                                         type="button"
                                         key={`${result.sourceTable}-${index}`}
