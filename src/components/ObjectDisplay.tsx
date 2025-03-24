@@ -6,15 +6,15 @@ import MainEntityData from './MainEntityData';
 import type { Blueprint, GraphQLResponse } from '@/types/blueprint';
 
 // Custom hook for fetching object data and connections
-export function useObjectData(blueprint: Blueprint, objectId: string | undefined, typeName: string | undefined): GraphQLResponse {
+export function useObjectData(blueprint: Blueprint, nodeId: string | undefined, typeName: string | undefined): GraphQLResponse {
     // Generate connections query for the specific object type
-    if(!typeName) {
-        return {
-            data: null,
-            loading: false,
-            error: new Error('No type name found')
-        };
-    }
+    // if(!typeName) {
+    //     return {
+    //         data: null,
+    //         loading: false,
+    //         error: new Error('No type name found')
+    //     };
+    // }
 
     const connectionsQuery = QueryBuilder.buildConnectionsQuery(blueprint, typeName);
 
@@ -25,11 +25,11 @@ export function useObjectData(blueprint: Blueprint, objectId: string | undefined
             error: new Error('No connections query found')
             };
     }
-
+    console.log("connectionsQuery", connectionsQuery);
     // Execute the query
     const { data, loading, error } = useQuery(connectionsQuery, {
-        variables: { nodeId: objectId },
-        skip: !objectId || !typeName
+        variables: { nodeId: nodeId },
+        // skip: !nodeId || !typeName
     });
 
     console.log('Raw GraphQL Response:', data);
@@ -50,6 +50,7 @@ export const ObjectDisplay: React.FC<{
 }> = ({ blueprint, searchQuery }) => {
     // Find object type from schema using the objectType in search query metadata
     const objectType = searchQuery.metadata?.objectType;
+    console.log("searchQuery", searchQuery);
     // const objectDef = blueprint.entities.find(
     //     (type: any) => type.name === objectType
     // );

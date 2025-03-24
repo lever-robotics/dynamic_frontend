@@ -50,8 +50,10 @@ export const DisplayData: React.FC<DisplayDataProps> = ({
             return <div className="p-4">No search query selected</div>;
         }
         console.log("searchQuery.type", searchQuery.type);
+        console.log("searchQuery", searchQuery);
         switch (searchQuery.type) {
             case 'object':
+                console.log("object here");
                 return <ObjectDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;
             case 'table':
                 return <TableDisplay blueprint={blueprint} searchQuery={searchQuery} updateSearchQuery={updateSearchQuery} />;

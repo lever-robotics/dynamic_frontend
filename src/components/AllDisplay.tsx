@@ -80,7 +80,7 @@ export const AllDisplay: React.FC<{
 						result.data && (
 							<Table
 								key={result.tableName}
-								data={result.data}
+								data={result.data.slice(0,25)}
 								tableName={result.tableName}
 								updateSearchQuery={updateSearchQuery}
 							/>

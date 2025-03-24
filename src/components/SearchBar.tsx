@@ -25,6 +25,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
     }, [searchTerm]);
 
     const metadataQuery = QueryBuilder.buildMetadataSearchQuery(blueprint);
+
     console.log("metadataQuery", metadataQuery);
 
     const isTermContainedInSearch = (term: string) => {
@@ -61,6 +62,8 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         skip: !debouncedSearchTerm || debouncedSearchTerm.trim() === '',
     });
 
+    
+
     console.log("data", data);
 
     const formattedResults = React.useMemo(() => {
@@ -75,7 +78,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
                 resultType: 'table',
                 matchedField: 'table',
                 matchedValue: obj.displayName,
-                sourceTable: obj.displayName,
+                sourceTable: obj.name,
                 nodeId: '',
                 typeName: ''
             }));
@@ -193,6 +196,14 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         const results = [...schemaMatches, ...dbResults, ...additionalResults];
         const top_results = results.slice(0, 4);
 
+        if(debouncedSearchTerm === "") {
+            return {
+                results: [],
+                loading: false,
+                error: null
+            };
+        }
+
         //Add AI result if search term exists
         if (debouncedSearchTerm.trim()) {
             const aiResult = {
@@ -251,14 +262,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
         console.log("result\n\n", result);
         updateSearchQuery({
             type: result.resultType as SearchQueryType,
-            name: result.displayName,
+            name: result.sourceTable,
             metadata: {
                 /* Commenting out other metadata
                 objectType: result.sourceTable,
                 objectID: result.nodeId,
                 other: result.displayName,
                 */
-                searchTerm: searchInput
+               objectID: result.nodeId,
+                searchTerm: searchInput,
+                objectType: result.typeName,
+                other: result.sourceTable
             }
         });
 
@@ -292,7 +306,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ blueprint, updateSearchQue
                                 onChange={handleInputChange}
                                 onFocus={handleSearchFocus}
                                 onBlur={handleSearchBlur}
-                                onKeyPress={handleKeyPress}
+                                onKeyDown={handleKeyPress}
                                 placeholder="Ask AI anything..."
                                 className="w-full border-none bg-transparent placeholder:font-light font-base text-[14px] focus:outline-none text-portage-950"
                             />
