@@ -81,6 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setUserId(null);
 	};
 
+	/**
+	 * Signs in a user with email & password (PKCE flow).
+	 */
+	async function signIn({ email, password }: Credentials) {
+		const { data, error } = await supabase.auth.signInWithPassword({
+			email,
+			password,
+		});
+
+		if (error) throw error;
+		setUserId(data.user?.id);
+		return data;
+	}
+
 	return (
 		<AuthContext.Provider
 			value={{ getValidToken, isAuthenticated, signUp, signIn, signOut, userId }}
@@ -103,19 +117,6 @@ export function useAuth() {
  */
 async function signUp({ email, password }: Credentials) {
 	const { data, error } = await supabase.auth.signUp({
-		email,
-		password,
-	});
-
-	if (error) throw error;
-	return data;
-}
-
-/**
- * Signs in a user with email & password (PKCE flow).
- */
-async function signIn({ email, password }: Credentials) {
-	const { data, error } = await supabase.auth.signInWithPassword({
 		email,
 		password,
 	});

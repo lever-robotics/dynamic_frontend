@@ -1,9 +1,10 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SidebarComp } from '../components/Sidebar';
 import { SearchBar } from '../components/SearchBar';
 import { DisplayData } from '../components/DisplayData';
 import { useAuthApollo } from '../utils/ApolloProvider';
+import { Blueprint } from '@/types/blueprint';
 // import QueryBuilderTester from './tests/QueryBuilderTester';
 
 // Define the search query type
@@ -49,7 +50,7 @@ export const LeverApp: React.FC = () => {
         return (
             <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
                 <div className="flex flex-col items-center w-full h-full p-4">
-                    <h2 className="text-xl font-bold">Loading schema...</h2>
+                    <h2 className="text-xl font-bold">Loading schema haha...</h2>
                 </div>
             </div>
         );
