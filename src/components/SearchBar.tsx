@@ -1,4 +1,4 @@
-import React, { useState, useCallback, KeyboardEvent } from 'react';
+import React, { useState, useCallback, KeyboardEvent, useEffect } from 'react';
 import { SearchQuery, SearchQueryType } from './LeverApp';
 import { QueryBuilder } from '../utils/QueryBuilder';
 import { useQuery } from '@apollo/client';
@@ -12,12 +12,23 @@ interface SearchBarProps {
 }
 
 function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500);
+
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [searchTerm]);
+
     const metadataQuery = QueryBuilder.buildMetadataSearchQuery(blueprint);
     console.log("metadataQuery", metadataQuery);
 
-
     const isTermContainedInSearch = (term: string) => {
-        const searchLower = searchTerm.toLowerCase().replace(/\s/g, '');
+        const searchLower = debouncedSearchTerm.toLowerCase().replace(/\s/g, '');
         const termLower = term.toLowerCase().replace(/\s/g, '');
         let searchIndex = 0;
         for (let i = 0; i < termLower.length && searchIndex < searchLower.length; i++) {
@@ -29,36 +40,36 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
     };
 
     // Try to parse the search term as a number if possible
-    const numberTerm = !Number.isNaN(Number.parseInt(searchTerm)) ? Number.parseInt(searchTerm) : null;
+    const numberTerm = !Number.isNaN(Number.parseInt(debouncedSearchTerm)) ? Number.parseInt(debouncedSearchTerm) : null;
 
     // Try to parse the search term as a date if it matches date format
     let dateTerm = null;
-    if (searchTerm.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const dateObj = new Date(searchTerm);
+    if (debouncedSearchTerm.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const dateObj = new Date(debouncedSearchTerm);
         if (!Number.isNaN(dateObj.getTime())) {
-            dateTerm = searchTerm;
+            dateTerm = debouncedSearchTerm;
         }
     }
     console.log("query", metadataQuery);
 
     const { data, loading, error } = useQuery(metadataQuery, {
         variables: {
-            searchTerm: `%${searchTerm}%`,
+            searchTerm: `%${debouncedSearchTerm}%`,
             numberTerm: numberTerm,
             dateTerm: dateTerm
         },
-        skip: !searchTerm || searchTerm.trim() === '',
+        skip: !debouncedSearchTerm || debouncedSearchTerm.trim() === '',
     });
 
     console.log("data", data);
 
     const formattedResults = React.useMemo(() => {
-        if (!searchTerm.trim()) return [];
+        if (!debouncedSearchTerm.trim()) return [];
 
         // Commenting out other search results for AI testing
         // Get schema object type matches
         const schemaMatches = blueprint.entities
-            .filter(obj => obj.name.toLowerCase().includes(searchTerm.toLowerCase()))
+            .filter(obj => obj.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
             .map(obj => ({
                 displayName: obj.displayName,
                 resultType: 'table',
@@ -76,7 +87,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
                 console.log("entity", entity);
                 const result = Object.entries(entity).find(([fieldName, fieldValue]: [string, any]) => {
                     if (typeof fieldValue === "string") {
-                        if (fieldValue.toLowerCase().includes(searchTerm.toLowerCase())) {
+                        if (fieldValue.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) {
                             return [fieldName, fieldValue];
                         }
                     } else if (typeof fieldValue === "object" && fieldValue !== null && fieldValue.constructor.name === "Date") {
@@ -161,7 +172,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
                 displayName: 'Recommendations',
                 resultType: 'recommend',
                 matchedField: 'suggestions',
-                matchedValue: searchTerm,
+                matchedValue: debouncedSearchTerm,
                 sourceTable: 'recommend',
                 nodeId: '',
                 typeName: ''
@@ -170,7 +181,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
                 displayName: 'Settings',
                 resultType: 'settings',
                 matchedField: 'configuration',
-                matchedValue: searchTerm,
+                matchedValue: debouncedSearchTerm,
                 sourceTable: 'settings',
                 nodeId: '',
                 typeName: ''
@@ -183,12 +194,12 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         const top_results = results.slice(0, 4);
 
         //Add AI result if search term exists
-        if (searchTerm.trim()) {
+        if (debouncedSearchTerm.trim()) {
             const aiResult = {
-                displayName: `Ask AI about: "${searchTerm}"`,
+                displayName: `Ask AI about: "${debouncedSearchTerm}"`,
                 resultType: 'ai',
                 matchedField: 'query',
-                matchedValue: searchTerm,
+                matchedValue: debouncedSearchTerm,
                 sourceTable: 'ai',
                 nodeId: '',
                 typeName: ''
@@ -197,7 +208,7 @@ function useMetadataSearch(searchTerm: string, blueprint: Blueprint) {
         }
 
         return top_results;
-    }, [data, searchTerm, numberTerm, dateTerm,]);
+    }, [data, debouncedSearchTerm, numberTerm, dateTerm,]);
 
     return {
         results: formattedResults,

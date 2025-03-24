@@ -56,7 +56,8 @@ const AuthApolloProvider = ({
 
 	useEffect(() => {
 		if (userId) {
-			console.log('User ID login, fetching schema:', userId);
+			console.log('User login')
+			// , fetching schema:', userId);
 			fetchUserSchema(userId);
 		}
 	}, [userId]);
@@ -91,6 +92,7 @@ const AuthApolloProvider = ({
 				const newBlueprint = blueprintResponse.data.blueprint;
 				console.log('Blueprint:', newBlueprint);
 				setBlueprint(newBlueprint)
+				//Rerender the lever component
 			}
 		} catch (error) {
 			console.error("Error fetching schemas:", error);

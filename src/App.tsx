@@ -2,9 +2,7 @@
 import { LeverApp } from './components/LeverApp';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import BusinessSetup from './components/onboarding/BusinessSetup';
-import { useState } from 'react';
-
-// For Testing
+import { useEffect, useState } from 'react';
 import { useAuth } from './utils/AuthProvider';
 import AuthModal from './components/AuthModal';
 

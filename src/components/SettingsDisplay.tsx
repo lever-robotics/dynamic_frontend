@@ -1,10 +1,9 @@
 import type React from "react";
 import { useState } from "react";
 import { useAuth } from "@/utils/AuthProvider";
-import type { SearchQuery } from "./LeverApp";
-import { GoogleConnect } from "./GoogleConnect";
-import { GooglePicker } from "./GooglePicker";
-import type { Blueprint } from "@/types/blueprint";
+// import { GoogleConnect } from "./GoogleConnect";
+// import { GooglePicker } from "./GooglePicker";
+// import type { Blueprint } from "@/types/blueprint";
 
 // interface DisplayDataProps {
 // 	blueprint: Blueprint;
@@ -88,18 +87,16 @@ export const SettingsDisplay: React.FC = () => {
 								</div>
 								<button
 									type="button"
-									className={`${
-										setting.enabled ? "bg-indigo-600" : "bg-gray-200"
-									} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2`}
+									className={`${setting.enabled ? "bg-primary" : "bg-gray-200"
+										} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
 									role="switch"
 									aria-checked={setting.enabled}
 									onClick={() => handleToggle(setting.id)}
 								>
 									<span
 										aria-hidden="true"
-										className={`${
-											setting.enabled ? "translate-x-5" : "translate-x-0"
-										} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+										className={`${setting.enabled ? "translate-x-5" : "translate-x-0"
+											} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
 									/>
 								</button>
 							</div>
@@ -108,11 +105,11 @@ export const SettingsDisplay: React.FC = () => {
 
 					<div className="mt-8 pt-6 border-t border-gray-200">
 						{/* <GoogleConnect /> */}
-						<GooglePicker onSelect={() => {}} />
+						{/* <GooglePicker onSelect={() => { }} /> */}
 						<button
 							type="button"
 							onClick={handleSignOut}
-							className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+							className="w-3/4 mx-auto flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
 						>
 							Sign Out
 						</button>

@@ -45,17 +45,6 @@ export const LeverApp: React.FC = () => {
 
     const { blueprint } = useAuthApollo();
 
-
-    if (blueprint === null) {
-        return (
-            <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
-                <div className="flex flex-col items-center w-full h-full p-4">
-                    <h2 className="text-xl font-bold">Loading schema haha...</h2>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
             {/* Show the schema being loaded */}

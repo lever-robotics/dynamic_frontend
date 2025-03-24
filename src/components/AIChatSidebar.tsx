@@ -585,9 +585,14 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery, onClo
                                 <div className="font-medium text-blue-700 mb-2">GraphQL Query</div>
                                 <pre className="bg-white p-3 rounded overflow-x-auto border border-blue-100">
                                     <code className="text-sm text-blue-800 whitespace-pre-wrap">
-                                        {typeof tool.arguments.query === 'string'
-                                            ? tool.arguments.query
-                                            : tool.arguments.query.query}
+                                        {(() => {
+                                            const queryText = typeof tool.arguments.query === 'string'
+                                                ? tool.arguments.query
+                                                : tool.arguments.query.query;
+                                            return queryText.length > 200
+                                                ? queryText.substring(0, 200) + '...'
+                                                : queryText;
+                                        })()}
                                     </code>
                                 </pre>
                             </div>
@@ -601,7 +606,12 @@ export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery, onClo
                                 </div>
                                 <pre className={`bg-white p-3 rounded overflow-x-auto border ${tool.error ? 'border-red-100' : 'border-green-100'}`}>
                                     <code className={`text-sm ${tool.error ? 'text-red-800' : 'text-green-800'} whitespace-pre-wrap`}>
-                                        {tool.error || JSON.stringify(tool.result, null, 2)}
+                                        {(() => {
+                                            const responseText = tool.error || JSON.stringify(tool.result, null, 2);
+                                            return responseText.length > 150
+                                                ? responseText.substring(0, 150) + '...'
+                                                : responseText;
+                                        })()}
                                     </code>
                                 </pre>
                             </div>
