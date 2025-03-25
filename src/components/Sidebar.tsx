@@ -1,16 +1,7 @@
 import type React from 'react';
 import {
-    Users,
-    Group,
-    FileText,
-    Calendar,
-    Activity,
-    Box,
     Settings,
-    Award,
-    Network
 } from 'lucide-react';
-import type { SearchQuery, SearchQueryType } from './LeverApp';
 import {
     Sidebar,
     SidebarContent,
@@ -22,98 +13,19 @@ import {
 } from "../components/ui/sidebar";
 import { AspectRatio } from "radix-ui";
 import logoImg from '@/assets/cgLogo.png';
-import type { Blueprint } from "@/types/blueprint";
-import type { LucideIcon } from 'lucide-react';
 
-// Sidebar component props
-interface SidebarProps {
-    blueprint: Blueprint;
-    updateSearchQuery: (query: SearchQuery) => void;
-    searchQuery?: SearchQuery;
-}
-
-interface SidebarItem {
-    title: string;
-    // id: number;
-    type: SearchQueryType;
-    icon: LucideIcon;
-}
-
-export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQuery }) => {
-    // Icon mapping for different object types
-    const iconMapping: { [key: string]: LucideIcon } = {
-        Individual: Users,
-        Volunteer: Users,
-        Staff: Users,
-        Group: Group,
-        ProgressNote: FileText,
-        Event: Calendar,
-        Activity: Activity,
-        Equipment: Box,
-    };
-
-    // Function to get icon for a type
-    const getIconForType = (typeName: string) => {
-        return iconMapping[typeName] || Box;
-    };
-
-    // Extract object types from schema
-    const schemaItems: SidebarItem[] = blueprint.entities.map((type: any) => ({
-        title: type.name,
-        // id: `${type.name}`,  // Generate unique ID from name,
-        type: 'table' as SearchQueryType,
-        icon: getIconForType(type.name)
-    }));
-
-    const recommendationsItem: SidebarItem = {
-        title: 'Recommendations',
-        // id: 101,
-        type: 'recommend' as SearchQueryType,
-        icon: Award
-    };
-
-    const graphItem: SidebarItem = {
-        title: 'Knowledge Graph',
-        // id: 102,
-        type: 'graph' as SearchQueryType,
-        icon: Network
-    };
-
-    const settingsItem: SidebarItem = {
-        title: 'Settings',
-        // id: 103,
-        type: 'settings' as SearchQueryType,
-        icon: Settings
-    };
+export const SidebarComp: React.FC = () => {
 
     const handleLogoClick = () => {
-        updateSearchQuery({
-            type: 'all',
-            name: '',
-            metadata: {
-                other: 'home'
-            }
-        });
+        // TODO: Add home page
     };
 
-    const handleItemClick = (item: SidebarItem) => {
-        updateSearchQuery({
-            type: item.type,
-            name: item.title,
-            metadata: {
-                other: item.title.toLowerCase()
-            }
-        });
+    const handleItemClick = () => {
+        // TODO: Add item click
     };
 
     const handleSettingsClick = () => {
-        updateSearchQuery({
-            type: settingsItem.type,
-            name: '',
-            metadata: {
-                other: settingsItem.title.toLowerCase()
-            }
-        });
+        // TODO: Add settings click
     };
 
     return (
@@ -122,6 +34,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQue
             <div
                 className="p-6 pl-4 cursor-pointer hover:bg-anakiwa-50 transition-colors"
                 onClick={handleLogoClick}
+                onKeyDown={handleLogoClick}
             >
                 <AspectRatio.Root ratio={22 / 6}>
                     <img
@@ -137,32 +50,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQue
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {schemaItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        onClick={() => handleItemClick(item)}
-                                    >
-                                        <item.icon className="w-4 h-4" />
-                                        <span>{item.title}</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    onClick={() => handleItemClick(recommendationsItem)}
-                                >
-                                    <recommendationsItem.icon className="w-4 h-4" />
-                                    <span>{recommendationsItem.title}</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    onClick={() => handleItemClick(graphItem)}
-                                >
-                                    <graphItem.icon className="w-4 h-4" />
-                                    <span>{graphItem.title}</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
+                          {/* TODO: Add menu items */}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -177,8 +65,8 @@ export const SidebarComp: React.FC<SidebarProps> = ({ blueprint, updateSearchQue
                                 <SidebarMenuButton
                                     onClick={handleSettingsClick}
                                 >
-                                    <settingsItem.icon className="w-4 h-4" />
-                                    <span>{settingsItem.title}</span>
+                                    <Settings className="w-4 h-4" />
+                                    <span>Settings</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         </SidebarMenu>

@@ -1,16 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { SearchQuery } from './LeverApp';
+import type React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Highlight, themes } from 'prism-react-renderer';
 import { useAuth } from '../utils/AuthProvider';
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-
-
-interface AIChatSidebarProps {
-    searchQuery: SearchQuery;
-    onClose: () => void;
-}
 
 interface Message {
     type: 'user' | 'assistant';
@@ -173,7 +167,7 @@ const processText = (text: string) => {
     return processedText;
 };
 
-export const AIChatSidebar: React.FC<AIChatSidebarProps> = ({ searchQuery, onClose }) => {
+export const AIChatSidebar: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const [currentMessage, setCurrentMessage] = useState<{

@@ -1,14 +1,14 @@
 "use client";
-import * as React from "react";
+import type * as React from "react";
 import { useState } from "react";
-import { BusinessInfoSection } from "./BusinessInfoSection";
+// import { BusinessInfoSection } from "./BusinessInfoSection";
 import { X } from "lucide-react";
 import gsIcon from "@/assets/gs.png";
 import odooIcon from "@/assets/odoo.png";
 import shopifyIcon from "@/assets/shopify.png";
 import quickBooksIcon from "@/assets/quick_books.png";
 import defaultLogo from "@/assets/default_business_logo.png";
-import { IntegrationModal } from "./IntegrationModal";
+// import { IntegrationModal } from "./IntegrationModal";
 
 export interface Integration {
   name: string;
@@ -43,7 +43,8 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
   onClick,
 }) => {
   return (
-    <article
+    // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+<article
       className={`flex gap-4 items-center p-4 rounded-xl border cursor-pointer transition-all ${!integration.isAvailable ? 'opacity-50 cursor-not-allowed' : ''
         } ${integration.isConnected ? 'border-primary-500 bg-primary-50' : ''
         }`}
@@ -87,6 +88,7 @@ const IntegrationsSection: React.FC<IntegrationsSectionProps> = ({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
+        {/* biome-ignore lint/a11y/noLabelWithoutControl: <explanation> */}
         <label className="text-sm font-medium text-zinc-800">Integrations</label>
         <div className="grid grid-cols-2 gap-4">
           {integrations.map((integration) => (
@@ -100,13 +102,13 @@ const IntegrationsSection: React.FC<IntegrationsSectionProps> = ({
           ))}
         </div>
       </div>
-      {selectedIntegration && (
+      {/* {selectedIntegration && (
         <IntegrationModal
           integration={selectedIntegration}
           onClose={() => setSelectedIntegration(null)}
           onConnect={onConnect}
         />
-      )}
+      )} */}
     </section>
   );
 };
@@ -155,6 +157,7 @@ const BusinessSetup: React.FC<BusinessSetupProps> = ({ onClose }) => {
   return (
     <main className="fixed inset-0 flex justify-center items-center w-screen h-screen bg-black bg-opacity-50 z-50">
       <section className="relative p-8 bg-white rounded-3xl max-w-[600px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] w-[90%]">
+        {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
         <button
           onClick={onClose}
           className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -165,14 +168,14 @@ const BusinessSetup: React.FC<BusinessSetupProps> = ({ onClose }) => {
           <h1 className="text-2xl font-semibold text-neutral-900">
             Set up your business
           </h1>
-          <BusinessInfoSection
+          {/* <BusinessInfoSection
             businessName={businessName}
             setBusinessName={setBusinessName}
             logoUrl={logoUrl}
             setLogoUrl={setLogoUrl}
             isHovering={isHovering}
             setIsHovering={setIsHovering}
-          />
+          /> */}
           <IntegrationsSection
             integrations={integrations}
             isHovering={isHovering}
