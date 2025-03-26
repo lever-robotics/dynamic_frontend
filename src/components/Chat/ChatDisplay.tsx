@@ -1,15 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import type { WebSocketMessage } from "@/types/chat";
+import { useState, useCallback } from "react";
+import type { Message, WebSocketMessage } from "@/types/chat";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { processText } from "@/utils/messageUtils";
 import { ChatInput } from "./ChatInput";
-
-interface Message {
-	id: string;
-	type: "user" | "assistant";
-	content: string;
-	timestamp: string;
-}
+import { MessageList } from "./MessageList";
 
 interface ChatDisplayProps {
 	onClose?: () => void;
@@ -17,48 +10,126 @@ interface ChatDisplayProps {
 
 export function ChatDisplay({ onClose }: ChatDisplayProps) {
 	const [messages, setMessages] = useState<Message[]>([]);
-	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const containerRef = useRef<HTMLDivElement>(null);
+	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 
-	// Memoize the onMessage callback
-	const handleMessage = useCallback((message: WebSocketMessage) => {
-		if (message.type === "streamChunk") {
-			setMessages((prev) => {
-				const lastMessage = prev[prev.length - 1];
-				if (lastMessage?.type === "assistant") {
-					const updatedMessages = [...prev.slice(0, -1)];
-					updatedMessages.push({
-						...lastMessage,
-						content: lastMessage.content + message.payload.text,
+	// Handle incoming WebSocket messages
+	const handleMessage = useCallback(
+		(wsMessage: WebSocketMessage) => {
+			if (!activeMessageId) return;
+
+			const { payload } = wsMessage;
+			switch (payload.type) {
+				case "chunk": {
+					setMessages((prev) => {
+						const messageIndex = prev.findIndex(
+							(m) => m.id === activeMessageId,
+						);
+						if (messageIndex === -1) return prev;
+
+						return [
+							...prev.slice(0, messageIndex),
+							{
+								...prev[messageIndex],
+								chunks: [...prev[messageIndex].chunks, payload.chunk],
+							},
+							...prev.slice(messageIndex + 1),
+						];
 					});
-					return updatedMessages;
+					break;
 				}
-				return prev;
-			});
-		}
-	}, []); 
 
-	// WebSocket connection with memoized callback
+				case "result": {
+					setMessages((prev) => {
+						const messageIndex = prev.findIndex(
+							(m) => m.id === activeMessageId,
+						);
+						if (messageIndex === -1) return prev;
+
+						const toolChunkIndex = prev[messageIndex].chunks.findIndex(
+							(chunk) =>
+								chunk.type === "tool" &&
+								chunk.toolExecution?.tool === payload.tool,
+						);
+						if (toolChunkIndex === -1) return prev;
+
+						const updatedChunks = [...prev[messageIndex].chunks];
+						const toolChunk = updatedChunks[toolChunkIndex];
+						if (toolChunk.type === "tool" && toolChunk.toolExecution) {
+							toolChunk.toolExecution = {
+								...toolChunk.toolExecution,
+								status: "complete",
+								result: payload.result,
+							};
+						}
+
+						return [
+							...prev.slice(0, messageIndex),
+							{
+								...prev[messageIndex],
+								chunks: updatedChunks,
+							},
+							...prev.slice(messageIndex + 1),
+						];
+					});
+					break;
+				}
+
+				case "error": {
+					if (payload.message) {
+						setMessages((prev) => {
+							const messageIndex = prev.findIndex(
+								(m) => m.id === activeMessageId,
+							);
+							if (messageIndex === -1) return prev;
+
+							return [
+								...prev.slice(0, messageIndex),
+								{
+									...prev[messageIndex],
+									chunks: [
+										...prev[messageIndex].chunks,
+										{
+											type: "text" as const,
+											content: `Error: ${payload.message}`,
+										},
+									],
+								},
+								...prev.slice(messageIndex + 1),
+							];
+						});
+					}
+					break;
+				}
+			}
+		},
+		[activeMessageId],
+	);
+
+	// WebSocket connection with message handling
 	const { isConnected, error, sendMessage } = useWebSocket({
 		onMessage: handleMessage,
 	});
 
-	// Auto-scroll to bottom when messages change
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	useEffect(() => {
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [messages]);
+	// Handle new user messages
+	const handleNewMessage = (content: string) => {
+		const userMessageId = crypto.randomUUID();
+		const assistantMessageId = crypto.randomUUID();
 
-	const handleNewMessage = (message: string) => {
-		const newMessage: Message = {
-			id: crypto.randomUUID(),
+		const userMessage: Message = {
+			id: userMessageId,
 			type: "user",
-			content: message,
-			timestamp: new Date().toISOString(),
+			chunks: [{ type: "text", content }],
 		};
 
-		setMessages((prev) => [...prev, newMessage]);
-		sendMessage("toLLM", { text: message });
+		const assistantMessage: Message = {
+			id: assistantMessageId,
+			type: "assistant",
+			chunks: [],
+		};
+
+		setMessages((prev) => [...prev, userMessage, assistantMessage]);
+		setActiveMessageId(assistantMessageId);
+		sendMessage("toLLM", { type: "toLLM", text: content });
 	};
 
 	return (
@@ -87,27 +158,7 @@ export function ChatDisplay({ onClose }: ChatDisplayProps) {
 			</div>
 
 			{/* Messages */}
-			<div ref={containerRef} className="flex-1 overflow-y-auto p-4">
-				{messages.map((message) => (
-					<div
-						key={message.id}
-						className={`mb-4 flex ${
-							message.type === "user" ? "justify-end" : "justify-start"
-						}`}
-					>
-						<div
-							className={`rounded-lg p-3 ${
-								message.type === "user"
-									? "bg-blue-100 text-blue-900"
-									: "bg-gray-100 text-gray-900"
-							}`}
-						>
-							{processText(message.content)}
-						</div>
-					</div>
-				))}
-				<div ref={messagesEndRef} />
-			</div>
+			<MessageList messages={messages} />
 
 			{/* Chat Input */}
 			<ChatInput

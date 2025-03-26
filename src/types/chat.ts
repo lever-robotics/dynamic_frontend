@@ -1,38 +1,40 @@
-// Message Types
-// export interface Message {
-// 	type: "user" | "assistant";
-// 	content: string;
-// 	segments: MessageSegment[];
-// }
+// Core Message Types
+export interface Message {
+	id: string;
+	type: "user" | "assistant";
+	chunks: MessageChunk[];
+	timestamp?: string; // Optional, for display purposes
+}
 
-// export interface MessageSegment {
-// 	type: "text" | "tool";
-// 	content: string;
-// 	toolExecution?: ToolExecution;
-// }
+export interface MessageChunk {
+	type: "text" | "tool";
+	content: string;
+	toolExecution?: ToolExecution;
+}
 
-// WebSocket Message Types
-export interface WebSocketMessage {
-	type: WebSocketMessageType;
-	userId: string;
-	payload: any;
-	timestamp: string;
+export interface ToolExecution {
+	tool: string;
+	arguments: Record<string, any>;
+	status?: "starting" | "running" | "complete" | "error";
+	result?: any;
 	error?: string;
 }
 
-export type WebSocketMessageType =
-	| "toLLM"
-	| "toUser"
-	| "error"
-	| "streamStart"
-	| "streamChunk"
-	| "streamEnd"
-	| "error"
-	| "toolStart"
-	| "toolEnd"
-	| "toolResult"
-	| "toolError";
+// WebSocket Message Types
+export type WebSocketMessageType = "toLLM" | "chunk" | "result" | "error";
 
+export interface WebSocketMessage {
+	type: WebSocketMessageType;
+	userId: string;
+	payload:
+		| { type: "chunk"; chunk: MessageChunk }
+		| { type: "result"; tool: string; result: any }
+		| { type: "error"; message: string }
+		| { type: "toLLM"; text: string };
+	timestamp: string;
+}
+
+// WebSocket Message Types
 export interface ToolExecutionResponse {
 	tool: string;
 	arguments: Record<string, any>;
@@ -44,31 +46,21 @@ export interface ToolResultResponse {
 	error?: string;
 }
 
-export interface LLMStreamResponse {
-	text: string;
-	isComplete: boolean;
+// Add type guards
+export function isChunkPayload(
+	payload: WebSocketMessage["payload"],
+): payload is { type: "chunk"; chunk: MessageChunk } {
+	return payload.type === "chunk";
 }
 
-export interface CompleteResponse {
-	response: string;
-	metadata?: Record<string, any>;
+export function isToolResultPayload(
+	payload: WebSocketMessage["payload"],
+): payload is { type: "result"; tool: string; result: any } {
+	return payload.type === "result";
 }
 
-export interface ErrorResponse {
-	message: string;
-	details?: string;
+export function isErrorPayload(
+	payload: WebSocketMessage["payload"],
+): payload is { type: "error"; message: string } {
+	return payload.type === "error";
 }
-
-// UI State Types
-// export interface ChatState {
-// 	messages: Message[];
-// 	isConnected: boolean;
-// 	currentMessage: {
-// 		text: string;
-// 		segments: MessageSegment[];
-// 	};
-// 	autoScroll: boolean;
-// 	userHasScrolled: boolean;
-// 	connectionError: string | null;
-// 	accumulatedText: string;
-// }

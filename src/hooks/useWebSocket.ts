@@ -21,7 +21,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 	const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 	const optionsRef = useRef(options);
 	const isConnectingRef = useRef(false);
-	const { getValidToken } = useAuth();
+	const { getValidToken, userId } = useAuth();
 
 	// Update options ref when options change
 	useEffect(() => {
@@ -107,7 +107,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
 	// Memoize sendMessage function
 	const sendMessage = useCallback(
-		(type: WebSocketMessageType, payload: any) => {
+		(type: WebSocketMessageType, payload: WebSocketMessage["payload"]) => {
 			if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
 				console.error("WebSocket is not connected");
 				return false;
@@ -116,7 +116,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 			try {
 				const message: WebSocketMessage = {
 					type,
-					userId: "user",
+					userId,
 					payload,
 					timestamp: new Date().toISOString(),
 				};
@@ -127,7 +127,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 				return false;
 			}
 		},
-		[],
+		[userId],
 	);
 
 	// Set up initial connection and cleanup
