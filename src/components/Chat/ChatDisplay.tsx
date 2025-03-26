@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type { WebSocketMessage } from "@/types/chat";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { processText } from "@/utils/messageUtils";
-import { useAuth } from "@/utils/AuthProvider";
+import { ChatInput } from "./ChatInput";
 
 interface Message {
 	id: string;
@@ -17,10 +17,8 @@ interface ChatDisplayProps {
 
 export function ChatDisplay({ onClose }: ChatDisplayProps) {
 	const [messages, setMessages] = useState<Message[]>([]);
-	const [inputValue, setInputValue] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
-	const { getValidToken, userId } = useAuth();
 
 	// Memoize the onMessage callback
 	const handleMessage = useCallback((message: WebSocketMessage) => {
@@ -38,7 +36,7 @@ export function ChatDisplay({ onClose }: ChatDisplayProps) {
 				return prev;
 			});
 		}
-	}, []); // No dependencies needed as it only uses setState
+	}, []); 
 
 	// WebSocket connection with memoized callback
 	const { isConnected, error, sendMessage } = useWebSocket({
@@ -51,24 +49,20 @@ export function ChatDisplay({ onClose }: ChatDisplayProps) {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
 
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!inputValue.trim() || !isConnected) return;
-
+	const handleNewMessage = (message: string) => {
 		const newMessage: Message = {
 			id: crypto.randomUUID(),
 			type: "user",
-			content: inputValue.trim(),
+			content: message,
 			timestamp: new Date().toISOString(),
 		};
 
 		setMessages((prev) => [...prev, newMessage]);
-		sendMessage("toLLM", { text: inputValue });
-		setInputValue("");
+		sendMessage("toLLM", { text: message });
 	};
 
 	return (
-		<div className="flex h-full flex-col bg-white">
+		<div className="flex flex-col h-full bg-white">
 			{/* Header */}
 			<div className="flex items-center justify-between border-b p-4">
 				<div className="flex items-center gap-2">
@@ -115,27 +109,12 @@ export function ChatDisplay({ onClose }: ChatDisplayProps) {
 				<div ref={messagesEndRef} />
 			</div>
 
-			{/* Input */}
-			<form onSubmit={handleSubmit} className="border-t p-4">
-				<div className="flex gap-2">
-					<input
-						type="text"
-						value={inputValue}
-						onChange={(e) => setInputValue(e.target.value)}
-						placeholder="Type a message..."
-						className="flex-1 rounded-lg border p-2"
-						disabled={!isConnected}
-					/>
-					<button
-						type="submit"
-						disabled={!isConnected || !inputValue.trim()}
-						className="rounded-lg bg-blue-500 px-4 py-2 text-white disabled:bg-gray-300"
-					>
-						Send
-					</button>
-				</div>
-				{error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-			</form>
+			{/* Chat Input */}
+			<ChatInput
+				isConnected={isConnected}
+				onSubmit={handleNewMessage}
+				error={error}
+			/>
 		</div>
 	);
 }

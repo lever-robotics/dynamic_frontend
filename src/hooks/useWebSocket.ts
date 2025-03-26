@@ -18,96 +18,68 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 	const [isConnected, setIsConnected] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
-	const { getValidToken, isAuthenticated } = useAuth();
-	const isConnectingRef = useRef(false);
 	const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-	const mountedRef = useRef(false);
+	const optionsRef = useRef(options);
+	const isConnectingRef = useRef(false);
+	const { getValidToken } = useAuth();
 
+	// Update options ref when options change
+	useEffect(() => {
+		optionsRef.current = options;
+	}, [options]);
+
+	// Memoize connect function and keep it stable
 	const connect = useCallback(async () => {
-		if (isConnectingRef.current || !isAuthenticated) {
-			console.log("Connection blocked:", {
-				isConnecting: isConnectingRef.current,
-				isAuthenticated,
-			});
+		// Prevent multiple connection attempts
+		if (
+			isConnectingRef.current ||
+			wsRef.current?.readyState === WebSocket.OPEN
+		) {
 			return;
 		}
 
+		isConnectingRef.current = true;
+
 		try {
-			isConnectingRef.current = true;
 			const token = await getValidToken();
-
-			// Close existing connection if any
-			if (wsRef.current) {
-				wsRef.current.close();
-			}
-
 			const wsUrl = `${WS_URL}/ws?token=${token}`;
-			console.log("Attempting WebSocket connection to:", wsUrl);
-
-			// Add timeout to detect connection failures
-			const connectionTimeout = setTimeout(() => {
-				if (wsRef.current?.readyState !== WebSocket.OPEN) {
-					console.error("WebSocket connection timeout");
-					wsRef.current?.close();
-				}
-			}, 5000);
 
 			const ws = new WebSocket(wsUrl);
 			wsRef.current = ws;
 
 			ws.onopen = () => {
-				clearTimeout(connectionTimeout);
 				console.log("WebSocket connected successfully");
 				setIsConnected(true);
 				setError(null);
-				options.onConnect?.();
+				optionsRef.current.onConnect?.();
 				isConnectingRef.current = false;
 			};
 
 			ws.onclose = (event) => {
-				clearTimeout(connectionTimeout);
-				console.log(
-					"WebSocket disconnected with code:",
-					event.code,
-					"reason:",
-					event.reason,
-					"wasClean:",
-					event.wasClean,
-				);
+				console.log("WebSocket disconnected:", event.code);
 				setIsConnected(false);
-				options.onDisconnect?.();
+				optionsRef.current.onDisconnect?.();
 				isConnectingRef.current = false;
 
 				// Only attempt reconnect if it wasn't a clean closure
 				if (!event.wasClean) {
 					reconnectTimeoutRef.current = setTimeout(() => {
-						if (isAuthenticated) {
-							console.log("Attempting to reconnect...");
-							connect();
-						}
+						connect();
 					}, 5000);
 				}
 			};
 
 			ws.onerror = (event) => {
-				console.error("WebSocket error:", event);
-				// Try to get more error details
-				const error = (event as any).error;
-				const errorMessage = error
-					? `WebSocket error: ${error.message}`
-					: "WebSocket connection error";
+				const errorMessage = "WebSocket connection error";
+				console.error(errorMessage, event);
 				setError(errorMessage);
-				options.onError?.(errorMessage);
+				optionsRef.current.onError?.(errorMessage);
 			};
 
 			ws.onmessage = (event) => {
 				try {
 					const message = JSON.parse(event.data) as WebSocketMessage;
-					console.log("WebSocket message received:", {
-						type: message.type,
-						timestamp: message.timestamp,
-					});
-					options.onMessage?.(message);
+					optionsRef.current.onMessage?.(message);
 				} catch (error) {
 					console.error("Error processing message:", error);
 					setError("Failed to process message");
@@ -118,17 +90,22 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 			setError(`Failed to establish connection: ${error}`);
 			isConnectingRef.current = false;
 		}
-	}, [isAuthenticated, getValidToken, options]);
+	}, [getValidToken]); // Only depend on getValidToken
 
+	// Memoize disconnect function
 	const disconnect = useCallback(() => {
 		if (wsRef.current) {
 			wsRef.current.close();
+			wsRef.current = null;
 		}
 		if (reconnectTimeoutRef.current) {
 			clearTimeout(reconnectTimeoutRef.current);
 		}
+		setIsConnected(false);
+		isConnectingRef.current = false;
 	}, []);
 
+	// Memoize sendMessage function
 	const sendMessage = useCallback(
 		(type: WebSocketMessageType, payload: any) => {
 			if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -139,7 +116,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 			try {
 				const message: WebSocketMessage = {
 					type,
-					userId: "user", // This should come from auth context
+					userId: "user",
 					payload,
 					timestamp: new Date().toISOString(),
 				};
@@ -153,29 +130,18 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 		[],
 	);
 
-	// Connect when component mounts and auth state changes
+	// Set up initial connection and cleanup
 	useEffect(() => {
-		mountedRef.current = true;
-
-		if (isAuthenticated && !wsRef.current) {
-			connect();
-		}
+		connect();
 
 		return () => {
-			// Only disconnect if the component is unmounting
-			if (mountedRef.current) {
-				console.log("Component unmounting, cleaning up WebSocket");
-				mountedRef.current = false;
-				disconnect();
-			}
+			disconnect();
 		};
-	}, [isAuthenticated, disconnect, connect]);
+	}, [connect, disconnect]);
 
 	return {
 		isConnected,
 		error,
 		sendMessage,
-		connect,
-		disconnect,
 	};
 }
