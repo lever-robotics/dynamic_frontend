@@ -2,10 +2,10 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import type { WebSocketMessage, WebSocketMessageType } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
-const WS_URL =
-	API_BASE_URL?.replace("https", "wss").replace("http", "ws") ||
-	"ws://localhost:8000";
+// const API_BASE_URL = import.meta.env.VITE_API_URL;
+// const WS_URL =
+// 	API_BASE_URL?.replace("https", "wss").replace("http", "ws") ||
+// 	"ws://localhost:8000";
 
 interface UseWebSocketOptions {
 	onMessage?: (message: WebSocketMessage) => void;
@@ -42,7 +42,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
 		try {
 			const token = await getValidToken();
-			const wsUrl = `${WS_URL}/ws?token=${token}`;
+			const wsUrl = `ws://localhost:8000/ws?token=${token}`;
 
 			const ws = new WebSocket(wsUrl);
 			wsRef.current = ws;
@@ -116,7 +116,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 			try {
 				const message: WebSocketMessage = {
 					type,
-					userId,
+					userId: userId,
 					payload,
 					timestamp: new Date().toISOString(),
 				};
