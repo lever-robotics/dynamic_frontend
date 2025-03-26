@@ -3,6 +3,9 @@ import type { WebSocketMessage, WebSocketMessageType } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+const WS_URL =
+	API_BASE_URL?.replace("https", "wss").replace("http", "ws") ||
+	"ws://localhost:8000";
 
 interface UseWebSocketOptions {
 	onMessage?: (message: WebSocketMessage) => void;
@@ -18,6 +21,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 	const { getValidToken, isAuthenticated } = useAuth();
 	const isConnectingRef = useRef(false);
 	const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+	const mountedRef = useRef(false);
 
 	const connect = useCallback(async () => {
 		if (isConnectingRef.current || !isAuthenticated) {
@@ -37,35 +41,61 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 				wsRef.current.close();
 			}
 
-			const wsUrl = `${API_BASE_URL}/ws?token=${token}`;
+			const wsUrl = `${WS_URL}/ws?token=${token}`;
+			console.log("Attempting WebSocket connection to:", wsUrl);
+
+			// Add timeout to detect connection failures
+			const connectionTimeout = setTimeout(() => {
+				if (wsRef.current?.readyState !== WebSocket.OPEN) {
+					console.error("WebSocket connection timeout");
+					wsRef.current?.close();
+				}
+			}, 5000);
+
 			const ws = new WebSocket(wsUrl);
 			wsRef.current = ws;
 
 			ws.onopen = () => {
-				console.log("WebSocket connected");
+				clearTimeout(connectionTimeout);
+				console.log("WebSocket connected successfully");
 				setIsConnected(true);
 				setError(null);
 				options.onConnect?.();
 				isConnectingRef.current = false;
 			};
 
-			ws.onclose = () => {
-				console.log("WebSocket disconnected");
+			ws.onclose = (event) => {
+				clearTimeout(connectionTimeout);
+				console.log(
+					"WebSocket disconnected with code:",
+					event.code,
+					"reason:",
+					event.reason,
+					"wasClean:",
+					event.wasClean,
+				);
 				setIsConnected(false);
 				options.onDisconnect?.();
 				isConnectingRef.current = false;
 
-				// Attempt to reconnect after a delay
-				reconnectTimeoutRef.current = setTimeout(() => {
-					if (isAuthenticated) {
-						connect();
-					}
-				}, 5000);
+				// Only attempt reconnect if it wasn't a clean closure
+				if (!event.wasClean) {
+					reconnectTimeoutRef.current = setTimeout(() => {
+						if (isAuthenticated) {
+							console.log("Attempting to reconnect...");
+							connect();
+						}
+					}, 5000);
+				}
 			};
 
 			ws.onerror = (event) => {
 				console.error("WebSocket error:", event);
-				const errorMessage = "WebSocket connection error";
+				// Try to get more error details
+				const error = (event as any).error;
+				const errorMessage = error
+					? `WebSocket error: ${error.message}`
+					: "WebSocket connection error";
 				setError(errorMessage);
 				options.onError?.(errorMessage);
 			};
@@ -85,7 +115,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 			};
 		} catch (error) {
 			console.error("Error connecting to WebSocket:", error);
-			setError("Failed to establish connection");
+			setError(`Failed to establish connection: ${error}`);
 			isConnectingRef.current = false;
 		}
 	}, [isAuthenticated, getValidToken, options]);
@@ -125,13 +155,21 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
 	// Connect when component mounts and auth state changes
 	useEffect(() => {
-		if (isAuthenticated) {
+		mountedRef.current = true;
+
+		if (isAuthenticated && !wsRef.current) {
 			connect();
 		}
+
 		return () => {
-			disconnect();
+			// Only disconnect if the component is unmounting
+			if (mountedRef.current) {
+				console.log("Component unmounting, cleaning up WebSocket");
+				mountedRef.current = false;
+				disconnect();
+			}
 		};
-	}, [isAuthenticated, connect, disconnect]);
+	}, [isAuthenticated, disconnect, connect]);
 
 	return {
 		isConnected,

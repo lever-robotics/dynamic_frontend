@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { WebSocketMessage } from "@/types/chat";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { processText } from "@/utils/messageUtils";
+import { useAuth } from "@/utils/AuthProvider";
 
 interface Message {
 	id: string;
@@ -19,31 +20,34 @@ export function ChatDisplay({ onClose }: ChatDisplayProps) {
 	const [inputValue, setInputValue] = useState("");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const { getValidToken, userId } = useAuth();
 
-	// WebSocket connection with callbacks
+	// Memoize the onMessage callback
+	const handleMessage = useCallback((message: WebSocketMessage) => {
+		if (message.type === "streamChunk") {
+			setMessages((prev) => {
+				const lastMessage = prev[prev.length - 1];
+				if (lastMessage?.type === "assistant") {
+					const updatedMessages = [...prev.slice(0, -1)];
+					updatedMessages.push({
+						...lastMessage,
+						content: lastMessage.content + message.payload.text,
+					});
+					return updatedMessages;
+				}
+				return prev;
+			});
+		}
+	}, []); // No dependencies needed as it only uses setState
+
+	// WebSocket connection with memoized callback
 	const { isConnected, error, sendMessage } = useWebSocket({
-		onMessage: (message: WebSocketMessage) => {
-			if (message.type === "streamChunk") {
-				// Append new content to the last assistant message
-				setMessages((prev) => {
-					const lastMessage = prev[prev.length - 1];
-					if (lastMessage?.type === "assistant") {
-						const updatedMessages = [...prev.slice(0, -1)];
-						updatedMessages.push({
-							...lastMessage,
-							content: lastMessage.content + message.payload.text,
-						});
-						return updatedMessages;
-					}
-					return prev;
-				});
-			}
-		},
+		onMessage: handleMessage,
 	});
 
 	// Auto-scroll to bottom when messages change
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-		useEffect(() => {
+	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
 

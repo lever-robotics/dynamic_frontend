@@ -11,7 +11,6 @@
 // 	toolExecution?: ToolExecution;
 // }
 
-
 // WebSocket Message Types
 export interface WebSocketMessage {
 	type: WebSocketMessageType;
@@ -33,7 +32,6 @@ export type WebSocketMessageType =
 	| "toolEnd"
 	| "toolResult"
 	| "toolError";
-
 
 export interface ToolExecutionResponse {
 	tool: string;

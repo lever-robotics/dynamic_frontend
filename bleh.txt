@@ -1,0 +1,94 @@
+# Generated GraphQL Schema
+
+scalar Date
+scalar DateTime
+scalar URL
+
+type Individual {
+  addedToCc: String # Added to CC field
+  gender: String # Gender field
+  lastName: String # Last Name field
+  firstName: String # First Name field
+  fullName: String # Full Name field
+  phoneNumber: String # Phone Number field
+  email: String # Email field
+  waiverLm: String # Waiver (L/M) field
+  waiverDate: String # Waiver Date field
+  progressNotes: String # Progress Notes field
+  ethnicity: String # Ethnicity field
+  primaryDiagnosis: String # Primary Diagnosis field
+  secondaryDiagnosis: String # Secondary Diagnosis field
+  seizuresAllergiesMobilityNeeds: String # Seizures, Allergies, Mobility Needs field
+  height: String # Height field
+  weight: String # Weight field
+  shoeSize: String # Shoe Size field
+  codeOfConduct: String # Code of Conduct field
+  agency: String # Agency field
+  participateIn2022: String # Participate in 2022? field
+  participateIn2023: String # Participate in 2023 field
+  participateIn2024: String # Participate in 2024 field
+  e: String # E field
+  nodeId: Float # Row number in the spreadsheet
+}
+
+input IndividualStringFilter {
+  eq: String
+  neq: String
+  contains: String
+  ilike: String
+  in: [String!]
+}
+
+input IndividualNumberFilter {
+  eq: Float
+  neq: Float
+  gt: Float
+  gte: Float
+  lt: Float
+  lte: Float
+  in: [Float!]
+}
+
+input IndividualDateFilter {
+  eq: Date
+  neq: Date
+  gt: Date
+  gte: Date
+  lt: Date
+  lte: Date
+}
+
+input IndividualFilter {
+  addedToCc: IndividualStringFilter
+  gender: IndividualStringFilter
+  lastName: IndividualStringFilter
+  firstName: IndividualStringFilter
+  fullName: IndividualStringFilter
+  phoneNumber: IndividualStringFilter
+  email: IndividualStringFilter
+  waiverLm: IndividualStringFilter
+  waiverDate: IndividualStringFilter
+  progressNotes: IndividualStringFilter
+  ethnicity: IndividualStringFilter
+  primaryDiagnosis: IndividualStringFilter
+  secondaryDiagnosis: IndividualStringFilter
+  seizuresAllergiesMobilityNeeds: IndividualStringFilter
+  height: IndividualStringFilter
+  weight: IndividualStringFilter
+  shoeSize: IndividualStringFilter
+  codeOfConduct: IndividualStringFilter
+  agency: IndividualStringFilter
+  participateIn2022: IndividualStringFilter
+  participateIn2023: IndividualStringFilter
+  participateIn2024: IndividualStringFilter
+  e: IndividualStringFilter
+  nodeId: IndividualNumberFilter
+  and: [IndividualFilter!]
+  or: [IndividualFilter!]
+  not: IndividualFilter
+}
+
+type Query {
+  individual(filter: IndividualFilter): [Individual!]!
+  individualById(id: ID!): Individual
+}
