@@ -21,7 +21,7 @@ export interface ToolExecution {
 }
 
 // WebSocket Message Types
-export type WebSocketMessageType = "toLLM" | "chunk" | "result" | "error";
+export type WebSocketMessageType = "toLLM" | "chunk" | "result" | "error" | "context";
 
 export interface WebSocketMessage {
 	type: WebSocketMessageType;
@@ -30,7 +30,8 @@ export interface WebSocketMessage {
 		| { type: "chunk"; chunk: MessageChunk }
 		| { type: "result"; tool: string; result: any }
 		| { type: "error"; message: string }
-		| { type: "toLLM"; text: string };
+		| { type: "toLLM"; text: string }
+		| { type: "context"; context: string};
 	timestamp: string;
 }
 

@@ -1,0 +1,40 @@
+Implementation Plan for Modal Chat Interface
+
+1. NEW COMPONENTS NEEDED
+   ModalChat/
+   ├── Onboarding.tsx (main container using existing Modal component)
+   └── DetailSection/
+       ├── DocumentView.tsx (document display/edit)
+       └── ToolDetail.tsx (expanded tool info)
+
+2. REUSABLE COMPONENTS
+   Chat/ (existing)
+   ├── MessageList
+   ├── MessageBubble
+   ├── ToolExecution
+   └── ChatInput
+
+3. LAYOUT STRUCTURE
+   <Modal size="xl">
+     <div className="flex h-[90vh]">
+       {/* Left Panel */}
+       <div className="w-[45%] border-r">
+         {showToolDetail ? <ToolDetail /> : <DocumentView />}
+       </div>
+       
+       {/* Right Panel */}
+       <div className="w-[55%]">
+         <ChatDisplay /> {/* existing component */}
+       </div>
+     </div>
+   </Modal>
+
+4. NEW STATE NEEDED
+   - selectedToolId: string | null
+   - documentContent: string
+   - isDetailExpanded: boolean
+
+5. INTERACTIONS TO ADD
+   - Tool click handler in ToolExecution
+   - Document update handlers
+   - Panel resize/collapse

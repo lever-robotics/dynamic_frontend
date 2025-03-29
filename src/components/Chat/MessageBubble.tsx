@@ -8,6 +8,12 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
+	console.log("message", message);
+	message.chunks.forEach((chunk) => {
+		if (chunk.type === "tool") {
+			console.log("tool", chunk.toolExecution);
+		}
+	});
 	return (
 		<div
 			className={`mb-4 flex ${

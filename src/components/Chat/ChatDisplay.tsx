@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { Message, WebSocketMessage } from "@/types/chat";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { ChatInput } from "./ChatInput";
@@ -6,15 +6,29 @@ import { MessageList } from "./MessageList";
 
 interface ChatDisplayProps {
 	onClose?: () => void;
+	sendOnConnect?: () => WebSocketMessage;
 }
 
-export function ChatDisplay({ onClose }: ChatDisplayProps) {
+export function ChatDisplay({ onClose, sendOnConnect }: ChatDisplayProps) {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
 		(wsMessage: WebSocketMessage) => {
+			// Create initial message if none exists
+			if (wsMessage.payload.type === "chunk" && messages.length === 0) {
+				const initialMessageId = crypto.randomUUID();
+				const initialMessage: Message = {
+					id: initialMessageId,
+					type: "assistant",
+					chunks: [],
+				};
+				setMessages([initialMessage]);
+				setActiveMessageId(initialMessageId);
+				return;
+			}
+
 			if (!activeMessageId) return;
 
 			const { payload } = wsMessage;
@@ -102,13 +116,32 @@ export function ChatDisplay({ onClose }: ChatDisplayProps) {
 				}
 			}
 		},
-		[activeMessageId],
+		[activeMessageId, messages.length],
 	);
 
 	// WebSocket connection with message handling
 	const { isConnected, error, sendMessage } = useWebSocket({
 		onMessage: handleMessage,
 	});
+
+	useEffect(() => {
+		if (isConnected && sendOnConnect) {
+			const msg = sendOnConnect();
+			if (msg) {
+				// Create initial message before sending
+				const initialMessageId = crypto.randomUUID();
+				const initialMessage: Message = {
+					id: initialMessageId,
+					type: "assistant",
+					chunks: [],
+				};
+				setMessages([initialMessage]);
+				setActiveMessageId(initialMessageId);
+
+				sendMessage(msg.type, msg.payload);
+			}
+		}
+	}, [isConnected, sendOnConnect, sendMessage]);
 
 	// Handle new user messages
 	const handleNewMessage = (content: string) => {

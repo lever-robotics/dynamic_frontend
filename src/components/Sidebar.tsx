@@ -14,7 +14,13 @@ import {
 import { AspectRatio } from "radix-ui";
 import logoImg from '@/assets/cgLogo.png';
 
-export const SidebarComp: React.FC = () => {
+interface SidebarProps {
+    setShowSettings: (show: boolean) => void;
+}
+
+export const SidebarComp: React.FC<SidebarProps> = ({
+    setShowSettings,
+}) => {
 
     const handleLogoClick = () => {
         // TODO: Add home page
@@ -25,7 +31,7 @@ export const SidebarComp: React.FC = () => {
     };
 
     const handleSettingsClick = () => {
-        // TODO: Add settings click
+        setShowSettings(true);
     };
 
     return (
