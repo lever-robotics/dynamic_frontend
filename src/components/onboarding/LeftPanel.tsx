@@ -4,8 +4,8 @@ import { DocumentView } from './DocumentView';
 import { ToolDetail } from './ToolDetail';
 
 export function LeftPanel() {
-    const { selectedTool, setSelectedTool } = useToolContext();
-    const [documentContent, setDocumentContent] = useState<string>("");
+    const { selectedTool, setSelectedTool, document, setDocument } = useToolContext();
+    // const [documentContent, setDocumentContent] = useState<string>("");
 
     return (
         <div className="w-[800px] border-r border-gray-200">
@@ -16,8 +16,8 @@ export function LeftPanel() {
                 />
             ) : (
                 <DocumentView
-                    content={documentContent}
-                    onUpdate={setDocumentContent}
+                    content={document || "{\"hello\": \"world\"}"}
+                    onUpdate={setDocument}
                     isEditable={true}
                 />
             )}

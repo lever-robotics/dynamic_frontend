@@ -1,5 +1,6 @@
 import type React from "react";
 import type { ToolExecutionBubble as ToolExecutionType } from "@/types/chat";
+import { LoadingSpinner } from "../LoadingSpinner";
 
 interface ToolExecutionProps {
 	toolExecution: ToolExecutionType;
@@ -11,15 +12,20 @@ export function ToolExecution({
 	compact = false,
 }: ToolExecutionProps) {
 	const statusColors = {
-		starting: "bg-blue-50 border-blue-200 text-blue-700",
-		running: "bg-yellow-50 border-yellow-200 text-yellow-700",
+		starting: "bg-yellow-50 border-yellow-200 text-yellow-700",
+		running: "bg-blue-50 border-blue-200 text-blue-700",
 		complete: "bg-green-50 border-green-200 text-green-700",
 		error: "bg-red-50 border-red-200 text-red-700",
 	} as const;
 
 	const statusColor = toolExecution.status
 		? statusColors[toolExecution.status]
-		: statusColors.starting;
+		: statusColors.running;
+
+	if (toolExecution.status === "complete") {
+		console.log(toolExecution.result);
+		console.log(toolExecution.error);
+	}
 
 	if (compact) {
 		return (
@@ -27,7 +33,11 @@ export function ToolExecution({
 				<div className="flex items-center gap-2">
 					<span className="font-medium">{toolExecution.tool}</span>
 					<span className={`text-xs px-1.5 py-0.5 rounded ${statusColor}`}>
-						{toolExecution.status || "starting"}
+						{toolExecution.status === "running" ? (
+							<LoadingSpinner size="sm" />
+						) : (
+							toolExecution.status || "starting"
+						)}
 					</span>
 				</div>
 				{toolExecution.error && (

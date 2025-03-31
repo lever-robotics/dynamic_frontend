@@ -1,7 +1,11 @@
 import type React from "react";
 import { processText } from "@/utils/messageUtils";
-import type { MessageBubble as MessageBubbleType, ToolExecutionBubble } from "@/types/chat";
+import type {
+	MessageBubble as MessageBubbleType,
+	ToolExecutionBubble,
+} from "@/types/chat";
 import { AgentExecution } from "./AgentExecution";
+import { MarkdownContent } from "./MarkdownContent";
 
 interface MessageBubbleProps {
 	message: MessageBubbleType;
@@ -9,7 +13,6 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, onToolSelect }: MessageBubbleProps) {
-
 	return (
 		<div
 			className={`mb-4 flex ${
@@ -25,9 +28,7 @@ export function MessageBubble({ message, onToolSelect }: MessageBubbleProps) {
 			>
 				{message.chunks.map((chunk, index) => (
 					<div key={`${message.id}-chunk-${index}`}>
-						<div className="prose prose-sm max-w-none">
-							{processText(chunk.content)}
-						</div>
+						<MarkdownContent content={chunk.content} />
 					</div>
 				))}
 			</div>

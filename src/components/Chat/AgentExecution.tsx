@@ -4,6 +4,7 @@ import type {
 	ToolExecutionBubble,
 } from "@/types/chat";
 import { ToolExecution } from "./ToolExecution";
+import { LoadingSpinner } from "../LoadingSpinner";
 
 interface AgentExecutionProps {
 	agent: AgentExecutionBubble;
@@ -14,8 +15,8 @@ export function AgentExecution({ agent, onToolSelect }: AgentExecutionProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
 
 	const statusColors = {
-		starting: "bg-blue-50 text-blue-700",
-		running: "bg-yellow-50 text-yellow-700",
+		starting: "bg-yellow-50 text-yellow-700",
+		running: "bg-blue-50 text-blue-700",
 		complete: "bg-green-50 text-green-700",
 		error: "bg-red-50 text-red-700",
 	} as const;
@@ -31,7 +32,11 @@ export function AgentExecution({ agent, onToolSelect }: AgentExecutionProps) {
 							statusColors[agent.status]
 						}`}
 					>
-						{agent.status}
+						{agent.status === "running" ? (
+							<LoadingSpinner size="sm" />
+						) : (
+							agent.status
+						)}
 					</span>
 				</div>
 				<button

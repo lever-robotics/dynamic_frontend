@@ -18,12 +18,14 @@ interface ChatDisplayProps {
 	onClose?: () => void;
 	sendOnConnect?: () => Payload;
 	onToolSelect?: (tool: ToolExecutionBubble) => void;
+	setDocument?: (document: string | null) => void;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
 	onClose,
 	sendOnConnect,
 	onToolSelect,
+	setDocument,
 }: ChatDisplayProps) {
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	const [messages, setMessages] = useState<MessageBubble[]>([]);
@@ -32,8 +34,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 	const handleMessage = useCallback(
 		(wsMessage: WebSocketMessage) => {
 			console.log("Current Mesages --", messages, "Message: ", wsMessage);
-			if (!activeMessageId) return;
-
+			// if (!activeMessageId) return;
 			const { payload, messageId } = wsMessage;
 			switch (payload.type) {
 				// Create or Update Text
@@ -106,7 +107,30 @@ export const ChatDisplay = memo(function ChatDisplay({
 						console.log("Message Index --", messageIndex);
 						console.log("Tool Info:", payload as ToolChunk);
 						// If there is not a agent that this tool references, do nothing
-						if (messageIndex === -1) return [...prev];
+						// if (messageIndex === -1) return [...prev];
+						if (messageIndex === -1) {
+
+							const newMessage: MessageBubble = {
+								id: messageId,
+								type: "agent",
+								agentName: (payload as AgentChunk).name,
+								status: (payload as AgentChunk).status,
+								chunks: [
+									{
+										toolCall: {
+											tool: (payload as ToolChunk).tool,
+											status: (payload as ToolChunk).status,
+											agentName: (payload as ToolChunk).agentName,
+											arguments: (payload as ToolChunk).arguments,
+											result: (payload as ToolChunk).result,
+											error: (payload as ToolChunk).error,
+										},
+									},
+								],
+							};
+							setDocument?.((payload as ToolChunk).result?.data);
+							return [...prev, newMessage];
+						}
 						// console.log("Tool Call --", (payload as ToolChunk).status);
 						// If the tool is running, add a new chunk to the message
 						if ((payload as ToolChunk).status === "running") {
@@ -166,7 +190,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 				}
 			}
 		},
-		[activeMessageId, messages],
+		[messages, setDocument],
 	);
 
 	// WebSocket connection with message handling
@@ -179,14 +203,14 @@ export const ChatDisplay = memo(function ChatDisplay({
 			const msg = sendOnConnect();
 			if (msg) {
 				// Create initial message before sending
-				const initialMessageId = crypto.randomUUID();
-				const initialMessage: MessageBubble = {
-					id: initialMessageId,
-					type: "assistant",
-					chunks: [],
-				};
-				setMessages([initialMessage]);
-				setActiveMessageId(initialMessageId);
+				// const initialMessageId = crypto.randomUUID();
+				// const initialMessage: MessageBubble = {
+				// 	id: initialMessageId,
+				// 	type: "assistant",
+				// 	chunks: [],
+				// };
+				// setMessages([initialMessage]);
+				// setActiveMessageId(initialMessageId);
 
 				sendMessage(msg.type, msg);
 			}

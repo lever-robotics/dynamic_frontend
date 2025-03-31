@@ -5,6 +5,8 @@ import type { ToolExecutionBubble } from '@/types/chat';
 interface ToolContextType {
     selectedTool: ToolExecutionBubble | null;
     setSelectedTool: (tool: ToolExecutionBubble | null) => void;
+    document: string | null;
+    setDocument: (document: string | null) => void;
 }
 
 const ToolContext = createContext<ToolContextType | null>(null);
@@ -19,11 +21,14 @@ export function useToolContext() {
 
 export function ToolProvider({ children }: { children: React.ReactNode }) {
     const [selectedTool, setSelectedTool] = useState<ToolExecutionBubble | null>(null);
+    const [document, setDocument] = useState<string | null>(null);
     
     return (
         <ToolContext.Provider value={{ 
             selectedTool, 
             setSelectedTool,
+            document,
+            setDocument,
         }}>
             {children}
         </ToolContext.Provider>

@@ -25,8 +25,8 @@ export const BusinessInfoSection: React.FC<BusinessInfoProps> = ({
   setBusinessInfo,
 }) => {
 
-    const [businessName, setBusinessName] = useState("");
-    const [businessUrl, setBusinessUrl] = useState("");
+    const [businessName, setBusinessName] = useState("leverai");
+    const [businessUrl, setBusinessUrl] = useState("https://lever-ai.com");
 
   return (
     <Modal isOpen={true} onClose={onClose}>

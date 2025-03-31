@@ -7,13 +7,12 @@ interface RightPanelProps {
 }
 
 export function RightPanel({ sendOnConnect }: RightPanelProps) {
-    const { setSelectedTool, messages, setMessages } = useToolContext();
+    const { setSelectedTool, setDocument } = useToolContext();
 
     return (
         <div className="w-[600px] border-l border-gray-200">
             <ChatDisplay
-                messages={messages}
-                setMessages={setMessages}
+                setDocument={setDocument}
                 sendOnConnect={sendOnConnect}
                 onToolSelect={setSelectedTool}
             />

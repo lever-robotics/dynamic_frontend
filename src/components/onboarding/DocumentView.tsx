@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { processText } from "@/utils/messageUtils";
+import { JsonView } from "./JsonViewer";
 
 interface DocumentViewProps {
     content: string;
@@ -54,7 +55,8 @@ export function DocumentView({
                     />
                 ) : (
                     <div className="prose max-w-none">
-                        {processText(content)}
+                        {/* {processText(content)} */}
+                        <JsonView data={JSON.parse(content)} />
                     </div>
                 )}
             </div>
