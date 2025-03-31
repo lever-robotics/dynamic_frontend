@@ -1,122 +1,172 @@
-import { useState, useCallback, useEffect } from "react";
-import type { Message, WebSocketMessage } from "@/types/chat";
+import { useState, useCallback, useEffect, memo } from "react";
+import type {
+	MessageBubble,
+	WebSocketMessage,
+	ToolExecutionBubble,
+	MessageChunk,
+	ToLLMMessage,
+	AgentChunk,
+	ToolChunk,
+	MessageChunkBubble,
+	Payload,
+} from "@/types/chat";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
 
 interface ChatDisplayProps {
 	onClose?: () => void;
-	sendOnConnect?: () => WebSocketMessage;
+	sendOnConnect?: () => Payload;
+	onToolSelect?: (tool: ToolExecutionBubble) => void;
 }
 
-export function ChatDisplay({ onClose, sendOnConnect }: ChatDisplayProps) {
-	const [messages, setMessages] = useState<Message[]>([]);
+export const ChatDisplay = memo(function ChatDisplay({
+	onClose,
+	sendOnConnect,
+	onToolSelect,
+}: ChatDisplayProps) {
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
+	const [messages, setMessages] = useState<MessageBubble[]>([]);
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
 		(wsMessage: WebSocketMessage) => {
-			// Create initial message if none exists
-			if (wsMessage.payload.type === "chunk" && messages.length === 0) {
-				const initialMessageId = crypto.randomUUID();
-				const initialMessage: Message = {
-					id: initialMessageId,
-					type: "assistant",
-					chunks: [],
-				};
-				setMessages([initialMessage]);
-				setActiveMessageId(initialMessageId);
-				return;
-			}
-
+			console.log("Current Mesages --", messages, "Message: ", wsMessage);
 			if (!activeMessageId) return;
 
-			const { payload } = wsMessage;
+			const { payload, messageId } = wsMessage;
 			switch (payload.type) {
-				case "chunk": {
+				// Create or Update Text
+				case "text": {
+					console.log("Text --", payload);
 					setMessages((prev) => {
-						const messageIndex = prev.findIndex(
-							(m) => m.id === activeMessageId,
-						);
-						if (messageIndex === -1) return prev;
-
-						return [
-							...prev.slice(0, messageIndex),
-							{
-								...prev[messageIndex],
-								chunks: [...prev[messageIndex].chunks, payload.chunk],
-							},
-							...prev.slice(messageIndex + 1),
-						];
+						const messageIndex = prev.length - 1;
+						const newChunk: MessageChunkBubble = {
+							content: (payload as MessageChunk).content,
+						};
+						// Append new text chunk to current message
+						if(prev[messageIndex].type === "assistant") {
+							return [
+								...prev.slice(0, messageIndex),
+								{
+									...prev[messageIndex],
+									chunks: [...prev[messageIndex].chunks, newChunk],
+								},
+								...prev.slice(messageIndex + 1),
+							];
+						}
+						// Create new message if the last message is an agent
+						const newMessage: MessageBubble = {
+							id: messageId,
+							type: "assistant",
+							chunks: [newChunk],
+						};
+						return [...prev, newMessage];
 					});
 					break;
 				}
-
-				case "result": {
+				// Create or Update Agent
+				case "agent": {
 					setMessages((prev) => {
 						const messageIndex = prev.findIndex(
-							(m) => m.id === activeMessageId,
+							(m) => m.agentName === (payload as AgentChunk).name,
 						);
-						if (messageIndex === -1) return prev;
-
-						const toolChunkIndex = prev[messageIndex].chunks.findIndex(
-							(chunk) =>
-								chunk.type === "tool" &&
-								chunk.toolExecution?.tool === payload.tool,
-						);
-						if (toolChunkIndex === -1) return prev;
-
-						const updatedChunks = [...prev[messageIndex].chunks];
-						const toolChunk = updatedChunks[toolChunkIndex];
-						if (toolChunk.type === "tool" && toolChunk.toolExecution) {
-							toolChunk.toolExecution = {
-								...toolChunk.toolExecution,
-								status: "complete",
-								result: payload.result,
+						console.log(messageIndex, wsMessage);
+						// If the referenced agent is not found, create a new agent message
+						if (messageIndex === -1) {
+							const newMessage: MessageBubble = {
+								id: messageId,
+								type: "agent",
+								agentName: (payload as AgentChunk).name,
+								status: (payload as AgentChunk).status,
+								chunks: [],
 							};
+							console.log("Prev --", prev);
+							return [...prev, newMessage];
 						}
 
 						return [
 							...prev.slice(0, messageIndex),
 							{
 								...prev[messageIndex],
-								chunks: updatedChunks,
+								status: (payload as AgentChunk).status,
 							},
 							...prev.slice(messageIndex + 1),
 						];
 					});
 					break;
 				}
-
-				case "error": {
-					if (payload.message) {
-						setMessages((prev) => {
-							const messageIndex = prev.findIndex(
-								(m) => m.id === activeMessageId,
-							);
-							if (messageIndex === -1) return prev;
-
-							return [
+				// Create or Update Tool
+				case "tool": {
+					setMessages((prev) => {
+						console.log("Tool Call --", (payload as ToolChunk).status);
+						const messageIndex = prev.findIndex(
+							(m) => m.agentName === (payload as ToolChunk).agentName,
+						);
+						console.log("Message Index --", messageIndex);
+						console.log("Tool Info:", payload as ToolChunk);
+						// If there is not a agent that this tool references, do nothing
+						if (messageIndex === -1) return [...prev];
+						// console.log("Tool Call --", (payload as ToolChunk).status);
+						// If the tool is running, add a new chunk to the message
+						if ((payload as ToolChunk).status === "running") {
+							const updated = [
 								...prev.slice(0, messageIndex),
 								{
 									...prev[messageIndex],
 									chunks: [
 										...prev[messageIndex].chunks,
 										{
-											type: "text" as const,
-											content: `Error: ${payload.message}`,
+											toolCall: {
+												tool: (payload as ToolChunk).tool,
+												status: (payload as ToolChunk).status,
+												agentName: (payload as ToolChunk).agentName,
+												arguments: (payload as ToolChunk).arguments,
+												result: (payload as ToolChunk).result,
+												error: (payload as ToolChunk).error,
+											},
 										},
 									],
 								},
 								...prev.slice(messageIndex + 1),
 							];
-						});
-					}
+							console.log(updated);
+							return updated;
+							
+						}
+						// If the tool is complete, add the result to the message. The running tool is always the last chunk.
+						if ((payload as ToolChunk).status === "complete") {
+							const updatedChunk = prev[messageIndex].chunks.pop();
+							updatedChunk.toolCall.status = (payload as ToolChunk).status;
+							updatedChunk.toolCall.result = (payload as ToolChunk).result;
+							updatedChunk.toolCall.error = (payload as ToolChunk).error;
+							return [
+								...prev.slice(0, messageIndex),
+								{
+									...prev[messageIndex],
+									chunks: [...prev[messageIndex].chunks, updatedChunk],
+								},
+								...prev.slice(messageIndex + 1),
+							];
+						}
+						if ((payload as ToolChunk).status === "error") {
+							const updatedChunk = prev[messageIndex].chunks.pop();
+							updatedChunk.toolCall.status = (payload as ToolChunk).status;
+							updatedChunk.toolCall.error = (payload as ToolChunk).error;
+							return [
+								...prev.slice(0, messageIndex),
+								{
+									...prev[messageIndex],
+									chunks: [...prev[messageIndex].chunks, updatedChunk],
+								},
+							];
+						}
+					});
 					break;
 				}
 			}
 		},
-		[activeMessageId, messages.length],
+		[activeMessageId, messages],
 	);
 
 	// WebSocket connection with message handling
@@ -130,7 +180,7 @@ export function ChatDisplay({ onClose, sendOnConnect }: ChatDisplayProps) {
 			if (msg) {
 				// Create initial message before sending
 				const initialMessageId = crypto.randomUUID();
-				const initialMessage: Message = {
+				const initialMessage: MessageBubble = {
 					id: initialMessageId,
 					type: "assistant",
 					chunks: [],
@@ -138,7 +188,7 @@ export function ChatDisplay({ onClose, sendOnConnect }: ChatDisplayProps) {
 				setMessages([initialMessage]);
 				setActiveMessageId(initialMessageId);
 
-				sendMessage(msg.type, msg.payload);
+				sendMessage(msg.type, msg);
 			}
 		}
 	}, [isConnected, sendOnConnect, sendMessage]);
@@ -148,13 +198,13 @@ export function ChatDisplay({ onClose, sendOnConnect }: ChatDisplayProps) {
 		const userMessageId = crypto.randomUUID();
 		const assistantMessageId = crypto.randomUUID();
 
-		const userMessage: Message = {
+		const userMessage: MessageBubble = {
 			id: userMessageId,
 			type: "user",
-			chunks: [{ type: "text", content }],
+			chunks: [{ content }],
 		};
 
-		const assistantMessage: Message = {
+		const assistantMessage: MessageBubble = {
 			id: assistantMessageId,
 			type: "assistant",
 			chunks: [],
@@ -162,7 +212,7 @@ export function ChatDisplay({ onClose, sendOnConnect }: ChatDisplayProps) {
 
 		setMessages((prev) => [...prev, userMessage, assistantMessage]);
 		setActiveMessageId(assistantMessageId);
-		sendMessage("toLLM", { type: "toLLM", text: content });
+		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	};
 
 	return (
@@ -191,7 +241,15 @@ export function ChatDisplay({ onClose, sendOnConnect }: ChatDisplayProps) {
 			</div>
 
 			{/* Messages */}
-			<MessageList messages={messages} />
+			<MessageList
+				messages={messages}
+				onToolSelect={useCallback(
+					(tool) => {
+						onToolSelect?.(tool);
+					},
+					[onToolSelect],
+				)}
+			/>
 
 			{/* Chat Input */}
 			<ChatInput
@@ -201,4 +259,4 @@ export function ChatDisplay({ onClose, sendOnConnect }: ChatDisplayProps) {
 			/>
 		</div>
 	);
-}
+});

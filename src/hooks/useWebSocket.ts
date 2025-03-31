@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { WebSocketMessage, WebSocketMessageType } from "@/types/chat";
+import type { Payload, ToLLMMessage, WebSocketMessage, WebSocketMessageType } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -107,7 +107,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
 	// Memoize sendMessage function
 	const sendMessage = useCallback(
-		(type: WebSocketMessageType, payload: WebSocketMessage["payload"]) => {
+		(type: WebSocketMessageType, payload: Payload) => {
 			if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
 				console.error("WebSocket is not connected");
 				return false;
@@ -119,6 +119,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 					userId: userId,
 					payload,
 					timestamp: new Date().toISOString(),
+					messageId: crypto.randomUUID(),
 				};
 				wsRef.current.send(JSON.stringify(message));
 				return true;

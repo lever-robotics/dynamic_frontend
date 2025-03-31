@@ -1,21 +1,41 @@
 import type React from "react";
-import type { ToolExecution as ToolExecutionType } from "@/types/chat";
+import type { ToolExecutionBubble as ToolExecutionType } from "@/types/chat";
 
 interface ToolExecutionProps {
 	toolExecution: ToolExecutionType;
+	compact?: boolean;
 }
 
-export function ToolExecution({ toolExecution }: ToolExecutionProps) {
+export function ToolExecution({
+	toolExecution,
+	compact = false,
+}: ToolExecutionProps) {
 	const statusColors = {
 		starting: "bg-blue-50 border-blue-200 text-blue-700",
 		running: "bg-yellow-50 border-yellow-200 text-yellow-700",
 		complete: "bg-green-50 border-green-200 text-green-700",
 		error: "bg-red-50 border-red-200 text-red-700",
-	};
+	} as const;
 
 	const statusColor = toolExecution.status
 		? statusColors[toolExecution.status]
 		: statusColors.starting;
+
+	if (compact) {
+		return (
+			<div className="flex items-center justify-between p-2 border rounded">
+				<div className="flex items-center gap-2">
+					<span className="font-medium">{toolExecution.tool}</span>
+					<span className={`text-xs px-1.5 py-0.5 rounded ${statusColor}`}>
+						{toolExecution.status || "starting"}
+					</span>
+				</div>
+				{toolExecution.error && (
+					<span className="text-xs text-red-600">Failed</span>
+				)}
+			</div>
+		);
+	}
 
 	return (
 		<div className="my-2 rounded-lg border shadow-sm">

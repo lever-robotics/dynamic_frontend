@@ -1,19 +1,15 @@
 import type React from "react";
 import { processText } from "@/utils/messageUtils";
-import type { Message } from "@/types/chat";
-import { ToolExecution } from "./ToolExecution";
+import type { MessageBubble as MessageBubbleType, ToolExecutionBubble } from "@/types/chat";
+import { AgentExecution } from "./AgentExecution";
 
 interface MessageBubbleProps {
-	message: Message;
+	message: MessageBubbleType;
+	onToolSelect?: (tool: ToolExecutionBubble) => void;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
-	console.log("message", message);
-	message.chunks.forEach((chunk) => {
-		if (chunk.type === "tool") {
-			console.log("tool", chunk.toolExecution);
-		}
-	});
+export function MessageBubble({ message, onToolSelect }: MessageBubbleProps) {
+
 	return (
 		<div
 			className={`mb-4 flex ${
@@ -29,15 +25,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 			>
 				{message.chunks.map((chunk, index) => (
 					<div key={`${message.id}-chunk-${index}`}>
-						{chunk.type === "text" ? (
-							<div className="prose prose-sm max-w-none">
-								{processText(chunk.content)}
-							</div>
-						) : (
-							chunk.toolExecution && (
-								<ToolExecution toolExecution={chunk.toolExecution} />
-							)
-						)}
+						<div className="prose prose-sm max-w-none">
+							{processText(chunk.content)}
+						</div>
 					</div>
 				))}
 			</div>
