@@ -46,7 +46,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 							content: (payload as MessageChunk).content,
 						};
 						// Append new text chunk to current message
-						if(prev[messageIndex].type === "assistant") {
+						if (prev[messageIndex].type === "assistant") {
 							return [
 								...prev.slice(0, messageIndex),
 								{
@@ -128,7 +128,6 @@ export const ChatDisplay = memo(function ChatDisplay({
 									},
 								],
 							};
-							setDocument?.((payload as ToolChunk).result?.data);
 							return [...prev, newMessage];
 						}
 						// console.log("Tool Call --", (payload as ToolChunk).status);
@@ -156,14 +155,21 @@ export const ChatDisplay = memo(function ChatDisplay({
 							];
 							console.log(updated);
 							return updated;
-							
+
 						}
 						// If the tool is complete, add the result to the message. The running tool is always the last chunk.
 						if ((payload as ToolChunk).status === "complete") {
 							const updatedChunk = prev[messageIndex].chunks.pop();
+							if (!updatedChunk) return [...prev]; // Temproary fix, not the case for the bigquery agent
 							updatedChunk.toolCall.status = (payload as ToolChunk).status;
 							updatedChunk.toolCall.result = (payload as ToolChunk).result;
 							updatedChunk.toolCall.error = (payload as ToolChunk).error;
+
+							if ((payload as ToolChunk).tool === "agent_read_business_json") {
+								console.log("Setting Document --", (payload as ToolChunk).result.data);
+								setDocument((payload as ToolChunk).result.data);
+							}
+
 							return [
 								...prev.slice(0, messageIndex),
 								{
@@ -245,9 +251,8 @@ export const ChatDisplay = memo(function ChatDisplay({
 			<div className="flex items-center justify-between border-b p-4">
 				<div className="flex items-center gap-2">
 					<div
-						className={`h-2 w-2 rounded-full ${
-							isConnected ? "bg-green-500" : "bg-yellow-500"
-						}`}
+						className={`h-2 w-2 rounded-full ${isConnected ? "bg-green-500" : "bg-yellow-500"
+							}`}
 					/>
 					<span className="text-sm text-gray-600">
 						{isConnected ? "Connected" : "Connecting..."}

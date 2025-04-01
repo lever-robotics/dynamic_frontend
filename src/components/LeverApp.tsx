@@ -1,10 +1,26 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { SidebarComp } from "../components/Sidebar";
 import { ChatDisplay } from "./Chat/ChatDisplay";
-import BusinessSetup from "./onboarding/BusinessSetup";
 import { SettingsDisplay } from "./SettingsDisplay";
 import { Onboarding } from "./onboarding/Onboarding";
+import { Whiteboard } from "./Whiteboard";
+import { ToolProvider } from "@/contexts/ToolContext";
+import type { FlagChunk } from "@/types/chat";
+import { useToolContext } from "@/contexts/ToolContext";
+
+// ChatWrapper component to handle tool context
+function ChatWrapper({ sendOnConnect }: { sendOnConnect: () => FlagChunk }) {
+	const { setSelectedTool, setDocument } = useToolContext();
+
+	return (
+		<ChatDisplay
+			sendOnConnect={sendOnConnect}
+			onToolSelect={setSelectedTool}
+			setDocument={setDocument}
+		/>
+	);
+}
 
 // LeverApp component with search query management
 export const LeverApp: React.FC = () => {
@@ -14,23 +30,28 @@ export const LeverApp: React.FC = () => {
 	const [showOnboarding, setShowOnboarding] = useState(true);
 	const [showSettings, setShowSettings] = useState(false);
 
+	const sendOnConnect = useCallback(() => {
+		return {
+			type: "flag",
+			flag: "query",
+			context: JSON.stringify({}),
+		} as FlagChunk;
+	}, []);
+
 	return (
 		<div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
 			{/* Sidebar */}
 			<SidebarComp setShowSettings={setShowSettings} />
 
-			{/* Middle Content Area */}
-			<div className="flex-1 flex flex-col items-center bg-white max-h-[calc(100%-20px)] min-h-[calc(100%-20px)] rounded-xl overflow-auto pb-16 shadow-lg transition-all duration-300 m-2.5" />
+			<ToolProvider>
+				{/* Middle Content Area */}
+				<Whiteboard />
 
-			{/* Chat Display */}
-			<div className="w-1/3 h-full border-l border-gray-200 bg-white">
-				{!showOnboarding && <ChatDisplay />}
-			</div>
-
-			{/* Business Setup Modal */}
-			{showBusinessSetup && (
-				<BusinessSetup onClose={() => setShowBusinessSetup(false)} />
-			)}
+				{/* Chat Display */}
+				<div className="w-1/3 h-full border-l border-gray-200 bg-white">
+					{!showOnboarding && <ChatWrapper sendOnConnect={sendOnConnect} />}
+				</div>
+			</ToolProvider>
 
 			{/* Settings Display */}
 			{showSettings && (

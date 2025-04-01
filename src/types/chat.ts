@@ -70,8 +70,9 @@ export interface ErrorChunk extends Payload {
 	error: string;
 }
 
-export interface ContextChunk extends Payload {
-	type: "context";
+export interface FlagChunk extends Payload {
+	type: "flag";
+	flag: string;
 	context: string;
 }
 
@@ -91,7 +92,7 @@ export type WebSocketMessageType =
 	| "agent"
 	| "result"
 	| "error"
-	| "context";
+	| "flag";
 
 // Send these Messages
 export interface WebSocketMessage {

@@ -12,7 +12,9 @@ import {
     SidebarMenuButton
 } from "../components/ui/sidebar";
 import { AspectRatio } from "radix-ui";
-import logoImg from '@/assets/cgLogo.png';
+// import logoImg from '@/assets/cgLogo.png';
+// import logoImg from '@/assets/hydrojug.png';
+import logoImg from '@/assets/ecommerce.png';
 
 interface SidebarProps {
     setShowSettings: (show: boolean) => void;
@@ -56,7 +58,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                          {/* TODO: Add menu items */}
+                            {/* TODO: Add menu items */}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

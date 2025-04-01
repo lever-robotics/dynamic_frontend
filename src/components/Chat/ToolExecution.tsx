@@ -23,8 +23,8 @@ export function ToolExecution({
 		: statusColors.running;
 
 	if (toolExecution.status === "complete") {
-		console.log(toolExecution.result);
-		console.log(toolExecution.error);
+		//console.log(toolExecution.result);
+		//console.log(toolExecution.error);
 	}
 
 	if (compact) {

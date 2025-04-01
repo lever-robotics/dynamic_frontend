@@ -8,8 +8,10 @@ import odooIcon from "@/assets/odoo.png";
 import shopifyIcon from "@/assets/shopify.png";
 import quickBooksIcon from "@/assets/quick_books.png";
 import defaultLogo from "@/assets/default_business_logo.png";
+import bigqueryIcon from "@/assets/bigquery.png";
 import { Modal } from "../common/Modal";
 // import { IntegrationModal } from "./IntegrationModal";
+import type { BusinessInfo } from "./Onboarding";
 
 export interface Integration {
 	name: string;
@@ -21,6 +23,7 @@ export interface Integration {
 
 interface BusinessSetupProps {
 	onClose: () => void;
+	setBusinessInfo: (info: BusinessInfo) => void;
 }
 
 interface IntegrationsSectionProps {
@@ -46,9 +49,8 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 		<article
-			className={`flex gap-4 items-center p-4 rounded-xl border cursor-pointer transition-all ${
-				!integration.isAvailable ? "opacity-50 cursor-not-allowed" : ""
-			} ${integration.isConnected ? "border-primary-500 bg-primary-50" : ""}`}
+			className={`flex gap-4 items-center p-4 rounded-xl border cursor-pointer transition-all ${!integration.isAvailable ? "opacity-50 cursor-not-allowed" : ""
+				} ${integration.isConnected ? "border-primary-500 bg-primary-50" : ""}`}
 			onMouseEnter={() =>
 				integration.isAvailable && setIsHovering(integration.name)
 			}
@@ -124,15 +126,22 @@ const IntegrationsSection: React.FC<IntegrationsSectionProps> = ({
 	);
 };
 
-export function BusinessSetup({ onClose }: BusinessSetupProps) {
+export function BusinessSetup({ onClose, setBusinessInfo }: BusinessSetupProps) {
 	const [businessName, setBusinessName] = useState("");
+	const [businessUrl, setBusinessUrl] = useState("");
 	const [logoUrl, setLogoUrl] = useState(defaultLogo);
 	const [isHovering, setIsHovering] = useState<string | null>(null);
 	const [integrations, setIntegrations] = useState<Integration[]>([
 		{
-			name: "Google",
+			name: "Google Sheets",
 			icon: gsIcon,
 			description: "Connect your spreadsheets",
+			isAvailable: true,
+		},
+		{
+			name: "BigQuery",
+			icon: bigqueryIcon,
+			description: "Google BigQuery",
 			isAvailable: true,
 		},
 		{
@@ -145,7 +154,7 @@ export function BusinessSetup({ onClose }: BusinessSetupProps) {
 			name: "Shopify",
 			icon: shopifyIcon,
 			description: "E-commerce platform",
-			isAvailable: false,
+			isAvailable: true,
 		},
 		{
 			name: "QuickBooks",
@@ -165,29 +174,70 @@ export function BusinessSetup({ onClose }: BusinessSetupProps) {
 		);
 	};
 
+	const handleContinue = () => {
+		if (businessName && businessUrl) {
+			setBusinessInfo({ name: businessName, url: businessUrl });
+			onClose();
+		}
+	};
+
 	return (
 		<Modal isOpen={true} onClose={onClose} size="lg">
-			{/* <section className="relative p-8 bg-white rounded-3xl max-w-[600px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] w-[90%]"> */}
-				<div className="flex flex-col gap-6">
-					<h1 className="text-2xl font-semibold text-neutral-900">
-						Set up your business
-					</h1>
-					{/* <BusinessInfoSection
-            businessName={businessName}
-            setBusinessName={setBusinessName}
-            logoUrl={logoUrl}
-            setLogoUrl={setLogoUrl}
-            isHovering={isHovering}
-            setIsHovering={setIsHovering}
-          /> */}
-					<IntegrationsSection
-						integrations={integrations}
-						isHovering={isHovering}
-						setIsHovering={setIsHovering}
-						onConnect={handleConnect}
-					/>
+			<div className="flex flex-col gap-6">
+				<h1 className="text-2xl font-semibold text-neutral-900">
+					Set up your business
+				</h1>
+				<section className="flex flex-col gap-4">
+					<div className="flex flex-col gap-2">
+						<label
+							htmlFor="businessName"
+							className="text-sm font-medium text-zinc-800"
+						>
+							Business Name
+						</label>
+						<input
+							type="text"
+							id="businessName"
+							placeholder="Enter your business name"
+							className="px-4 py-3 w-full text-base rounded-lg border"
+							value={businessName}
+							onChange={(event) => setBusinessName(event.target.value)}
+						/>
+					</div>
+					<div className="flex flex-col gap-2">
+						<label
+							htmlFor="businessUrl"
+							className="text-sm font-medium text-zinc-800"
+						>
+							Business URL
+						</label>
+						<input
+							type="text"
+							id="businessUrl"
+							placeholder="Enter your business URL"
+							className="px-4 py-3 w-full text-base rounded-lg border"
+							value={businessUrl}
+							onChange={(event) => setBusinessUrl(event.target.value)}
+						/>
+					</div>
+				</section>
+				<IntegrationsSection
+					integrations={integrations}
+					isHovering={isHovering}
+					setIsHovering={setIsHovering}
+					onConnect={handleConnect}
+				/>
+				<div className="mt-4">
+					<button
+						type="button"
+						className="px-6 py-4 w-full text-base rounded-lg bg-accent-100 text-accent-700 hover:bg-accent-200 transition-colors font-medium shadow-sm"
+						onClick={handleContinue}
+						disabled={!businessName || !businessUrl}
+					>
+						Continue
+					</button>
 				</div>
-			{/* </section> */}
+			</div>
 		</Modal>
 	);
 }

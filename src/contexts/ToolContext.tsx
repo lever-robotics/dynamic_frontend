@@ -22,10 +22,10 @@ export function useToolContext() {
 export function ToolProvider({ children }: { children: React.ReactNode }) {
     const [selectedTool, setSelectedTool] = useState<ToolExecutionBubble | null>(null);
     const [document, setDocument] = useState<string | null>(null);
-    
+
     return (
-        <ToolContext.Provider value={{ 
-            selectedTool, 
+        <ToolContext.Provider value={{
+            selectedTool,
             setSelectedTool,
             document,
             setDocument,

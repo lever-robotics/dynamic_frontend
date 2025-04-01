@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 import { Modal } from "../common/Modal";
 import { ChatDisplay } from "../Chat/ChatDisplay";
-import type { ContextChunk, ToolExecutionBubble } from "@/types/chat";
+import type { FlagChunk, ToolExecutionBubble } from "@/types/chat";
 import { DocumentView } from "./DocumentView";
 import { ToolDetail } from "./ToolDetail";
-import { BusinessInfoSection } from "./BusinessInfoSection";
+import { BusinessSetup } from "./BusinessSetup";
 import { LeftPanel } from "./LeftPanel";
 import { RightPanel } from "./RightPanel";
 import { ToolProvider } from "@/contexts/ToolContext";
@@ -25,9 +25,10 @@ export function Onboarding({ onClose }: OnboardingProps) {
 	const sendOnConnect = useCallback(() => {
 		if (businessInfo) {
 			return {
-				type: "context",
+				type: "flag",
+				flag: "onboarding",
 				context: JSON.stringify(businessInfo),
-			} as ContextChunk;
+			} as FlagChunk;
 		}
 		return null;
 	}, [businessInfo]);
@@ -35,7 +36,7 @@ export function Onboarding({ onClose }: OnboardingProps) {
 	return (
 		<ToolProvider>
 			{showBusinessInfoSection ? (
-				<BusinessInfoSection
+				<BusinessSetup
 					onClose={() => setShowBusinessInfoSection(false)}
 					setBusinessInfo={setBusinessInfo}
 				/>
