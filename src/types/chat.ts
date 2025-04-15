@@ -56,6 +56,7 @@ export interface ToolChunk extends Payload {
 	arguments: Record<string, any>;
 	status: ToolStatus;
 	result?: any;
+	image?: string;
 	error?: string;
 }
 

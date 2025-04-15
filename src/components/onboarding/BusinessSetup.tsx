@@ -127,8 +127,8 @@ const IntegrationsSection: React.FC<IntegrationsSectionProps> = ({
 };
 
 export function BusinessSetup({ onClose, setBusinessInfo }: BusinessSetupProps) {
-	const [businessName, setBusinessName] = useState("");
-	const [businessUrl, setBusinessUrl] = useState("");
+	const [businessName, setBusinessName] = useState("My Business");
+	const [businessUrl, setBusinessUrl] = useState("https://mybusiness.com");
 	const [logoUrl, setLogoUrl] = useState(defaultLogo);
 	const [isHovering, setIsHovering] = useState<string | null>(null);
 	const [integrations, setIntegrations] = useState<Integration[]>([
@@ -182,9 +182,9 @@ export function BusinessSetup({ onClose, setBusinessInfo }: BusinessSetupProps) 
 	};
 
 	return (
-		<Modal isOpen={true} onClose={onClose} size="lg">
-			<div className="flex flex-col gap-6">
-				<h1 className="text-2xl font-semibold text-neutral-900">
+		<Modal isOpen={true} onClose={() => {}} size="lg" showCloseButton={false} preventBackgroundClick={true}>
+			<div className="flex flex-col gap-6 drop-shadow-sm">
+				<h1 className="text-2xl font-semibold text-neutral-900 font-semibold font-heading mt-2">
 					Set up your business
 				</h1>
 				<section className="flex flex-col gap-4">

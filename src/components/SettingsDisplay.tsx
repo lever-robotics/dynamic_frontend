@@ -21,14 +21,12 @@ interface Setting {
 
 interface SettingsDisplayProps {
 	onClose: () => void;
-	showBusinessSetup: (show: boolean) => void;
-	showOnboarding: (show: boolean) => void;
+	showBlueprint: () => void;
 }
 
 export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 	onClose,
-	showBusinessSetup,
-	showOnboarding,
+	showBlueprint,
 }) => {
 	const { signOut } = useAuth();
 	const [settings, setSettings] = useState<Setting[]>([
@@ -77,33 +75,38 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 	};
 
 	return (
-		<Modal isOpen={true} onClose={onClose}>
-			<div className="w-full px-4 py-5 sm:p-6">
-				<h2 className="text-xl font-semibold text-gray-900 mb-6">Settings</h2>
-
-				<div className="space-y-6">
+		<Modal isOpen={true} onClose={onClose} size="lg">
+			<div className="flex flex-col gap-6">
+				<h2 className="text-2xl font-semibold text-neutral-900">Settings</h2>
+				<div className="flex flex-col gap-4">
 					{settings.map((setting) => (
-						<div key={setting.id} className="flex items-center justify-between">
-							<div className="flex-1">
-								<h3 className="text-sm font-medium text-gray-900">
+						<div
+							key={setting.id}
+							className="flex items-center justify-between p-4 border rounded-lg"
+						>
+							<div>
+								<h3 className="font-medium text-neutral-900">
 									{setting.name}
 								</h3>
-								<p className="text-sm text-gray-500">{setting.description}</p>
+								<p className="text-sm text-neutral-600">
+									{setting.description}
+								</p>
 							</div>
 							<button
 								type="button"
-								className={`${
-									setting.enabled ? "bg-primary" : "bg-gray-200"
-								} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
-								role="switch"
-								aria-checked={setting.enabled}
 								onClick={() => handleToggle(setting.id)}
+								className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+									setting.enabled
+										? "bg-primary-500"
+										: "bg-gray-200"
+								}`}
 							>
 								<span
-									aria-hidden="true"
-									className={`${
-										setting.enabled ? "translate-x-5" : "translate-x-0"
-									} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+									className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+										setting.enabled
+											? "translate-x-6"
+											: "translate-x-1"
+									}`}
 								/>
 							</button>
 						</div>
@@ -115,17 +118,13 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 					{/* <GooglePicker onSelect={() => { }} /> */}
 					<button
 						type="button"
-						onClick={() => {showBusinessSetup(true); onClose()}}
+						onClick={() => {
+							showBlueprint();
+							onClose();
+						}}
 						className="w-3/4 mx-auto flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-anakiwa-500 hover:bg-anakiwa-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-anakiwa-500"
 					>
-						Business Setup
-					</button>
-					<button
-						type="button"
-						onClick={() => {showOnboarding(true); onClose()}}
-						className="w-3/4 mx-auto flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-anakiwa-500 hover:bg-anakiwa-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-anakiwa-500"
-					>
-						Onboarding
+						Open Blueprint
 					</button>
 					<button
 						type="button"

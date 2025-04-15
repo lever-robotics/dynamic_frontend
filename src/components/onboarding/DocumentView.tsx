@@ -242,8 +242,8 @@ export function DocumentView({
                                 <JsonToMarkdown data={parsedContent} />
                             </div>
                         ) : (
-                            <div className="text-red-500 p-4 bg-red-50 rounded-lg">
-                                Invalid JSON content
+                            <div className="bg-gray-50 p-6 rounded-lg">
+                                Searching Business Data...
                             </div>
                         )}
                     </div>

@@ -7,7 +7,7 @@ interface RightPanelProps {
 }
 
 export function RightPanel({ sendOnConnect }: RightPanelProps) {
-    const { setSelectedTool, setDocument } = useToolContext();
+    const { setSelectedTool, setDocument, setImage } = useToolContext();
 
     return (
         <div className="w-[600px] border-l border-gray-200">
@@ -15,6 +15,7 @@ export function RightPanel({ sendOnConnect }: RightPanelProps) {
                 setDocument={setDocument}
                 sendOnConnect={sendOnConnect}
                 onToolSelect={setSelectedTool}
+                setImage={setImage}
             />
         </div>
     );

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useToolContext } from '@/contexts/ToolContext';
 import { DocumentView } from './DocumentView';
 import { ToolDetail } from './ToolDetail';
+import { TabGroup } from './TabGroup';
 
 const exampleJson = {
     "business_profile": {
@@ -79,20 +80,22 @@ const exampleJson = {
     }
 };
 
-const blankJson = {
-    "business_profile": { "business_name": "Company Name" },
-    "business_model_canvas": {},
-    "product_service_descriptions": {},
-    "social_media_strategy": {},
-    "competitor_analysis": {}
-};
+const blankJson = {};
 
 export function LeftPanel() {
     const { selectedTool, setSelectedTool, document, setDocument } = useToolContext();
-    // const [documentContent, setDocumentContent] = useState<string>("");
+    const [activeTab, setActiveTab] = useState(0);
+    const tabs = ["Business Overview", "Business Data"];
 
     return (
         <div className="w-[800px] border-r border-gray-200">
+            <div className="flex justify-center py-6">
+                <TabGroup 
+                    tabs={tabs} 
+                    activeTab={activeTab} 
+                    onTabChange={setActiveTab} 
+                />
+            </div>
             {selectedTool ? (
                 <ToolDetail
                     tool={selectedTool}
@@ -100,7 +103,7 @@ export function LeftPanel() {
                 />
             ) : (
                 <DocumentView
-                    content={document || JSON.stringify(blankJson, null, 2)}
+                    content={JSON.stringify(document, null, 2) || JSON.stringify(blankJson, null, 2)}
                     onUpdate={setDocument}
                     isEditable={true}
                 />

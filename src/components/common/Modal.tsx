@@ -47,13 +47,13 @@ export function Modal({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50 backdrop-blur-md"
                 onClick={preventBackgroundClick ? undefined : onClose}
             />
 
             {/* Modal */}
             <div
-                className={"relative bg-white rounded-lg shadow-xl m-4"}
+                className={"relative bg-white rounded-3xl shadow-xl m-4"}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close button */}
@@ -61,7 +61,7 @@ export function Modal({
                     <button
                         onClick={onClose}
                         type="button"
-                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                        className="absolute top-5 right-6 text-gray-400 hover:text-gray-600"
                         aria-label="Close modal"
                     >
                         ✕

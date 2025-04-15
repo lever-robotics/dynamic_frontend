@@ -19,6 +19,7 @@ interface ChatDisplayProps {
 	sendOnConnect?: () => Payload;
 	onToolSelect?: (tool: ToolExecutionBubble) => void;
 	setDocument?: (document: string | null) => void;
+	setImage?: (image: string | null) => void;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
@@ -26,6 +27,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 	sendOnConnect,
 	onToolSelect,
 	setDocument,
+	setImage,
 }: ChatDisplayProps) {
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	const [messages, setMessages] = useState<MessageBubble[]>([]);
@@ -33,20 +35,42 @@ export const ChatDisplay = memo(function ChatDisplay({
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
 		(wsMessage: WebSocketMessage) => {
-			console.log("Current Mesages --", messages, "Message: ", wsMessage);
+			// console.log("Current Mesages --", messages, "Message: ", wsMessage);
 			// if (!activeMessageId) return;
 			const { payload, messageId } = wsMessage;
 			switch (payload.type) {
 				// Create or Update Text
 				case "text": {
-					console.log("Text --", payload);
+					// console.log("Text --", payload);
 					setMessages((prev) => {
 						const messageIndex = prev.length - 1;
 						const newChunk: MessageChunkBubble = {
 							content: (payload as MessageChunk).content,
 						};
+
 						// Append new text chunk to current message
 						if (prev[messageIndex].type === "assistant") {
+							const lastChunkIndex = prev[messageIndex].chunks.length - 1;
+
+							// Merge with the last chunk if it exists
+							if (lastChunkIndex >= 0) {
+								const updatedChunks = [...prev[messageIndex].chunks];
+								updatedChunks[lastChunkIndex] = {
+									...updatedChunks[lastChunkIndex],
+									content: updatedChunks[lastChunkIndex].content + newChunk.content,
+								};
+
+								return [
+									...prev.slice(0, messageIndex),
+									{
+										...prev[messageIndex],
+										chunks: updatedChunks,
+									},
+									...prev.slice(messageIndex + 1),
+								];
+							}
+
+							// If no chunks exist, add the new chunk
 							return [
 								...prev.slice(0, messageIndex),
 								{
@@ -56,6 +80,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 								...prev.slice(messageIndex + 1),
 							];
 						}
+
 						// Create new message if the last message is an agent
 						const newMessage: MessageBubble = {
 							id: messageId,
@@ -100,12 +125,12 @@ export const ChatDisplay = memo(function ChatDisplay({
 				// Create or Update Tool
 				case "tool": {
 					setMessages((prev) => {
-						console.log("Tool Call --", (payload as ToolChunk).status);
+						// console.log("Tool Call --", (payload as ToolChunk).status);
 						const messageIndex = prev.findIndex(
 							(m) => m.agentName === (payload as ToolChunk).agentName,
 						);
-						console.log("Message Index --", messageIndex);
-						console.log("Tool Info:", payload as ToolChunk);
+						// console.log("Message Index --", messageIndex);
+						// console.log("Tool Info:", payload as ToolChunk);
 						// If there is not a agent that this tool references, do nothing
 						// if (messageIndex === -1) return [...prev];
 						if (messageIndex === -1) {
@@ -166,8 +191,14 @@ export const ChatDisplay = memo(function ChatDisplay({
 							updatedChunk.toolCall.error = (payload as ToolChunk).error;
 
 							if ((payload as ToolChunk).tool === "agent_read_business_json") {
-								console.log("Setting Document --", (payload as ToolChunk).result.data);
-								setDocument((payload as ToolChunk).result.data);
+								console.log("Setting Document --", (payload as ToolChunk).result);
+								setDocument((payload as ToolChunk).result);
+								// console.log("Parsed --", parsed);
+							}
+
+							if ((payload as ToolChunk).tool === "agent_execute_python_code") {
+								console.log("Setting Image --", (payload as ToolChunk).image);
+								setImage((payload as ToolChunk).image);
 							}
 
 							return [
