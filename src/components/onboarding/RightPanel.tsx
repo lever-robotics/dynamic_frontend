@@ -7,6 +7,7 @@ interface RightPanelProps {
 }
 
 export function RightPanel({ sendOnConnect }: RightPanelProps) {
+    // This Chat display will no actually set image or document or select a tool.
     const { setSelectedTool, setDocument, setImage } = useToolContext();
 
     return (

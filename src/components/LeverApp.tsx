@@ -7,14 +7,15 @@ import { BusinessSetup } from "./onboarding/BusinessSetup";
 import { AnalyzingBusiness } from "./onboarding/AnalyzingBusiness";
 import { Blueprint } from "./onboarding/Blueprint";
 import { Whiteboard } from "./Whiteboard";
-import { ToolProvider } from "@/contexts/ToolContext";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import type { FlagChunk } from "@/types/chat";
-import { useToolContext } from "@/contexts/ToolContext";
 import { useAuth } from "@/utils/AuthProvider";
+import { useUserConfig } from "@/utils/UserConfigProvider";
+import { SinglePageApp } from "./SinglePageApp";
 
-// ChatWrapper component to handle tool context
+// ChatWrapper component to handle workspace context
 function ChatWrapper({ sendOnConnect }: { sendOnConnect: () => FlagChunk }) {
-	const { setSelectedTool, setDocument, setImage } = useToolContext();
+	const { setSelectedTool, setDocument, setImage } = useWorkspace();
 
 	return (
 		<ChatDisplay
@@ -28,8 +29,8 @@ function ChatWrapper({ sendOnConnect }: { sendOnConnect: () => FlagChunk }) {
 
 // LeverApp component with new flow implementation
 export const LeverApp: React.FC = () => {
-	const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(false);
-	const [isFirstTime, setIsFirstTime] = useState(true);
+	const { userConfig } = useUserConfig();
+	const [isFirstTime, setIsFirstTime] = useState(!userConfig?.completed_onboarding);
 	const [showBlueprint, setShowBlueprint] = useState(false);
 	const [showSettings, setShowSettings] = useState(false);
 	const [businessInfo, setBusinessInfo] = useState<{ name: string; url: string } | null>(null);
@@ -45,52 +46,43 @@ export const LeverApp: React.FC = () => {
 
 	return (
 		<div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
-			{/* Sidebar */}
-			<SidebarComp setShowSettings={setShowSettings} />
+			<WorkspaceProvider>
+				<SinglePageApp />
 
-			<ToolProvider>
-				{/* Middle Content Area */}
-				<Whiteboard />
-
-				{/* Chat Display */}
-				<div className="w-1/3 h-full border-l border-gray-200 bg-white">
-					<ChatWrapper sendOnConnect={sendOnConnect} />
-				</div>
-			</ToolProvider>
-
-			{/* Settings Display */}
-			{showSettings && (
-				<SettingsDisplay 
-					onClose={() => setShowSettings(false)} 
-					showBlueprint={() => setShowBlueprint(true)}
-				/>
-			)}
-
-			{/* First-time user flow */}
-			{isFirstTime && (
-				<>
-					<BusinessSetup
-						onClose={() => setIsFirstTime(true)}
-						setBusinessInfo={setBusinessInfo}
+				{/* Settings Display */}
+				{showSettings && (
+					<SettingsDisplay 
+						onClose={() => setShowSettings(false)} 
+						showBlueprint={() => setShowBlueprint(true)}
 					/>
-					{businessInfo && (
-						<AnalyzingBusiness
-							onComplete={() => {
-								setIsFirstTime(false);
-								setShowBlueprint(true);
-							}}
-						/>
-					)}
-				</>
-			)}
+				)}
 
-			{/* Blueprint Modal */}
-			{showBlueprint && (
-				<Blueprint
-					onClose={() => setShowBlueprint(false)}
-					businessInfo={businessInfo || undefined}
-				/>
-			)}
+				{/* Blueprint Modal */}
+				{showBlueprint && (
+					<Blueprint
+						onClose={() => setShowBlueprint(false)}
+					/>
+				)}
+
+				{/* First-time user flow */}
+				{isFirstTime && (
+					<>
+						<BusinessSetup
+							onClose={() => setIsFirstTime(true)}
+							setBusinessInfo={setBusinessInfo}
+						/>
+						{businessInfo && (
+							<AnalyzingBusiness
+								onComplete={() => {
+									setIsFirstTime(false);
+									setShowBlueprint(true);
+								}}
+								businessInfo={businessInfo || undefined}
+							/>
+						)}
+					</>
+				)}
+			</WorkspaceProvider>
 		</div>
 	);
 };

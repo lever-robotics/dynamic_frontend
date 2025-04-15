@@ -13,6 +13,7 @@ import type {
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 interface ChatDisplayProps {
 	onClose?: () => void;
@@ -30,26 +31,36 @@ export const ChatDisplay = memo(function ChatDisplay({
 	setImage,
 }: ChatDisplayProps) {
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
-	const [messages, setMessages] = useState<MessageBubble[]>([]);
+	const [localMessages, setLocalMessages] = useState<MessageBubble[]>([]);
+	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+	const { state: { messages, currentThreadId }, addMessage } = useWorkspace();
+
+	// Load messages when thread changes
+	useEffect(() => {
+		if (currentThreadId) {
+			console.log('Thread changed, loading messages:', messages);
+			setIsLoadingMessages(true);
+			setLocalMessages(messages);
+			setIsLoadingMessages(false);
+		} else {
+			setLocalMessages([]);
+		}
+	}, [currentThreadId, messages]);
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
 		(wsMessage: WebSocketMessage) => {
-			// console.log("Current Mesages --", messages, "Message: ", wsMessage);
-			// if (!activeMessageId) return;
 			const { payload, messageId } = wsMessage;
 			switch (payload.type) {
-				// Create or Update Text
 				case "text": {
-					// console.log("Text --", payload);
-					setMessages((prev) => {
+					setLocalMessages((prev) => {
 						const messageIndex = prev.length - 1;
 						const newChunk: MessageChunkBubble = {
 							content: (payload as MessageChunk).content,
 						};
 
 						// Append new text chunk to current message
-						if (prev[messageIndex].type === "assistant") {
+						if (prev[messageIndex]?.type === "assistant") {
 							const lastChunkIndex = prev[messageIndex].chunks.length - 1;
 
 							// Merge with the last chunk if it exists
@@ -60,23 +71,25 @@ export const ChatDisplay = memo(function ChatDisplay({
 									content: updatedChunks[lastChunkIndex].content + newChunk.content,
 								};
 
+								const updatedMessage = {
+									...prev[messageIndex],
+									chunks: updatedChunks,
+								};
 								return [
 									...prev.slice(0, messageIndex),
-									{
-										...prev[messageIndex],
-										chunks: updatedChunks,
-									},
+									updatedMessage,
 									...prev.slice(messageIndex + 1),
 								];
 							}
 
 							// If no chunks exist, add the new chunk
+							const updatedMessage = {
+								...prev[messageIndex],
+								chunks: [...prev[messageIndex].chunks, newChunk],
+							};
 							return [
 								...prev.slice(0, messageIndex),
-								{
-									...prev[messageIndex],
-									chunks: [...prev[messageIndex].chunks, newChunk],
-								},
+								updatedMessage,
 								...prev.slice(messageIndex + 1),
 							];
 						}
@@ -91,13 +104,11 @@ export const ChatDisplay = memo(function ChatDisplay({
 					});
 					break;
 				}
-				// Create or Update Agent
 				case "agent": {
-					setMessages((prev) => {
+					setLocalMessages((prev) => {
 						const messageIndex = prev.findIndex(
 							(m) => m.agentName === (payload as AgentChunk).name,
 						);
-						console.log(messageIndex, wsMessage);
 						// If the referenced agent is not found, create a new agent message
 						if (messageIndex === -1) {
 							const newMessage: MessageBubble = {
@@ -107,39 +118,32 @@ export const ChatDisplay = memo(function ChatDisplay({
 								status: (payload as AgentChunk).status,
 								chunks: [],
 							};
-							console.log("Prev --", prev);
 							return [...prev, newMessage];
 						}
 
+						const updatedMessage = {
+							...prev[messageIndex],
+							status: (payload as AgentChunk).status,
+						};
 						return [
 							...prev.slice(0, messageIndex),
-							{
-								...prev[messageIndex],
-								status: (payload as AgentChunk).status,
-							},
+							updatedMessage,
 							...prev.slice(messageIndex + 1),
 						];
 					});
 					break;
 				}
-				// Create or Update Tool
 				case "tool": {
-					setMessages((prev) => {
-						// console.log("Tool Call --", (payload as ToolChunk).status);
+					setLocalMessages((prev) => {
 						const messageIndex = prev.findIndex(
 							(m) => m.agentName === (payload as ToolChunk).agentName,
 						);
-						// console.log("Message Index --", messageIndex);
-						// console.log("Tool Info:", payload as ToolChunk);
-						// If there is not a agent that this tool references, do nothing
-						// if (messageIndex === -1) return [...prev];
 						if (messageIndex === -1) {
-
 							const newMessage: MessageBubble = {
 								id: messageId,
 								type: "agent",
-								agentName: (payload as AgentChunk).name,
-								status: (payload as AgentChunk).status,
+								agentName: (payload as ToolChunk).agentName,
+								status: (payload as ToolChunk).status,
 								chunks: [
 									{
 										toolCall: {
@@ -155,10 +159,9 @@ export const ChatDisplay = memo(function ChatDisplay({
 							};
 							return [...prev, newMessage];
 						}
-						// console.log("Tool Call --", (payload as ToolChunk).status);
-						// If the tool is running, add a new chunk to the message
+
 						if ((payload as ToolChunk).status === "running") {
-							const updated = [
+							return [
 								...prev.slice(0, messageIndex),
 								{
 									...prev[messageIndex],
@@ -178,56 +181,57 @@ export const ChatDisplay = memo(function ChatDisplay({
 								},
 								...prev.slice(messageIndex + 1),
 							];
-							console.log(updated);
-							return updated;
-
 						}
-						// If the tool is complete, add the result to the message. The running tool is always the last chunk.
+
 						if ((payload as ToolChunk).status === "complete") {
 							const updatedChunk = prev[messageIndex].chunks.pop();
-							if (!updatedChunk) return [...prev]; // Temproary fix, not the case for the bigquery agent
+							if (!updatedChunk) return [...prev];
 							updatedChunk.toolCall.status = (payload as ToolChunk).status;
 							updatedChunk.toolCall.result = (payload as ToolChunk).result;
 							updatedChunk.toolCall.error = (payload as ToolChunk).error;
 
 							if ((payload as ToolChunk).tool === "agent_read_business_json") {
-								console.log("Setting Document --", (payload as ToolChunk).result);
-								setDocument((payload as ToolChunk).result);
-								// console.log("Parsed --", parsed);
+								setDocument?.((payload as ToolChunk).result);
 							}
 
 							if ((payload as ToolChunk).tool === "agent_execute_python_code") {
-								console.log("Setting Image --", (payload as ToolChunk).image);
-								setImage((payload as ToolChunk).image);
+								setImage?.((payload as ToolChunk).image);
 							}
 
+							const updatedMessage = {
+								...prev[messageIndex],
+								chunks: [...prev[messageIndex].chunks, updatedChunk],
+							};
 							return [
 								...prev.slice(0, messageIndex),
-								{
-									...prev[messageIndex],
-									chunks: [...prev[messageIndex].chunks, updatedChunk],
-								},
+								updatedMessage,
 								...prev.slice(messageIndex + 1),
 							];
 						}
+
 						if ((payload as ToolChunk).status === "error") {
 							const updatedChunk = prev[messageIndex].chunks.pop();
+							if (!updatedChunk) return [...prev];
 							updatedChunk.toolCall.status = (payload as ToolChunk).status;
 							updatedChunk.toolCall.error = (payload as ToolChunk).error;
+							const updatedMessage = {
+								...prev[messageIndex],
+								chunks: [...prev[messageIndex].chunks, updatedChunk],
+							};
 							return [
 								...prev.slice(0, messageIndex),
-								{
-									...prev[messageIndex],
-									chunks: [...prev[messageIndex].chunks, updatedChunk],
-								},
+								...prev.slice(messageIndex + 1),
+								updatedMessage,
 							];
 						}
+
+						return prev;
 					});
 					break;
 				}
 			}
 		},
-		[messages, setDocument],
+		[setDocument, setImage]
 	);
 
 	// WebSocket connection with message handling
@@ -239,16 +243,6 @@ export const ChatDisplay = memo(function ChatDisplay({
 		if (isConnected && sendOnConnect) {
 			const msg = sendOnConnect();
 			if (msg) {
-				// Create initial message before sending
-				// const initialMessageId = crypto.randomUUID();
-				// const initialMessage: MessageBubble = {
-				// 	id: initialMessageId,
-				// 	type: "assistant",
-				// 	chunks: [],
-				// };
-				// setMessages([initialMessage]);
-				// setActiveMessageId(initialMessageId);
-
 				sendMessage(msg.type, msg);
 			}
 		}
@@ -271,10 +265,30 @@ export const ChatDisplay = memo(function ChatDisplay({
 			chunks: [],
 		};
 
-		setMessages((prev) => [...prev, userMessage, assistantMessage]);
+		// Add user message to both local and workspace state
+		setLocalMessages(prev => [...prev, userMessage, assistantMessage]);
+		addMessage(userMessage);
 		setActiveMessageId(assistantMessageId);
 		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	};
+
+	// When a message is complete, add it to the workspace state
+	useEffect(() => {
+		// Don't add messages to DB if we're loading them
+		if (isLoadingMessages) return;
+
+		const lastMessage = localMessages[localMessages.length - 1];
+		if (lastMessage && lastMessage.type === "assistant" && lastMessage.chunks.length > 0) {
+			const isComplete = lastMessage.chunks.every(chunk => 
+				!chunk.toolCall || 
+				(chunk.toolCall.status === "complete" || chunk.toolCall.status === "error")
+			);
+			
+			if (isComplete) {
+				addMessage(lastMessage);
+			}
+		}
+	}, [localMessages, addMessage, isLoadingMessages]);
 
 	return (
 		<div className="flex flex-col h-full bg-white">
@@ -302,7 +316,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 			{/* Messages */}
 			<MessageList
-				messages={messages}
+				messages={localMessages}
 				onToolSelect={useCallback(
 					(tool) => {
 						onToolSelect?.(tool);

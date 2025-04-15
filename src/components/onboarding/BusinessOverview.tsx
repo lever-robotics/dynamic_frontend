@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
 import { JsonView } from "./JsonViewer";
-
-interface DocumentViewProps {
-    content: string;
-    onUpdate?: (content: string) => void;
-    isEditable?: boolean;
-}
+import { useUserConfig } from "@/utils/UserConfigProvider";
 
 function JsonToMarkdown({ data }: { data: any }) {
     const renderBusinessProfile = (businessProfile: any) => {
@@ -170,84 +165,45 @@ function JsonToMarkdown({ data }: { data: any }) {
     );
 }
 
-export function DocumentView({
-    content,
-    onUpdate,
-    isEditable = false
-}: DocumentViewProps) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [editableContent, setEditableContent] = useState(content);
+export function BusinessOverview() {
+    const { userConfig, isLoading } = useUserConfig();
     const [parsedContent, setParsedContent] = useState<any>(null);
 
     useEffect(() => {
-        setEditableContent(content);
-        try {
-            setParsedContent(JSON.parse(content));
-        } catch (e) {
-            setParsedContent(null);
+        if (userConfig?.business_overview) {
+            try {
+                // If it's a string, parse it. If it's already an object, use it directly
+                const parsed = typeof userConfig.business_overview === 'string' 
+                    ? JSON.parse(userConfig.business_overview)
+                    : userConfig.business_overview;
+                setParsedContent(parsed);
+            } catch (e) {
+                console.error('Failed to parse business overview:', e);
+                setParsedContent(null);
+            }
         }
-    }, [content]);
-
-    const handleSave = () => {
-        setIsEditing(false);
-        onUpdate?.(editableContent);
-    };
-
-    const formatJson = (json: string) => {
-        try {
-            return JSON.stringify(JSON.parse(json), null, 2);
-        } catch (e) {
-            return json;
-        }
-    };
+    }, [userConfig]);
 
     return (
         <div className="h-full flex flex-col bg-white">
-            {/* Header */}
-            <div className="flex justify-between items-center p-4 border-b bg-gray-50">
-                <h2 className="text-lg font-semibold text-gray-800">Business Overview</h2>
-                {isEditable && (
-                    <button
-                        type="button"
-                        onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                        className="px-4 py-2 rounded-md text-sm font-medium
-                            bg-accent-100 text-accent-700 hover:bg-accent-200
-                            transition-colors duration-200"
-                    >
-                        {isEditing ? "Save" : "Edit"}
-                    </button>
-                )}
-            </div>
 
             {/* Content */}
             <div className="flex-1 overflow-auto p-6">
-                {isEditing ? (
-                    <div className="h-full">
+                <div className="prose max-w-none">
+                    {isLoading ? (
                         <div className="bg-gray-50 p-6 rounded-lg">
-                            <JsonView data={parsedContent} />
+                            Loading Business Overview...
                         </div>
-                        <textarea
-                            value={formatJson(editableContent)}
-                            onChange={(e) => setEditableContent(e.target.value)}
-                            className="w-full h-full min-h-[500px] p-4 border rounded-lg mt-4
-                                font-mono text-sm focus:outline-none focus:ring-2 
-                                focus:ring-accent-500 bg-gray-50"
-                            placeholder="Enter JSON content..."
-                        />
-                    </div>
-                ) : (
-                    <div className="prose max-w-none">
-                        {parsedContent ? (
-                            <div className="bg-gray-50 p-6 rounded-lg">
-                                <JsonToMarkdown data={parsedContent} />
-                            </div>
-                        ) : (
-                            <div className="bg-gray-50 p-6 rounded-lg">
-                                Searching Business Data...
-                            </div>
-                        )}
-                    </div>
-                )}
+                    ) : parsedContent ? (
+                        <div className="bg-gray-50 p-6 rounded-lg">
+                            <JsonToMarkdown data={parsedContent} />
+                        </div>
+                    ) : (
+                        <div className="bg-gray-50 p-6 rounded-lg">
+                            No business overview data available.
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -3,12 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './utils/AuthProvider.tsx'
-
+import { UserConfigProvider } from './utils/UserConfigProvider.tsx'
 // biome-ignore lint/style/noNonNullAssertion: <explanation>
 createRoot(document.getElementById('root')!).render(
   // <StrictMode>
 	<AuthProvider>
-		<App />
+		<UserConfigProvider>
+			<App />
+		</UserConfigProvider>
 	</AuthProvider>
   // </StrictMode>,
 )

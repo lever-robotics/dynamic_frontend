@@ -14,7 +14,9 @@ import {
 import { AspectRatio } from "radix-ui";
 // import logoImg from '@/assets/cgLogo.png';
 // import logoImg from '@/assets/hydrojug.png';
-import logoImg from '@/assets/ecommerce.png';
+// import logoImg from '@/assets/ecommerce.png';
+import logoImg from '@/assets/lever-nobg.png';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 interface SidebarProps {
     setShowSettings: (show: boolean) => void;
@@ -23,13 +25,14 @@ interface SidebarProps {
 export const SidebarComp: React.FC<SidebarProps> = ({
     setShowSettings,
 }) => {
+    const { state: { threads, currentThreadId }, switchThread } = useWorkspace();
 
     const handleLogoClick = () => {
         // TODO: Add home page
     };
 
-    const handleItemClick = () => {
-        // TODO: Add item click
+    const handleThreadClick = (threadId: string) => {
+        switchThread(threadId);
     };
 
     const handleSettingsClick = () => {
@@ -58,13 +61,24 @@ export const SidebarComp: React.FC<SidebarProps> = ({
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {/* TODO: Add menu items */}
+                            {threads.map((thread) => (
+                                <SidebarMenuItem key={thread.id}>
+                                    <SidebarMenuButton
+                                        onClick={() => handleThreadClick(thread.id)}
+                                        className={`w-full ${currentThreadId === thread.id ? 'bg-anakiwa-100' : ''}`}
+                                    >
+                                        <span className="truncate max-w-[180px]">
+                                            {thread.name}
+                                        </span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
 
-            {/* Settings Section - Moved to bottom like in AppSidebar */}
+            {/* Settings Section */}
             <SidebarContent className="pb-4 ml-1 justify-end">
                 <SidebarGroup>
                     <SidebarGroupContent>

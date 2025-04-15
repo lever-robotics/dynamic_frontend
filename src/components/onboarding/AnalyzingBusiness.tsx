@@ -4,6 +4,10 @@ import { Modal } from "../common/Modal";
 
 interface AnalyzingBusinessProps {
     onComplete: () => void;
+    businessInfo: {
+        name: string;
+        url: string;
+    };
 }
 
 interface ProgressBarProps {
@@ -70,7 +74,7 @@ export function AnalyzingBusiness({ onComplete }: AnalyzingBusinessProps) {
                     setTimeout(() => onComplete(), 500);
                     return 100;
                 }
-                return prevProgress + 2;
+                return prevProgress + 20;
             });
         }, 100);
 
@@ -99,7 +103,7 @@ export function AnalyzingBusiness({ onComplete }: AnalyzingBusinessProps) {
                         <span className="text-primary-400"> Website</span>
                     </h1>
 
-                    <ProgressBar progress={progress} width={828} className="mb-20" />
+                    <ProgressBar progress={progress} width={414} className="mb-20" />
 
                     <StatusText
                         messages={messages.slice(0, currentMessageIndex + 1)}

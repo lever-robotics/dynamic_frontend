@@ -2,6 +2,7 @@ import type React from 'react'
 import { useState } from 'react'
 import { useAuth } from '@/utils/AuthProvider';
 import leverLogo from '@/assets/lever-nobg.png';
+import { useUserConfig } from '@/utils/UserConfigProvider';
 
 function InputField({
   label,
@@ -67,7 +68,7 @@ export const AuthModal: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     const { signIn } = useAuth();
-    // const { fetchUserSchema } = useAuthApollo();
+    const { fetchUserConfig } = useUserConfig();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -75,7 +76,12 @@ export const AuthModal: React.FC = () => {
         setLoading(true)
         try {
             const authResponse = await signIn({ email, password });
-            console.log(authResponse)
+            // console.log(authResponse)
+
+            // Fetch user config after successful sign in
+            if (authResponse?.user?.id) {
+                await fetchUserConfig();
+            }
 
         } catch (err) {
             setError('Invalid email or password')

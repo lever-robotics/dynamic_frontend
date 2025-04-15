@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Modal } from "../common/Modal";
 import { ChatDisplay } from "../Chat/ChatDisplay";
 import type { FlagChunk, ToolExecutionBubble } from "@/types/chat";
-import { DocumentView } from "./DocumentView";
+import { DocumentView } from "./BusinessOverview";
 import { ToolDetail } from "./ToolDetail";
 import { BusinessSetup } from "./BusinessSetup";
 import { LeftPanel } from "./LeftPanel";
