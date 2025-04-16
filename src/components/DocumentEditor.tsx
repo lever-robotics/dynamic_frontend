@@ -16,7 +16,7 @@ export function DocumentEditor() {
             <div className="w-[8.5in] min-w-[8.5in] py-8 space-y-8">
                 {/* Each "page" is a section with a white background and shadow */}
                 <div className={cn(
-                    "bg-card",
+                    "bg-white",
                     "border rounded-lg",
                     "shadow-sm",
                     "p-8",
@@ -26,7 +26,7 @@ export function DocumentEditor() {
                 </div>
                 {/* Empty page at the bottom to create the "one more page" effect */}
                 <div className={cn(
-                    "bg-card",
+                    "bg-white",
                     "border rounded-lg",
                     "shadow-sm",
                     "p-8",

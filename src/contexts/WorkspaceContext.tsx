@@ -3,7 +3,7 @@ import { supabase } from '@/utils/SupabaseClient';
 import { useAuth } from '@/utils/AuthProvider';
 import type { MessageBubble, ToolExecutionBubble } from '@/types/chat';
 
-type WhiteboardView = 'DataExecutor' | 'DocViewer';
+type WhiteboardView = 'DataExecutor' | 'DocViewer' | 'GraphViewer';
 
 interface Thread {
   id: string;
@@ -18,12 +18,14 @@ interface WorkspaceState {
   artifacts: {
     images: string[];
     documents: string[];
+    queries: string[];
   };
   // Whiteboard state
   currentView: WhiteboardView;
   selectedTool: ToolExecutionBubble | null;
   document: string | null;
   image: string | null;
+  query: string | null;
 }
 
 interface WorkspaceContextType {
@@ -34,12 +36,13 @@ interface WorkspaceContextType {
   createThread: (name: string) => Promise<void>;
   switchThread: (threadId: string) => Promise<void>;
   addMessage: (message: MessageBubble) => Promise<void>;
-  addArtifact: (type: 'image' | 'document', content: string) => Promise<void>;
+  addArtifact: (type: 'image' | 'document' | 'query', content: string) => Promise<void>;
   // Whiteboard functions
   setView: (view: WhiteboardView) => void;
   setSelectedTool: (tool: ToolExecutionBubble | null) => void;
   setDocument: (document: string | null) => void;
   setImage: (image: string | null) => void;
+  setQuery: (query: string | null) => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -53,13 +56,15 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     messages: [],
     artifacts: {
       images: [],
-      documents: []
+      documents: [],
+      queries: []
     },
     // Whiteboard state
     currentView: 'DataExecutor',
     selectedTool: null,
     document: null,
-    image: null
+    image: null,
+    query: null
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +130,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         const latestImage = artifacts
           .filter(a => a.artifact_type === 'image')
           .sort((a, b) => b.created_at - a.created_at)[0]?.content || null;
+        const latestQuery = artifacts
+          .filter(a => a.artifact_type === 'query')
+          .sort((a, b) => b.created_at - a.created_at)[0]?.content || null;
 
         setState(prev => ({
           ...prev,
@@ -135,10 +143,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
               .map(a => a.content),
             documents: artifacts
               .filter(a => a.artifact_type === 'document')
+              .map(a => a.content),
+            queries: artifacts
+              .filter(a => a.artifact_type === 'query')
               .map(a => a.content)
           },
           document: latestDocument,
-          image: latestImage
+          image: latestImage,
+          query: latestQuery
         }));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch thread content');
@@ -203,7 +215,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addArtifact = async (type: 'image' | 'document', content: string) => {
+  const addArtifact = async (type: 'image' | 'document' | 'query', content: string) => {
     if (!state.currentThreadId) return;
 
     try {
@@ -212,7 +224,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         .insert([{
           thread_id: state.currentThreadId,
           artifact_type: type,
-          content
+          content,
+          created_at: new Date().toISOString()
         }]);
 
       if (error) throw error;
@@ -221,12 +234,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         artifacts: {
           ...prev.artifacts,
-          [type === 'image' ? 'images' : 'documents']: [
-            ...prev.artifacts[type === 'image' ? 'images' : 'documents'],
+          [type === 'image' ? 'images' : type === 'document' ? 'documents' : 'queries']: [
+            ...prev.artifacts[type === 'image' ? 'images' : type === 'document' ? 'documents' : 'queries'],
             content
           ]
         },
-        [type === 'image' ? 'image' : 'document']: content
+        [type === 'image' ? 'image' : type === 'document' ? 'document' : 'query']: content
       }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add artifact');
@@ -262,6 +275,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const setQuery = (query: string | null) => {
+    setState(prev => ({
+      ...prev,
+      query
+    }));
+  };
+
   return (
     <WorkspaceContext.Provider
       value={{
@@ -277,7 +297,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         setView,
         setSelectedTool,
         setDocument,
-        setImage
+        setImage,
+        setQuery
       }}
     >
       {children}

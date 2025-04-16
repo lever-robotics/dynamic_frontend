@@ -19,21 +19,24 @@ interface ChatDisplayProps {
 	onClose?: () => void;
 	sendOnConnect?: () => Payload;
 	onToolSelect?: (tool: ToolExecutionBubble) => void;
-	setDocument?: (document: string | null) => void;
-	setImage?: (image: string | null) => void;
+	addArtifact?: (type: 'image' | 'document' | 'query', content: string) => Promise<void>;
+	isLaunchMode?: boolean;
+	onLaunchComplete?: (threadId: string) => void;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
 	onClose,
 	sendOnConnect,
 	onToolSelect,
-	setDocument,
-	setImage,
+	addArtifact,
+	isLaunchMode = false,
+	onLaunchComplete,
 }: ChatDisplayProps) {
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	const [localMessages, setLocalMessages] = useState<MessageBubble[]>([]);
 	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-	const { state: { messages, currentThreadId }, addMessage } = useWorkspace();
+	const [isInitializing, setIsInitializing] = useState(false);
+	const { state: { messages, currentThreadId }, addMessage, createThread } = useWorkspace();
 
 	// Load messages when thread changes
 	useEffect(() => {
@@ -190,12 +193,35 @@ export const ChatDisplay = memo(function ChatDisplay({
 							updatedChunk.toolCall.result = (payload as ToolChunk).result;
 							updatedChunk.toolCall.error = (payload as ToolChunk).error;
 
-							if ((payload as ToolChunk).tool === "agent_read_business_json") {
-								setDocument?.((payload as ToolChunk).result);
+							// Handle different types of tool results
+							const tool = (payload as ToolChunk).tool;
+							const result = (payload as ToolChunk).result;
+							const image = (payload as ToolChunk).image;
+
+							switch (tool) {
+								case "agent_read_business_json":
+									if (result) {
+										addArtifact?.('document', result);
+									}
+									break;
+								case "agent_execute_python_code":
+									if (image) {
+										addArtifact?.('image', image);
+									}
+									break;
+								case "agent_execute_sql_query":
+									if (result) {
+										addArtifact?.('query', result);
+									}
+									break;
+								default:
+									console.log(`Unhandled tool type: ${tool}`);
 							}
 
-							if ((payload as ToolChunk).tool === "agent_execute_python_code") {
-								setImage?.((payload as ToolChunk).image);
+							// If this is the first message in launch mode, create a thread
+							if (isLaunchMode && prev.length === 1) {
+								const threadId = createThread(result || "New Analysis");
+								onLaunchComplete?.(threadId);
 							}
 
 							const updatedMessage = {
@@ -231,7 +257,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 				}
 			}
 		},
-		[setDocument, setImage]
+		[addArtifact, isLaunchMode, createThread, onLaunchComplete]
 	);
 
 	// WebSocket connection with message handling
@@ -239,17 +265,19 @@ export const ChatDisplay = memo(function ChatDisplay({
 		onMessage: handleMessage,
 	});
 
+	// Handle initial connection in launch mode
 	useEffect(() => {
-		if (isConnected && sendOnConnect) {
+		if (isLaunchMode && isConnected && sendOnConnect) {
+			setIsInitializing(true);
 			const msg = sendOnConnect();
 			if (msg) {
 				sendMessage(msg.type, msg);
 			}
 		}
-	}, [isConnected, sendOnConnect, sendMessage]);
+	}, [isLaunchMode, isConnected, sendOnConnect, sendMessage]);
 
 	// Handle new user messages
-	const handleNewMessage = (content: string) => {
+	const handleNewMessage = async (content: string) => {
 		const userMessageId = crypto.randomUUID();
 		const assistantMessageId = crypto.randomUUID();
 
@@ -269,6 +297,15 @@ export const ChatDisplay = memo(function ChatDisplay({
 		setLocalMessages(prev => [...prev, userMessage, assistantMessage]);
 		addMessage(userMessage);
 		setActiveMessageId(assistantMessageId);
+
+		// If in launch mode, wait for connection before sending
+		if (isLaunchMode) {
+			if (!isConnected) {
+				// Wait for connection
+				await new Promise(resolve => setTimeout(resolve, 1000));
+			}
+		}
+
 		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	};
 
@@ -291,17 +328,21 @@ export const ChatDisplay = memo(function ChatDisplay({
 	}, [localMessages, addMessage, isLoadingMessages]);
 
 	return (
-		<div className="flex flex-col h-full bg-white">
+		<div className="flex flex-col h-full bg-[#F4F5F7]">
 			{/* Header */}
-			<div className="flex items-center justify-between border-b p-4">
+			<div className="flex items-center justify-between border-b p-4 bg-white">
 				<div className="flex items-center gap-2">
-					<div
-						className={`h-2 w-2 rounded-full ${isConnected ? "bg-green-500" : "bg-yellow-500"
-							}`}
-					/>
-					<span className="text-sm text-gray-600">
-						{isConnected ? "Connected" : "Connecting..."}
-					</span>
+					{!isLaunchMode && (
+						<>
+							<div
+								className={`h-2 w-2 rounded-full ${isConnected ? "bg-green-500" : "bg-yellow-500"
+									}`}
+							/>
+							<span className="text-sm text-gray-600">
+								{isConnected ? "Connected" : "Connecting..."}
+							</span>
+						</>
+					)}
 				</div>
 				{onClose && (
 					<button
@@ -330,6 +371,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 				isConnected={isConnected}
 				onSubmit={handleNewMessage}
 				error={error}
+				isLaunchMode={isLaunchMode}
 			/>
 		</div>
 	);

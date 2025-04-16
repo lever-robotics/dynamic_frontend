@@ -1,6 +1,7 @@
 import type React from 'react';
 import {
     Settings,
+    PlusCircle
 } from 'lucide-react';
 import {
     Sidebar,
@@ -17,15 +18,19 @@ import { AspectRatio } from "radix-ui";
 // import logoImg from '@/assets/ecommerce.png';
 import logoImg from '@/assets/lever-nobg.png';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
     setShowSettings: (show: boolean) => void;
+    setShowLaunchChat: (show: boolean) => void;
 }
 
 export const SidebarComp: React.FC<SidebarProps> = ({
     setShowSettings,
+    setShowLaunchChat,
 }) => {
-    const { state: { threads, currentThreadId }, switchThread } = useWorkspace();
+    const { state: { threads, currentThreadId }, switchThread, addArtifact, setView } = useWorkspace();
 
     const handleLogoClick = () => {
         // TODO: Add home page
@@ -33,10 +38,16 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 
     const handleThreadClick = (threadId: string) => {
         switchThread(threadId);
+        setShowLaunchChat(false);
+        setView('DocViewer');
     };
 
     const handleSettingsClick = () => {
         setShowSettings(true);
+    };
+
+    const handleNewAnalysisClick = () => {
+        setShowLaunchChat(true);
     };
 
     return (
@@ -60,6 +71,9 @@ export const SidebarComp: React.FC<SidebarProps> = ({
             <SidebarContent className="flex-1 ml-1 justify-center">
                 <SidebarGroup>
                     <SidebarGroupContent>
+                        <div className="px-4 py-2">
+                            <hr className="border-t border-gray-200" />
+                        </div>
                         <SidebarMenu>
                             {threads.map((thread) => (
                                 <SidebarMenuItem key={thread.id}>
@@ -74,6 +88,20 @@ export const SidebarComp: React.FC<SidebarProps> = ({
                                 </SidebarMenuItem>
                             ))}
                         </SidebarMenu>
+                        <div className="px-4 py-2 mt-4">
+                            <Button
+                                onClick={handleNewAnalysisClick}
+                                className={cn(
+                                    "bg-primary-600 hover:bg-primary-700",
+                                    "text-white",
+                                    "flex items-center justify-between",
+                                    "border-0"
+                                )}
+                            >
+                                <PlusCircle className="h-4 w-4" />
+                                <span>Start New Analysis</span>
+                            </Button>
+                        </div>
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>

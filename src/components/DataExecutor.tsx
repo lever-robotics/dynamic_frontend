@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -9,17 +11,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { Play } from "lucide-react";
+import { Play, Download, Copy, FileSpreadsheet, FileText } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-export function DataExecutor() {
-  const [sqlQuery, setSqlQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [columns, setColumns] = useState<string[]>([]);
+interface DataExecutorProps {
+    initialQuery?: string | null;
+}
+
+export function DataExecutor({ initialQuery }: DataExecutorProps) {
+    const [query, setQuery] = useState(initialQuery || '');
+    const [results, setResults] = useState<any[]>([]);
+    const [isExecuting, setIsExecuting] = useState(false);
+    const [columns, setColumns] = useState<string[]>([]);
 
   const handleExecute = () => {
     // TODO: Implement SQL execution
-    console.log("Executing SQL:", sqlQuery);
+    console.log("Executing SQL:", query);
     // Test with a larger dataset
     setColumns([
       "id",
@@ -55,17 +67,42 @@ export function DataExecutor() {
     setResults(testData);
   };
 
+    const handleDownloadCSV = () => {
+        const csvContent = [
+            columns.join(','),
+            ...results.map(row => columns.map(col => row[col]).join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'query_results.csv';
+        link.click();
+    };
+
+    const handleDownloadExcel = () => {
+        // TODO: Implement Excel download
+        console.log("Downloading Excel...");
+    };
+
+    const handleCopyResults = () => {
+        const text = results.map(row => 
+            columns.map(col => row[col]).join('\t')
+        ).join('\n');
+        navigator.clipboard.writeText(text);
+    };
+
   return (
-    <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 space-y-4">
+    <div className="flex flex-col h-full w-full p-4 space-y-4">
       {/* SQL Editor Section */}
-      <div className="flex-1 flex flex-col">
-        <div className="flex-1 relative">
+      <div className="h-[200px] flex justify-center">
+        <div className="h-full relative w-full max-w-4xl">
           <Textarea
-            value={sqlQuery}
-            onChange={(e) => setSqlQuery(e.target.value)}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Enter your SQL query here..."
             className={cn(
-              "w-full h-full min-h-[200px]",
+              "w-full h-full",
               "font-mono text-sm",
               "rounded-lg",
               "resize-none"
@@ -82,16 +119,48 @@ export function DataExecutor() {
       </div>
 
       {/* Results Table Section */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-[300px]">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">Results</h2>
-          <span className="text-sm text-muted-foreground">
-            {results.length} rows
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {results.length} rows
+            </span>
+            {results.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-md shadow-md hover:shadow-lg transition-shadow"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleDownloadCSV}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Download CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownloadExcel}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Download Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCopyResults}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Results
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
-        <div className="flex-1 overflow-auto rounded-md border">
+        <div className={cn(
+          "flex-1 overflow-auto",
+          results.length > 0 ? "rounded-md border" : ""
+        )}>
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 {columns.map((column) => (
                   <TableHead key={column} className="whitespace-nowrap">

@@ -2,17 +2,21 @@ import type React from "react";
 import { useState } from "react";
 
 interface ChatInputProps {
-	isConnected: boolean;
+	isConnected?: boolean;
 	onSubmit: (message: string) => void;
 	error?: string | null;
+	isLaunchMode?: boolean;
 }
 
-export function ChatInput({ isConnected, onSubmit, error }: ChatInputProps) {
+export function ChatInput({ isConnected = true, onSubmit, error, isLaunchMode = false }: ChatInputProps) {
 	const [inputValue, setInputValue] = useState("");
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!inputValue.trim() || !isConnected) return;
+		if (!inputValue.trim()) return;
+
+		// In launch mode, we don't need to check connection
+		if (!isLaunchMode && !isConnected) return;
 
 		onSubmit(inputValue.trim());
 		setInputValue("");
@@ -24,12 +28,14 @@ export function ChatInput({ isConnected, onSubmit, error }: ChatInputProps) {
 				<textarea
 					value={inputValue}
 					onChange={(e) => setInputValue(e.target.value)}
-					placeholder="Type a message..."
-					className="w-full resize-none rounded-full border border-input bg-background px-4 py-3 pr-12 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] max-h-[132px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] leading-relaxed"
-					disabled={isConnected}
+					placeholder={isLaunchMode ? "Analyze your data" : "Type a message..."}
+					className={`bg-white w-full resize-none rounded-full border border-input px-4 py-3 pr-12 text-sm shadow-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] max-h-[132px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] leading-relaxed ${
+						isLaunchMode ? "placeholder:text-transparent placeholder:bg-clip-text placeholder:bg-gradient-to-r placeholder:from-primary-400 placeholder:to-secondary-200" : "placeholder:text-muted-foreground"
+					}`}
+					disabled={!isLaunchMode && !isConnected}
 					rows={1}
 					onKeyDown={(e) => {
-						if (e.key === 'Enter' && e.ctrlKey) {
+						if (e.key === 'Enter' && !e.shiftKey) {
 							e.preventDefault();
 							handleSubmit(e);
 						}
@@ -37,7 +43,7 @@ export function ChatInput({ isConnected, onSubmit, error }: ChatInputProps) {
 				/>
 				<button
 					type="submit"
-					disabled={isConnected || !inputValue.trim()}
+					disabled={!inputValue.trim() || (!isLaunchMode && !isConnected)}
 					className="absolute right-2 flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent transition-colors hover:bg-accent/20 disabled:pointer-events-none disabled:opacity-50"
 					aria-label="Send message"
 				>
