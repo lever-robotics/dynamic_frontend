@@ -47,7 +47,10 @@ export const LeverApp: React.FC = () => {
 	return (
 		<div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
 			<WorkspaceProvider>
-				<SinglePageApp />
+				<SinglePageApp 
+					setShowSettings={setShowSettings}
+					setShowBlueprint={setShowBlueprint}
+				/>
 
 				{/* Settings Display */}
 				{showSettings && (

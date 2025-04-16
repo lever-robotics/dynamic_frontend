@@ -1,7 +1,9 @@
 import type React from 'react';
 import {
     Settings,
-    PlusCircle
+    PlusCircle,
+    LayoutTemplate,
+    Database
 } from 'lucide-react';
 import {
     Sidebar,
@@ -24,11 +26,13 @@ import { cn } from "@/lib/utils";
 interface SidebarProps {
     setShowSettings: (show: boolean) => void;
     setShowLaunchChat: (show: boolean) => void;
+    setShowBlueprint: (show: boolean) => void;
 }
 
 export const SidebarComp: React.FC<SidebarProps> = ({
     setShowSettings,
     setShowLaunchChat,
+    setShowBlueprint,
 }) => {
     const { state: { threads, currentThreadId }, switchThread, addArtifact, setView } = useWorkspace();
 
@@ -48,6 +52,14 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 
     const handleNewAnalysisClick = () => {
         setShowLaunchChat(true);
+    };
+
+    const handleBlueprintClick = () => {
+        setShowBlueprint(true);
+    };
+
+    const handleQueryDataClick = () => {
+        setView('DataExecutor');
     };
 
     return (
@@ -111,6 +123,22 @@ export const SidebarComp: React.FC<SidebarProps> = ({
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    onClick={handleQueryDataClick}
+                                >
+                                    <Database className="w-4 h-4" />
+                                    <span>Query Data</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    onClick={handleBlueprintClick}
+                                >
+                                    <LayoutTemplate className="w-4 h-4" />
+                                    <span>Blueprint</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
                             <SidebarMenuItem>
                                 <SidebarMenuButton
                                     onClick={handleSettingsClick}

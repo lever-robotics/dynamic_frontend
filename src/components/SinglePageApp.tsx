@@ -6,6 +6,11 @@ import { LaunchChat } from "./LaunchChat";
 import type { FlagChunk } from "@/types/chat";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
+interface SinglePageAppProps {
+	setShowSettings: (show: boolean) => void;
+	setShowBlueprint: (show: boolean) => void;
+}
+
 // ChatWrapper component to handle workspace context
 function ChatWrapper({ sendOnConnect }: { sendOnConnect: () => FlagChunk }) {
 	const { setSelectedTool, addArtifact } = useWorkspace();
@@ -19,7 +24,7 @@ function ChatWrapper({ sendOnConnect }: { sendOnConnect: () => FlagChunk }) {
 	);
 }
 
-export const SinglePageApp: React.FC = () => {
+export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, setShowBlueprint }) => {
 	const [showLaunchChat, setShowLaunchChat] = useState(false);
 	const sendOnConnect = useCallback(() => {
 		return {
@@ -45,7 +50,8 @@ export const SinglePageApp: React.FC = () => {
 			{/* Sidebar - Fixed width */}
 			<div className="w-[240px] h-full bg-[#F4F5F7] border-r border-gray-200 shrink-0">
 				<SidebarComp 
-					setShowSettings={() => {}} 
+					setShowSettings={setShowSettings}
+					setShowBlueprint={setShowBlueprint}
 					setShowLaunchChat={setShowLaunchChat}
 				/>
 			</div>

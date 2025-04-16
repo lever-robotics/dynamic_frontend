@@ -60,7 +60,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       queries: []
     },
     // Whiteboard state
-    currentView: 'DataExecutor',
+    currentView: 'DocViewer',
     selectedTool: null,
     document: null,
     image: null,
