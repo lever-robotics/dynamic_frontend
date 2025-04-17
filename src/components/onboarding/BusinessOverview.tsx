@@ -60,7 +60,7 @@ function JsonToMarkdown({ data }: { data: any }) {
                             <h2 className="text-xl font-semibold text-gray-800 mb-4">Potential Objectives</h2>
                             <ul className="space-y-2">
                                 {businessProfile.objectives.map((objective: string, index: number) => (
-                                    <li key={index} className="flex items-start">
+                                    <li key={`objective-${index}`} className="flex items-start">
                                         <span className="text-accent-500 mr-2">•</span>
                                         <span className="text-gray-700">{objective}</span>
                                     </li>
@@ -78,11 +78,11 @@ function JsonToMarkdown({ data }: { data: any }) {
             return (
                 <div className="space-y-4">
                     {value.map((item, index) => (
-                        <div key={index} className="border-l-4 border-accent-200 pl-4">
+                        <div key={`array-item-${index}`} className="border-l-4 border-accent-200 pl-4">
                             {typeof item === 'object' ? (
                                 Object.entries(item).map(([key, val]) => (
                                     val && (
-                                        <div key={key} className="mb-2">
+                                        <div key={`${key}-${index}`} className="mb-2">
                                             <h3 className="font-medium text-gray-800">
                                                 {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                                             </h3>
@@ -91,7 +91,7 @@ function JsonToMarkdown({ data }: { data: any }) {
                                     )
                                 ))
                             ) : (
-                                item && <p className="text-gray-700">{item}</p>
+                                item && <p key={`text-item-${index}`} className="text-gray-700">{item}</p>
                             )}
                         </div>
                     ))}
@@ -104,8 +104,8 @@ function JsonToMarkdown({ data }: { data: any }) {
             if (entries.length > 0) {
                 return (
                     <div className="space-y-4">
-                        {entries.map(([key, val]) => (
-                            <div key={key} className="border-l-4 border-accent-200 pl-4">
+                        {entries.map(([key, val], index) => (
+                            <div key={`entry-${key}-${index}`} className="border-l-4 border-accent-200 pl-4">
                                 <h3 className="font-medium text-gray-800">
                                     {key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                                 </h3>
@@ -173,7 +173,7 @@ export function BusinessOverview() {
         if (userConfig?.business_overview) {
             try {
                 // If it's a string, parse it. If it's already an object, use it directly
-                const parsed = typeof userConfig.business_overview === 'string' 
+                const parsed = typeof userConfig.business_overview === 'string'
                     ? JSON.parse(userConfig.business_overview)
                     : userConfig.business_overview;
                 setParsedContent(parsed);

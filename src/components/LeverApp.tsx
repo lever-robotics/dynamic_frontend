@@ -36,13 +36,6 @@ export const LeverApp: React.FC = () => {
 	const [businessInfo, setBusinessInfo] = useState<{ name: string; url: string } | null>(null);
 	const { userId } = useAuth();
 
-	const sendOnConnect = useCallback(() => {
-		return {
-			type: "flag",
-			flag: "query",
-			context: JSON.stringify({}),
-		} as FlagChunk;
-	}, []);
 
 	return (
 		<div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">

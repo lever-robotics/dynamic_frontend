@@ -36,19 +36,8 @@ export const ChatDisplay = memo(function ChatDisplay({
 	const [localMessages, setLocalMessages] = useState<MessageBubble[]>([]);
 	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 	const [isInitializing, setIsInitializing] = useState(false);
-	const { state: { messages, currentThreadId }, addMessage, createThread } = useWorkspace();
-
-	// Load messages when thread changes
-	useEffect(() => {
-		if (currentThreadId) {
-			console.log('Thread changed, loading messages:', messages);
-			setIsLoadingMessages(true);
-			setLocalMessages(messages);
-			setIsLoadingMessages(false);
-		} else {
-			setLocalMessages([]);
-		}
-	}, [currentThreadId, messages]);
+	const [hasInitialized, setHasInitialized] = useState(false);
+	const { state: { messages, currentThreadId, launchChatMessage }, addMessage, createThread } = useWorkspace();
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
@@ -218,12 +207,6 @@ export const ChatDisplay = memo(function ChatDisplay({
 									console.log(`Unhandled tool type: ${tool}`);
 							}
 
-							// If this is the first message in launch mode, create a thread
-							if (isLaunchMode && prev.length === 1) {
-								const threadId = createThread(result || "New Analysis");
-								onLaunchComplete?.(threadId);
-							}
-
 							const updatedMessage = {
 								...prev[messageIndex],
 								chunks: [...prev[messageIndex].chunks, updatedChunk],
@@ -265,19 +248,106 @@ export const ChatDisplay = memo(function ChatDisplay({
 		onMessage: handleMessage,
 	});
 
-	// Handle initial connection in launch mode
-	useEffect(() => {
-		if (isLaunchMode && isConnected && sendOnConnect) {
-			setIsInitializing(true);
-			const msg = sendOnConnect();
-			if (msg) {
-				sendMessage(msg.type, msg);
-			}
+	// Initialize launch mode setup
+	const initializeLaunchMode = useCallback(async () => {
+		// Prevent multiple initializations
+		if (hasInitialized || isInitializing) {
+			console.log('[ChatDisplay] Already initialized or initializing, skipping');
+			return;
 		}
-	}, [isLaunchMode, isConnected, sendOnConnect, sendMessage]);
+
+		// Check all required conditions
+		if (!isLaunchMode || !isConnected || !sendOnConnect || !launchChatMessage) {
+			console.log('[ChatDisplay] Waiting for conditions:', {
+				isLaunchMode,
+				isConnected,
+				hasSendOnConnect: !!sendOnConnect,
+				hasLaunchMessage: !!launchChatMessage
+			});
+			return;
+		}
+
+		console.log('[ChatDisplay] Starting initialization');
+		setIsInitializing(true);
+
+		try {
+			// Send the initial flag message
+			const msg = sendOnConnect();
+			console.log('[ChatDisplay] Sending initial connection message:', msg);
+
+			if (msg) {
+				await sendMessage(msg.type, msg);
+				console.log('[ChatDisplay] Initial message sent');
+
+				// Create and send the launch message
+				const userMessageId = crypto.randomUUID();
+				const assistantMessageId = crypto.randomUUID();
+
+				const userMessage: MessageBubble = {
+					id: userMessageId,
+					type: "user",
+					chunks: [{ content: launchChatMessage }],
+				};
+
+				const assistantMessage: MessageBubble = {
+					id: assistantMessageId,
+					type: "assistant",
+					chunks: [],
+				};
+
+				// Add messages to local state and workspace
+				setLocalMessages(prev => [...prev, userMessage, assistantMessage]);
+				await addMessage(userMessage);
+				setActiveMessageId(assistantMessageId);
+
+				// Send message to LLM
+				await sendMessage("toLLM", { type: "toLLM", text: launchChatMessage } as ToLLMMessage);
+
+				// Mark as initialized
+				setHasInitialized(true);
+				console.log('[ChatDisplay] Initialization complete');
+			}
+		} catch (error) {
+			console.error('[ChatDisplay] Error during initialization:', error);
+			setHasInitialized(false); // Allow retry on error
+		} finally {
+			setIsInitializing(false);
+		}
+	}, [isLaunchMode, isConnected, sendOnConnect, sendMessage, launchChatMessage, addMessage, isInitializing, hasInitialized]);
+
+	// Initialize when all conditions are met
+	useEffect(() => {
+		if (isLaunchMode && isConnected && launchChatMessage) {
+			console.log('[ChatDisplay] Conditions met, attempting initialization');
+			initializeLaunchMode();
+		}
+	}, [isLaunchMode, isConnected, launchChatMessage, initializeLaunchMode]);
+
+	// Load messages when thread changes, but preserve launch message if it exists
+	useEffect(() => {
+		if (currentThreadId) {
+			console.log('[ChatDisplay] Thread changed, loading messages:', messages);
+			setIsLoadingMessages(true);
+			// Only update messages if we're not in launch mode or if we don't have a launch message
+			if (!isLaunchMode || !launchChatMessage || hasInitialized) {
+				setLocalMessages(messages);
+			}
+			setIsLoadingMessages(false);
+		} else {
+			setLocalMessages([]);
+		}
+	}, [currentThreadId, messages, isLaunchMode, launchChatMessage, hasInitialized]);
+
+	// Reset initialization state when thread changes
+	useEffect(() => {
+		if (currentThreadId) {
+			setHasInitialized(false);
+		}
+	}, [currentThreadId]);
 
 	// Handle new user messages
 	const handleNewMessage = async (content: string) => {
+		console.log('[ChatDisplay] Handling new message:', content);
 		const userMessageId = crypto.randomUUID();
 		const assistantMessageId = crypto.randomUUID();
 
@@ -301,11 +371,13 @@ export const ChatDisplay = memo(function ChatDisplay({
 		// If in launch mode, wait for connection before sending
 		if (isLaunchMode) {
 			if (!isConnected) {
+				console.log('[ChatDisplay] Waiting for connection before sending message...');
 				// Wait for connection
 				await new Promise(resolve => setTimeout(resolve, 1000));
 			}
 		}
 
+		console.log('[ChatDisplay] Sending message to LLM');
 		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	};
 
@@ -316,12 +388,13 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 		const lastMessage = localMessages[localMessages.length - 1];
 		if (lastMessage && lastMessage.type === "assistant" && lastMessage.chunks.length > 0) {
-			const isComplete = lastMessage.chunks.every(chunk => 
-				!chunk.toolCall || 
+			const isComplete = lastMessage.chunks.every(chunk =>
+				!chunk.toolCall ||
 				(chunk.toolCall.status === "complete" || chunk.toolCall.status === "error")
 			);
-			
+
 			if (isComplete) {
+				console.log('[ChatDisplay] Adding completed message to workspace state');
 				addMessage(lastMessage);
 			}
 		}

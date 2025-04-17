@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { SidebarComp } from "./Sidebar";
 import { ChatDisplay } from "./Chat/ChatDisplay";
 import { Whiteboard } from "./Whiteboard";
@@ -12,21 +12,12 @@ interface SinglePageAppProps {
 }
 
 // ChatWrapper component to handle workspace context
-function ChatWrapper({ sendOnConnect }: { sendOnConnect: () => FlagChunk }) {
-	const { setSelectedTool, addArtifact } = useWorkspace();
+function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
+	const { setSelectedTool, addArtifact, state: { currentThreadId } } = useWorkspace();
+	console.log('[ChatWrapper] Rendering with currentThreadId:', currentThreadId, 'in', isLaunchMode ? 'launch mode' : 'normal mode');
 
-	return (
-		<ChatDisplay
-			sendOnConnect={sendOnConnect}
-			onToolSelect={setSelectedTool}
-			addArtifact={addArtifact}
-		/>
-	);
-}
-
-export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, setShowBlueprint }) => {
-	const [showLaunchChat, setShowLaunchChat] = useState(false);
 	const sendOnConnect = useCallback(() => {
+		console.log('[ChatWrapper] Creating initial connection message');
 		return {
 			type: "flag",
 			flag: "query",
@@ -34,22 +25,64 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, s
 		} as FlagChunk;
 	}, []);
 
-	const { state: { threads, currentThreadId, messages, artifacts, currentView, selectedTool, document, image }, createThread, setView } = useWorkspace();
+	return (
+		<ChatDisplay
+			key={currentThreadId}
+			sendOnConnect={sendOnConnect}
+			onToolSelect={setSelectedTool}
+			addArtifact={addArtifact}
+			isLaunchMode={isLaunchMode}
+		/>
+	);
+}
+
+export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, setShowBlueprint }) => {
+	console.log('[SinglePageApp] Rendering');
+	const [showLaunchChat, setShowLaunchChat] = useState(true);
+	const [isLaunchMode, setIsLaunchMode] = useState(false);
+	const [isInitializing, setIsInitializing] = useState(false);
+	const { state: { threads, currentThreadId }, createThread, setView, initializeWorkspace, setLaunchChatMessage } = useWorkspace();
+
+	// Initialize workspace on mount
+	useEffect(() => {
+		console.log('[SinglePageApp] Initializing workspace');
+		initializeWorkspace();
+	}, [initializeWorkspace]);
 
 	const handleStartAnalysis = async (message: string) => {
-		// Create a new thread with the message as the title
-		const threadId = await createThread(message);
-		// Set the view to DocViewer
-		setView('DocViewer');
-		// Hide the launch chat
-		setShowLaunchChat(false);
+		console.log('[SinglePageApp] Starting analysis with message:', message);
+		if (isInitializing) {
+			console.log('[SinglePageApp] Already initializing, skipping');
+			return;
+		}
+
+		try {
+			setIsLaunchMode(true);
+			setIsInitializing(true);
+			// Create a new thread with the message as the title
+			const threadId = await createThread(message);
+			setLaunchChatMessage(message);
+			console.log('[SinglePageApp] Created thread with ID:', threadId);
+
+			// Set the view to DocViewer
+			setView('DocViewer');
+
+			// Hide the launch chat
+			setShowLaunchChat(false);
+			console.log('[SinglePageApp] Analysis started successfully');
+		} catch (error) {
+			console.error('[SinglePageApp] Failed to start analysis:', error);
+			// Handle error appropriately
+		} finally {
+			setIsInitializing(false);
+		}
 	};
 
 	return (
 		<div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
 			{/* Sidebar - Fixed width */}
 			<div className="w-[240px] h-full bg-[#F4F5F7] border-r border-gray-200 shrink-0">
-				<SidebarComp 
+				<SidebarComp
 					setShowSettings={setShowSettings}
 					setShowBlueprint={setShowBlueprint}
 					setShowLaunchChat={setShowLaunchChat}
@@ -66,9 +99,15 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, s
 						<div className="w-[calc(100%-500px)] h-full bg-white border-r border-gray-200">
 							<Whiteboard />
 						</div>
-						{/* Chat Display */}
+						{/* Chat Display or Placeholder */}
 						<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43]">
-							<ChatWrapper sendOnConnect={sendOnConnect} />
+							{!isInitializing && currentThreadId ? (
+								<ChatWrapper isLaunchMode={isLaunchMode} />
+							) : (
+								<div className="w-full h-full bg-[#F4F5F7]/[0.43] flex items-center justify-center">
+									<div className="text-gray-400"></div>
+								</div>
+							)}
 						</div>
 					</div>
 				)}

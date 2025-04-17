@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import { supabase } from '@/utils/SupabaseClient';
 import { useAuth } from '@/utils/AuthProvider';
 import type { MessageBubble, ToolExecutionBubble } from '@/types/chat';
@@ -8,10 +8,16 @@ type WhiteboardView = 'DataExecutor' | 'DocViewer' | 'GraphViewer';
 interface Thread {
   id: string;
   name: string;
+  created_at: string;
+}
+
+interface Artifact {
+  artifact_type: 'image' | 'document' | 'query';
+  content: string;
+  created_at: string;
 }
 
 interface WorkspaceState {
-  // Thread management
   threads: Thread[];
   currentThreadId: string | null;
   messages: MessageBubble[];
@@ -20,12 +26,12 @@ interface WorkspaceState {
     documents: string[];
     queries: string[];
   };
-  // Whiteboard state
   currentView: WhiteboardView;
   selectedTool: ToolExecutionBubble | null;
   document: string | null;
   image: string | null;
   query: string | null;
+  launchChatMessage: string | null;
 }
 
 interface WorkspaceContextType {
@@ -43,14 +49,16 @@ interface WorkspaceContextType {
   setDocument: (document: string | null) => void;
   setImage: (image: string | null) => void;
   setQuery: (query: string | null) => void;
+  setLaunchChatMessage: (message: string) => void;
+  initializeWorkspace: () => Promise<void>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
+  console.log('[WorkspaceContext] Initializing the Workspace Provider');
   const { userId } = useAuth();
   const [state, setState] = useState<WorkspaceState>({
-    // Thread management
     threads: [],
     currentThreadId: null,
     messages: [],
@@ -59,112 +67,113 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       documents: [],
       queries: []
     },
-    // Whiteboard state
     currentView: 'DocViewer',
     selectedTool: null,
     document: null,
     image: null,
-    query: null
+    query: null,
+    launchChatMessage: null
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch threads when user changes
-  useEffect(() => {
-    if (!userId) return;
+  const initializeWorkspace = useCallback(async () => {
+    console.log('[WorkspaceContext] Changed ThreadId, or re-rendered');
+    if (!userId) {
+      console.log('[WorkspaceContext] No user ID, skipping initialization');
+      return;
+    }
 
-    const fetchThreads = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('threads')
-          .select('id, name')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
+    setIsLoading(true);
+    try {
+      console.log('[WorkspaceContext] Fetching threads');
+      const { data: threads, error: threadsError } = await supabase
+        .from('threads')
+        .select('id, name, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
+      if (threadsError) throw threadsError;
 
-        setState(prev => ({
-          ...prev,
-          threads: data
-        }));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch threads');
-      } finally {
-        setIsLoading(false);
+      console.log('[WorkspaceContext] Found threads:', threads?.length);
+      setState(prev => ({
+        ...prev,
+        threads: threads || []
+      }));
+
+      if (state.currentThreadId) {
+        console.log('[WorkspaceContext] Loading content for thread:', state.currentThreadId);
+        await loadThreadContent(state.currentThreadId);
       }
-    };
-
-    fetchThreads();
-  }, [userId]);
-
-  // Fetch thread content when current thread changes
-  useEffect(() => {
-    if (!userId || !state.currentThreadId) return;
-
-    const fetchThreadContent = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch messages
-        const { data: messages, error: messagesError } = await supabase
-          .from('thread_messages')
-          .select('content')
-          .eq('thread_id', state.currentThreadId)
-          .order('created_at', { ascending: true });
-
-        if (messagesError) throw messagesError;
-
-        // Fetch artifacts
-        const { data: artifacts, error: artifactsError } = await supabase
-          .from('thread_artifacts')
-          .select('artifact_type, content')
-          .eq('thread_id', state.currentThreadId);
-
-        if (artifactsError) throw artifactsError;
-
-        // Get the latest document and image
-        const latestDocument = artifacts
-          .filter(a => a.artifact_type === 'document')
-          .sort((a, b) => b.created_at - a.created_at)[0]?.content || null;
-        
-        const latestImage = artifacts
-          .filter(a => a.artifact_type === 'image')
-          .sort((a, b) => b.created_at - a.created_at)[0]?.content || null;
-        const latestQuery = artifacts
-          .filter(a => a.artifact_type === 'query')
-          .sort((a, b) => b.created_at - a.created_at)[0]?.content || null;
-
-        setState(prev => ({
-          ...prev,
-          messages: messages.map(m => m.content),
-          artifacts: {
-            images: artifacts
-              .filter(a => a.artifact_type === 'image')
-              .map(a => a.content),
-            documents: artifacts
-              .filter(a => a.artifact_type === 'document')
-              .map(a => a.content),
-            queries: artifacts
-              .filter(a => a.artifact_type === 'query')
-              .map(a => a.content)
-          },
-          document: latestDocument,
-          image: latestImage,
-          query: latestQuery
-        }));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch thread content');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchThreadContent();
+    } catch (err) {
+      console.error('[WorkspaceContext] Initialization error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to initialize workspace');
+    } finally {
+      setIsLoading(false);
+    }
   }, [userId, state.currentThreadId]);
 
-  // Thread management functions
-  const createThread = async (name: string) => {
-    if (!userId) return;
+  const loadThreadContent = async (threadId: string) => {
+    try {
+      const { data: messages, error: messagesError } = await supabase
+        .from('thread_messages')
+        .select('content')
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true });
+
+      if (messagesError) throw messagesError;
+
+      const { data: artifacts, error: artifactsError } = await supabase
+        .from('thread_artifacts')
+        .select('artifact_type, content, created_at')
+        .eq('thread_id', threadId);
+
+      if (artifactsError) throw artifactsError;
+
+      console.log('[WorkspaceContext] Loaded messages:', messages?.length);
+      console.log('[WorkspaceContext] Loaded artifacts:', artifacts?.length);
+
+      // Process artifacts
+      const processedArtifacts = {
+        images: artifacts
+          .filter(a => a.artifact_type === 'image')
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .map(a => a.content),
+        documents: artifacts
+          .filter(a => a.artifact_type === 'document')
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .map(a => a.content),
+        queries: artifacts
+          .filter(a => a.artifact_type === 'query')
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .map(a => a.content)
+      };
+
+      // Get latest of each type
+      const latestDocument = processedArtifacts.documents[0] || null;
+      const latestImage = processedArtifacts.images[0] || null;
+      const latestQuery = processedArtifacts.queries[0] || null;
+
+      setState(prev => ({
+        ...prev,
+        messages: messages.map(m => m.content),
+        artifacts: processedArtifacts,
+        document: latestDocument,
+        image: latestImage,
+        query: latestQuery
+      }));
+    } catch (err) {
+      console.error('[WorkspaceContext] Error loading thread content:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load thread content');
+    }
+  };
+
+  const createThread = async (name: string): Promise<string> => {
+    console.log('[WorkspaceContext] Creating new thread:', name);
+    if (!userId) {
+      console.error('[WorkspaceContext] No user ID for thread creation');
+      throw new Error('User not authenticated');
+    }
 
     try {
       const { data, error } = await supabase
@@ -175,13 +184,19 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
+      console.log('[WorkspaceContext] Thread created successfully:', data.id);
       setState(prev => ({
         ...prev,
         threads: [data, ...prev.threads],
         currentThreadId: data.id
       }));
+
+
+      return data.id;
     } catch (err) {
+      console.error('[WorkspaceContext] Error creating thread:', err);
       setError(err instanceof Error ? err.message : 'Failed to create thread');
+      throw err;
     }
   };
 
@@ -190,6 +205,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       currentThreadId: threadId
     }));
+    await loadThreadContent(threadId);
   };
 
   const addMessage = async (message: MessageBubble) => {
@@ -246,7 +262,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Whiteboard functions
   const setView = (view: WhiteboardView) => {
     setState(prev => ({
       ...prev,
@@ -282,23 +297,30 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const setLaunchChatMessage = (message: string) => {
+    setState(prev => ({
+      ...prev,
+      launchChatMessage: message
+    }));
+  };
+
   return (
     <WorkspaceContext.Provider
       value={{
         state,
         isLoading,
         error,
-        // Thread management functions
         createThread,
         switchThread,
         addMessage,
         addArtifact,
-        // Whiteboard functions
         setView,
         setSelectedTool,
         setDocument,
         setImage,
-        setQuery
+        setQuery,
+        setLaunchChatMessage,
+        initializeWorkspace
       }}
     >
       {children}
