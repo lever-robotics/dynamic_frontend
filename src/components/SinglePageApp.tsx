@@ -13,8 +13,7 @@ interface SinglePageAppProps {
 
 // ChatWrapper component to handle workspace context
 function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
-	const { setSelectedTool, addArtifact, state: { currentThreadId } } = useWorkspace();
-	console.log('[ChatWrapper] Rendering with currentThreadId:', currentThreadId, 'in', isLaunchMode ? 'launch mode' : 'normal mode');
+	const {state: { currentThreadId } } = useWorkspace();
 
 	const sendOnConnect = useCallback(() => {
 		console.log('[ChatWrapper] Creating initial connection message');
@@ -29,8 +28,6 @@ function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
 		<ChatDisplay
 			key={currentThreadId}
 			sendOnConnect={sendOnConnect}
-			onToolSelect={setSelectedTool}
-			addArtifact={addArtifact}
 			isLaunchMode={isLaunchMode}
 		/>
 	);
@@ -40,7 +37,7 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, s
 	console.log('[SinglePageApp] Rendering');
 	const [showLaunchChat, setShowLaunchChat] = useState(true);
 	const [isLaunchMode, setIsLaunchMode] = useState(false);
-	const [isInitializing, setIsInitializing] = useState(false);
+	const [isInitializing, setIsInitializing] = useState(false); //starting up the workspace 
 	const { state: { threads, currentThreadId }, createThread, setView, initializeWorkspace, setLaunchChatMessage } = useWorkspace();
 
 	// Initialize workspace on mount
@@ -49,8 +46,9 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, s
 		initializeWorkspace();
 	}, [initializeWorkspace]);
 
+	// this function is called when on the launchchat compoent when the user clicks to start a new analysis, this gives it time to incilize the workspace, create the thread
 	const handleStartAnalysis = async (message: string) => {
-		console.log('[SinglePageApp] Starting analysis with message:', message);
+		console.log('[SinglePageApp] Create THread, set currentThread, added to threads turn off launch chat displaty:', message);
 		if (isInitializing) {
 			console.log('[SinglePageApp] Already initializing, skipping');
 			return;
@@ -84,6 +82,7 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, s
 			<div className="w-[240px] h-full bg-[#F4F5F7] border-r border-gray-200 shrink-0">
 				<SidebarComp
 					setShowSettings={setShowSettings}
+					setIsLaunchMode={setIsLaunchMode}
 					setShowBlueprint={setShowBlueprint}
 					setShowLaunchChat={setShowLaunchChat}
 				/>

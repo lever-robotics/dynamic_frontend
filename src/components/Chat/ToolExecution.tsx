@@ -5,11 +5,13 @@ import { LoadingSpinner } from "../LoadingSpinner";
 interface ToolExecutionProps {
 	toolExecution: ToolExecutionType;
 	compact?: boolean;
+	onSelect?: (tool: ToolExecutionType) => void;
 }
 
 export function ToolExecution({
 	toolExecution,
 	compact = false,
+	onSelect,
 }: ToolExecutionProps) {
 	const statusColors = {
 		starting: "bg-yellow-50 border-yellow-200 text-yellow-700",
@@ -29,7 +31,10 @@ export function ToolExecution({
 
 	if (compact) {
 		return (
-			<div className="flex items-center justify-between p-2 border rounded">
+			<div
+				className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-gray-50"
+				onClick={() => onSelect?.(toolExecution)}
+			>
 				<div className="flex items-center gap-2">
 					<span className="font-medium">{toolExecution.tool}</span>
 					<span className={`text-xs px-1.5 py-0.5 rounded ${statusColor}`}>
@@ -48,7 +53,10 @@ export function ToolExecution({
 	}
 
 	return (
-		<div className="my-2 rounded-lg border shadow-sm">
+		<div
+			className="my-2 rounded-lg border shadow-sm cursor-pointer hover:bg-gray-50"
+			onClick={() => onSelect?.(toolExecution)}
+		>
 			{/* Tool Header */}
 			<div
 				className={`flex items-center justify-between p-2 ${statusColor} rounded-t-lg`}

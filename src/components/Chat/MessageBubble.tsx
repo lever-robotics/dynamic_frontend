@@ -4,7 +4,7 @@ import type {
 	MessageBubble as MessageBubbleType,
 	ToolExecutionBubble,
 } from "@/types/chat";
-import { AgentExecution } from "./AgentExecution";
+import { ToolExecution } from "./ToolExecution";
 import { MarkdownContent } from "./MarkdownContent";
 
 interface MessageBubbleProps {
@@ -23,10 +23,6 @@ export function MessageBubble({ message, onToolSelect }: MessageBubbleProps) {
 		);
 	}
 
-	if (message.type === "agent") {
-		return <AgentExecution agent={message} onToolSelect={onToolSelect} />;
-	}
-
 	// Assistant message
 	return (
 		<div className="flex justify-start">
@@ -34,7 +30,13 @@ export function MessageBubble({ message, onToolSelect }: MessageBubbleProps) {
 				<div className="flex flex-col w-full text-xs leading-4 text-slate-600">
 					{message.chunks.map((chunk, index) => (
 						<div key={`${message.id}-chunk-${index}`}>
-							<MarkdownContent content={chunk.content || ""} />
+							{chunk.content && <MarkdownContent content={chunk.content} />}
+							{chunk.toolCall && (
+								<ToolExecution
+									toolExecution={chunk.toolCall}
+									onSelect={onToolSelect}
+								/>
+							)}
 						</div>
 					))}
 				</div>

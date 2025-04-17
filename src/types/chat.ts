@@ -1,11 +1,8 @@
 // Core Message Types
 export interface MessageBubble {
 	id: string;
-	type: "user" | "assistant" | "agent";
+	type: "user" | "assistant";
 	chunks: MessageChunkBubble[];
-	status?: AgentStatus;
-	agentName?: string;
-	error?: string;
 	timestamp?: string; // Optional, for display purposes
 }
 
@@ -26,7 +23,6 @@ export type AgentStatus = "starting" | "running" | "complete" | "error";
 
 export interface ToolExecutionBubble {
 	tool: string;
-	agentName: string;
 	arguments: Record<string, any>;
 	status?: ToolStatus;
 	result?: any;

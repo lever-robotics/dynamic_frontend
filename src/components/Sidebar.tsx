@@ -27,12 +27,14 @@ interface SidebarProps {
     setShowSettings: (show: boolean) => void;
     setShowLaunchChat: (show: boolean) => void;
     setShowBlueprint: (show: boolean) => void;
+    setIsLaunchMode: (isLaunchMode: boolean) => void;
 }
 
 export const SidebarComp: React.FC<SidebarProps> = ({
     setShowSettings,
     setShowLaunchChat,
     setShowBlueprint,
+    setIsLaunchMode
 }) => {
     const { state: { threads, currentThreadId }, switchThread, addArtifact, setView } = useWorkspace();
 
@@ -44,6 +46,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
         switchThread(threadId);
         setShowLaunchChat(false);
         setView('DocViewer');
+        setIsLaunchMode(false);
     };
 
     const handleSettingsClick = () => {
