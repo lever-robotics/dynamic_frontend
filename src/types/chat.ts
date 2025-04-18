@@ -1,7 +1,7 @@
 // Core Message Types
 export interface MessageBubble {
 	id: string;
-	type: "user" | "assistant";
+	type: "user" | "assistant" | "tool";
 	chunks: MessageChunkBubble[];
 	timestamp?: string; // Optional, for display purposes
 }

@@ -69,7 +69,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
         <Sidebar className="flex flex-col justify-between h-screen">
             {/* Logo Section */}
             <div
-                className="p-6 pl-4 cursor-pointer hover:bg-anakiwa-50 transition-colors"
+                className="p-6 pl-4"
                 onClick={handleLogoClick}
                 onKeyDown={handleLogoClick}
             >
@@ -84,25 +84,27 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 
             {/* Main Menu Section */}
             <SidebarContent className="flex-1 ml-1 justify-center">
-                <SidebarGroup>
+                <SidebarGroup className="overflow-y-auto scrollbar-hide max-h-[calc(100vh-300px)]">
                     <SidebarGroupContent>
                         <div className="px-4 py-2">
                             <hr className="border-t border-gray-200" />
                         </div>
-                        <SidebarMenu>
-                            {threads.map((thread) => (
-                                <SidebarMenuItem key={thread.id}>
-                                    <SidebarMenuButton
-                                        onClick={() => handleThreadClick(thread.id)}
-                                        className={`w-full ${currentThreadId === thread.id ? 'bg-anakiwa-100' : ''}`}
-                                    >
-                                        <span className="truncate max-w-[180px]">
-                                            {thread.name}
-                                        </span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
+                        <div className="overflow-y-auto scrollbar-hide max-h-[calc(100vh-300px)]">
+                            <SidebarMenu>
+                                {threads.map((thread) => (
+                                    <SidebarMenuItem key={thread.id}>
+                                        <SidebarMenuButton
+                                            onClick={() => handleThreadClick(thread.id)}
+                                            className={`w-full ${currentThreadId === thread.id ? 'bg-anakiwa-100' : ''}`}
+                                        >
+                                            <span className="truncate max-w-[180px]">
+                                                {thread.name}
+                                            </span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </div>
                         <div className="px-4 py-2 mt-4">
                             <Button
                                 onClick={handleNewAnalysisClick}

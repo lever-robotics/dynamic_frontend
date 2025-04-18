@@ -42,9 +42,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 			// Check if this is the final message and if so then save Agent output to the database.
 			if (payload.type === "agent" &&
 				(payload as AgentChunk).status === "complete") {
-
 				console.log('[ChatDisplay] Final message received:', payload);
-
 
 				// Use a timeout to ensure all messages are processed
 				setTimeout(() => {
@@ -61,18 +59,15 @@ export const ChatDisplay = memo(function ChatDisplay({
 						// Track which messages we've already saved
 						const savedMessageIds = new Set<string>();
 
-						// Save each message to the database
-						messagesToSave.forEach(message => {
+						// Save messages in chronological order (oldest to newest)
+						for (let i = 0; i < messagesToSave.length; i++) {
+							const message = messagesToSave[i];
 							// Only save if we haven't saved this message before
 							if (!savedMessageIds.has(message.id)) {
 								addMessage(message);
 								savedMessageIds.add(message.id);
 							}
-						});
-					} else {
-						localMessages.forEach(message => {
-							addMessage(message);
-						});
+						}
 					}
 				}, 1000); // Wait 1 second to ensure all messages are processed
 			}
@@ -130,9 +125,14 @@ export const ChatDisplay = memo(function ChatDisplay({
 					});
 					break;
 				}
+				case "agent": {
+					// Keep agent logic for tracking purposes but don't display
+					const agentChunk = payload as AgentChunk;
+					console.log('[ChatDisplay] Agent status update:', agentChunk.name, agentChunk.status);
+					break;
+				}
 				case "tool": {
 					setLocalMessages((prev) => {
-						const messageIndex = prev.length - 1;
 						const toolChunk = payload as ToolChunk;
 						const newChunk: MessageChunkBubble = {
 							toolCall: {
@@ -144,26 +144,44 @@ export const ChatDisplay = memo(function ChatDisplay({
 							},
 						};
 
-						// If the last message is an assistant message, append the tool call
-						if (prev[messageIndex]?.type === "assistant") {
-							const updatedMessage = {
-								...prev[messageIndex],
-								chunks: [...prev[messageIndex].chunks, newChunk],
-							};
-							return [
-								...prev.slice(0, messageIndex),
-								updatedMessage,
-								...prev.slice(messageIndex + 1),
-							];
+						// Handle different types of tool results
+						const tool = toolChunk.tool;
+						const result = toolChunk.result;
+						const image = toolChunk.image;
+
+						switch (tool) {
+							case "agent_write_analysis_report":
+								if (result) {
+									console.log('[ChatDisplay] Adding document:', result);
+									addArtifact?.('document', result);
+								}
+								break;
+							case "agent_execute_python_code":
+								if (image) {
+									console.log('[ChatDisplay] Adding image:', image);
+									addArtifact?.('image', image);
+								}
+								break;
+							case "agent_execute_sql_query":
+								if (result) {
+									console.log('[ChatDisplay] Adding query:', result);
+									addArtifact?.('query', result);
+								}
+								break;
+							default:
+								console.log(`Unhandled tool type: ${tool}`);
 						}
 
-						// Create new assistant message with the tool call
-						const newMessage: MessageBubble = {
-							id: messageId,
-							type: "assistant",
-							chunks: [newChunk],
-						};
-						return [...prev, newMessage];
+						// Create new tool message
+						if (toolChunk.status === "complete") {
+							const newMessage: MessageBubble = {
+								id: messageId,
+								type: "tool",
+								chunks: [newChunk],
+							};
+							return [...prev, newMessage];
+						}
+						return prev;
 					});
 					break;
 				}
@@ -206,7 +224,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 				// In launch mode, start fresh with just this message
 				setLocalMessages([userMessage]);
-				await addMessage(userMessage);
+				// await addMessage(userMessage); Actually save the user message after the assistnat has repsponsed 
 
 				// Send message to LLM
 				await sendMessage("toLLM", { type: "toLLM", text: launchChatMessage } as ToLLMMessage);
@@ -248,7 +266,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 		// Add user message to both local and workspace state
 		setLocalMessages(prev => [...prev, userMessage]);
-		addMessage(userMessage);
+		// addMessage(userMessage); Add the user message when its rendered in the begingn
 
 		console.log('[ChatDisplay] Sending message to LLM');
 		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
@@ -257,7 +275,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 	return (
 		<div className="flex flex-col h-full bg-[#F4F5F7]">
 			{/* Header */}
-			<div className="flex items-center justify-between border-b p-4 bg-white">
+			{/* <div className="flex items-center justify-between border-b p-4 bg-white">
 				<div className="flex items-center gap-2">
 					{!isLaunchMode && (
 						<>
@@ -280,7 +298,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 						✕
 					</button>
 				)}
-			</div>
+			</div> */}
 
 			{/* Messages */}
 			<MessageList
