@@ -28,7 +28,7 @@ function InputField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-4 py-3.5 mt-4 font-light text-zinc-600 rounded-xl border border-solid border-black border-opacity-20 bg-stone-300 bg-opacity-0 shadow-[0px_2px_5px_rgba(0,0,0,0.1)] font-body"
+        className="w-full px-4 py-3.5 mt-2 font-light text-zinc-600 rounded-xl border border-solid border-black border-opacity-20 bg-stone-300 bg-opacity-0 shadow-[0px_2px_5px_rgba(0,0,0,0.1)] font-body"
       />
     </div>
   );
@@ -112,7 +112,7 @@ export const AuthModal: React.FC = () => {
                                 className="object-contain self-center max-w-full aspect-[2.28] w-[162px]"
                             />
 
-                            <div className="mt-7 w-full">
+                            <div className="mt-6 w-full">
                                 <InputField
                                     label="Email"
                                     type="text"
@@ -122,7 +122,7 @@ export const AuthModal: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="mt-5 w-full">
+                            <div className="mt-4 w-full">
                                 <InputField
                                     label="Password"
                                     type="password"
@@ -139,7 +139,7 @@ export const AuthModal: React.FC = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-16 py-3.5 mt-3.5 text-white bg-sky-400 rounded-xl shadow-[0px_4px_10px_rgba(233,68,75,0.25)] font-heading"
+                                className="px-16 py-3.5 mt-8 text-white bg-sky-400 rounded-xl shadow-[0px_4px_10px_rgba(233,68,75,0.25)] font-heading"
                             >
                                 {loading ? 'Signing in...' : 'Sign in'}
                             </button>
