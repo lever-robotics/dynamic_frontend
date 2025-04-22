@@ -37,12 +37,6 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 			enabled: true,
 		},
 		{
-			id: "darkMode",
-			name: "Dark Mode",
-			description: "Enable dark mode theme",
-			enabled: false,
-		},
-		{
 			id: "autoSave",
 			name: "Auto Save",
 			description: "Automatically save changes",
@@ -116,16 +110,6 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 				<div className="mt-8 pt-6 border-t border-gray-200 flex flex-col gap-4">
 					{/* <GoogleConnect /> */}
 					{/* <GooglePicker onSelect={() => { }} /> */}
-					<button
-						type="button"
-						onClick={() => {
-							showBlueprint();
-							onClose();
-						}}
-						className="w-3/4 mx-auto flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-anakiwa-500 hover:bg-anakiwa-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-anakiwa-500"
-					>
-						Open Blueprint
-					</button>
 					<button
 						type="button"
 						onClick={handleSignOut}
