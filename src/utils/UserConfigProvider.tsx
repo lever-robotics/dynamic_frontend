@@ -32,6 +32,8 @@ interface UserConfigContextType {
     isLoading: boolean;
     error: string | null;
     fetchUserConfig: () => Promise<void>;
+    updateConnectionMeta: (connectionId: string, meta: DataConnector['meta']) => Promise<void>;
+    createConnection: (connectionType: string, keys: Record<string, string>) => Promise<void>;
 }
 
 const UserConfigContext = createContext<UserConfigContextType | undefined>(undefined);
@@ -83,6 +85,58 @@ export const UserConfigProvider = ({ children }: { children: React.ReactNode }) 
         }
     }, [userId]);
 
+    const updateConnectionMeta = useCallback(async (connectionId: string, meta: DataConnector['meta']) => {
+        if (!userId) return;
+
+        try {
+            const { error: updateError } = await supabase
+                .from('data_connectors')
+                .update({ meta })
+                .eq('id', connectionId)
+                .eq('user_id', userId);
+
+            if (updateError) {
+                throw new Error(updateError.message);
+            }
+
+            // Refresh the user config to get the updated data
+            await fetchUserConfig();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to update connection metadata');
+            console.error('Error updating connection metadata:', err);
+        }
+    }, [userId, fetchUserConfig]);
+
+    const createConnection = useCallback(async (connectionType: string, keys: Record<string, string>) => {
+        if (!userId) return;
+
+        try {
+            const { error: createError } = await supabase
+                .from('data_connectors')
+                .insert([
+                    {
+                        user_id: userId,
+                        connection_type: connectionType,
+                        meta: {
+                            version: '1.0',
+                            entities: []
+                        },
+                        keys: keys
+                    }
+                ]);
+
+            if (createError) {
+                throw new Error(createError.message);
+            }
+
+            // Refresh the user config to get the new connection
+            await fetchUserConfig();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create connection');
+            console.error('Error creating connection:', err);
+        }
+    }, [userId, fetchUserConfig]);
+
     // Fetch user config when userId changes
     useEffect(() => {
         if (userId) {
@@ -91,7 +145,14 @@ export const UserConfigProvider = ({ children }: { children: React.ReactNode }) 
     }, [userId, fetchUserConfig]);
 
     return (
-        <UserConfigContext.Provider value={{ userConfig, isLoading, error, fetchUserConfig }}>
+        <UserConfigContext.Provider value={{ 
+            userConfig, 
+            isLoading, 
+            error, 
+            fetchUserConfig,
+            updateConnectionMeta,
+            createConnection
+        }}>
             {children}
         </UserConfigContext.Provider>
     );

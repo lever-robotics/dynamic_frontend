@@ -1,14 +1,13 @@
-import { useUserConfig } from "@/utils/UserConfigProvider";
 import { useState, useEffect } from "react";
 import { ConnectionStore } from "./ConnectionStore";
 import { ConnectionDetail } from "./ConnectionDetail";
-import { DataSourceItem } from "./DataSourceItem";
-import { TextareaField } from "./TextareaField";
+import { ConnectionManagement } from "./ConnectionManagement";
 import gsIcon from "@/assets/gs.png";
 import odooIcon from "@/assets/odoo.png";
 import shopifyIcon from "@/assets/shopify.png";
 import quickBooksIcon from "@/assets/quick_books.png";
 import bigqueryIcon from "@/assets/bigquery.png";
+import { useUserConfig } from "@/utils/UserConfigProvider";
 
 interface Entity {
     name: string;
@@ -64,7 +63,6 @@ export function BusinessData() {
             }))
         );
 
-        // If expanding, select the first entity
         if (!connection.isExpanded && connection.entities.length > 0) {
             setSelectedEntity(connection.entities[0]);
         } else if (connection.isExpanded) {
@@ -76,7 +74,6 @@ export function BusinessData() {
         setSelectedEntity(entity);
     };
 
-    // Update connections when userConfig changes
     useEffect(() => {
         if (userConfig?.data_connectors) {
             setConnections(userConfig.data_connectors.map(connector => ({
@@ -91,87 +88,15 @@ export function BusinessData() {
     }, [userConfig]);
 
     return (
-        <div className="h-full flex bg-white">
-            {/* Left Side - Connections and Entities List */}
-            <div className="w-1/3 border-r border-gray-200 flex flex-col">
-                <div className="p-4 border-b">
-                    <h2 className="text-lg font-semibold text-gray-800">Business Data</h2>
-                </div>
-                
-                <div className="flex-1 overflow-auto p-4 space-y-2">
-                    {isLoading ? (
-                        <div className="text-gray-500">Loading Data Connectors...</div>
-                    ) : connections.length > 0 ? (
-                        connections.map((connection) => (
-                            <div key={connection.id} className="space-y-2">
-                                <DataSourceItem
-                                    icon={connection.icon}
-                                    label={connection.name}
-                                    isActive={connection.isExpanded}
-                                    onClick={() => handleSelectConnection(connection)}
-                                />
-                                {connection.isExpanded && connection.entities.map((entity) => (
-                                    <div key={entity.name} className="pl-4">
-                                        <DataSourceItem
-                                            label={entity.displayName}
-                                            isActive={selectedEntity?.name === entity.name}
-                                            onClick={() => handleSelectEntity(entity)}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-gray-500">No data connectors configured.</div>
-                    )}
-                    
-                    <div className="mt-4">
-                        <DataSourceItem
-                            label="Add Connection"
-                            isImage={true}
-                            onClick={() => setShowConnectionStore(true)}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Right Side - Entity Details */}
-            <div className="w-2/3 flex flex-col">
-                <div className="p-4 border-b">
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        {selectedEntity ? selectedEntity.displayName : "Select an Entity"}
-                    </h2>
-                </div>
-                
-                <div className="flex-1 overflow-auto p-6">
-                    {selectedEntity ? (
-                        <section className="flex flex-col -mt-2 leading-relaxed">
-                            <h1 className="self-start text-2xl">{selectedEntity.displayName}</h1>
-
-                            <div className="flex flex-col pl-3.5 mt-8 w-full text-sm">
-                                <div className="overflow-hidden px-3.5 pt-2.5 pb-6 leading-5 bg-white rounded-md min-h-[71px] text-zinc-500">
-                                    {selectedEntity.description}
-                                </div>
-
-                                <hr className="shrink-0 mt-3.5 border border-solid bg-stone-300 border-stone-300 h-[3px]" />
-
-                                {selectedEntity.fields.map((field) => (
-                                    <TextareaField
-                                        key={field.name}
-                                        label={field.displayName}
-                                        value={field.description}
-                                        className="text-zinc-500"
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-gray-500">
-                            Select an entity to view details
-                        </div>
-                    )}
-                </div>
-            </div>
+        <div className="h-full">
+            <ConnectionManagement
+                connections={connections}
+                selectedEntity={selectedEntity}
+                isLoading={isLoading}
+                onSelectConnection={handleSelectConnection}
+                onSelectEntity={handleSelectEntity}
+                onAddConnection={() => setShowConnectionStore(true)}
+            />
 
             {/* Connection Store Modal */}
             {showConnectionStore && !showConnectionDetail && (

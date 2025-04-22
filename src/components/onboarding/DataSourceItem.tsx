@@ -27,7 +27,7 @@ export const DataSourceItem: React.FC<DataSourceItemProps> = ({
             onClick={onClick}
         >
             {isImage ? (
-                <div className="flex shrink-0 bg-white border border-white border-solid h-[30px] w-[30px]" />
+                <div className="flex shrink-0 bg-white border border-solid h-[30px] w-[30px]" />
             ) : icon ? (
                 <img
                     src={icon}
@@ -38,7 +38,7 @@ export const DataSourceItem: React.FC<DataSourceItemProps> = ({
                 <div className="flex shrink-0 bg-zinc-300 h-[30px] w-[30px]" />
             )}
             <p
-                className={`grow shrink ${isActive ? "my-auto border border-white border-solid w-[143px]" : "self-start w-36"}`}
+                className={`grow shrink ${isActive ? "my-auto w-[143px]" : "self-start w-36"}`}
             >
                 {label}
             </p>

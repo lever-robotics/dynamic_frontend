@@ -4,6 +4,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BackArrow } from '../common/BackArrow';
 import { Modal } from '../common/Modal';
+import { useUserConfig } from '../../utils/UserConfigProvider';
+import { MarkdownContent } from "../Chat/MarkdownContent";
 
 interface ConnectionDetailProps {
     connection: {
@@ -107,13 +109,13 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({ connection, 
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState<Record<string, string>>({});
     const connectionConfig = getConnectionFields(connection.name);
+    const { createConnection } = useUserConfig();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            // TODO: Implement the actual API call to create the connection
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulated API call
+            await createConnection(connection.name.toLowerCase(), formData);
             onBack();
         } catch (error) {
             console.error('Failed to create connection:', error);
@@ -167,9 +169,7 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({ connection, 
                 <div className="w-1/2 flex flex-col">
                     <div className="flex-1 overflow-auto p-6">
                         <div className="prose max-w-none">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {connectionConfig.markdown}
-                            </ReactMarkdown>
+                            <MarkdownContent content={connectionConfig.markdown} />
                         </div>
                     </div>
                 </div>
