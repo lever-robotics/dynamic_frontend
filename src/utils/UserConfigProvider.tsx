@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from './SupabaseClient';
 import { useAuth } from './AuthProvider';
 
 interface DataConnector {
@@ -42,7 +41,7 @@ export const UserConfigProvider = ({ children }: { children: React.ReactNode }) 
     const [userConfig, setUserConfig] = useState<UserConfig | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { userId } = useAuth();
+    const { userId, getValidToken } = useAuth();
 
     const fetchUserConfig = useCallback(async () => {
         if (!userId) return;
@@ -50,32 +49,39 @@ export const UserConfigProvider = ({ children }: { children: React.ReactNode }) 
         setIsLoading(true);
         setError(null);
 
-        try {
-            // Fetch user config
-            const { data: configData, error: configError } = await supabase
-                .from('user_configs')
-                .select('completed_onboarding, business_overview')
-                .eq('user_id', userId)
-                .single();
+        const token = await getValidToken();
+        if (!token) {
+            setError('Failed to get valid token');
+            return;
+        }
 
-            if (configError) {
-                throw new Error(configError.message);
+        try {
+            const configResp = await fetch(`${import.meta.env.VITE_API_URL}/v0/config`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const configBody = await configResp.json();
+
+            if (configBody.error) {
+                throw new Error(configBody.error);
             }
 
-            // Fetch data connectors
-            const { data: connectorsData, error: connectorsError } = await supabase
-                .from('data_connectors')
-                .select('id, connection_type, meta')
-                .eq('user_id', userId);
+            const connectorsResp = await fetch(`${import.meta.env.VITE_API_URL}/v0/connectors`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const connectorsBody = await connectorsResp.json();
 
-            if (connectorsError) {
-                throw new Error(connectorsError.message);
+            if (connectorsBody.error) {
+                throw new Error(connectorsBody.error);
             }
 
             setUserConfig({
-                completed_onboarding: configData.completed_onboarding,
-                business_overview: configData.business_overview,
-                data_connectors: connectorsData || []
+                completed_onboarding: configBody.data.completed_onboarding,
+                business_overview: configBody.data.business_overview,
+                data_connectors: connectorsBody.data
             });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch user config');
@@ -83,50 +89,72 @@ export const UserConfigProvider = ({ children }: { children: React.ReactNode }) 
         } finally {
             setIsLoading(false);
         }
-    }, [userId]);
+    }, [userId, getValidToken]);
 
     const updateConnectionMeta = useCallback(async (connectionId: string, meta: DataConnector['meta']) => {
         if (!userId) return;
 
-        try {
-            const { error: updateError } = await supabase
-                .from('data_connectors')
-                .update({ meta })
-                .eq('id', connectionId)
-                .eq('user_id', userId);
+        const token = await getValidToken();
+        if (!token) {
+            setError('Failed to get valid token');
+            return;
+        }
 
-            if (updateError) {
-                throw new Error(updateError.message);
+        try {
+            const updateResp = await fetch(`${import.meta.env.VITE_API_URL}/v0/connectors/${connectionId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ meta })
+            });
+            const updateBody = await updateResp.json();
+
+            if (updateBody.error) {
+                throw new Error(updateBody.error);
             }
 
-            // Refresh the user config to get the updated data
             await fetchUserConfig();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to update connection metadata');
             console.error('Error updating connection metadata:', err);
+        } finally {
+            setIsLoading(false);
         }
-    }, [userId, fetchUserConfig]);
+    }, [userId, fetchUserConfig, getValidToken]);
 
     const createConnection = useCallback(async (connectionType: string, keys: Record<string, string>) => {
         if (!userId) return;
 
-        try {
-            const { error: createError } = await supabase
-                .from('data_connectors')
-                .insert([
-                    {
-                        user_id: userId,
-                        connection_type: connectionType,
-                        meta: {
-                            version: '1.0',
-                            entities: []
-                        },
-                        keys: keys
-                    }
-                ]);
+        const token = await getValidToken();
+        if (!token) {
+            setError('Failed to get valid token');
+            return;
+        }
 
-            if (createError) {
-                throw new Error(createError.message);
+        try {
+
+            const updateResp = await fetch(`${import.meta.env.VITE_API_URL}/v0/connectors`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    connection_type: connectionType,
+                    meta: {
+                        version: '1.0',
+                        entities: []
+                    },
+                    keys: keys
+                })
+            });
+            const updateBody = await updateResp.json();
+
+            if (updateBody.error) {
+                throw new Error(updateBody.error);
             }
 
             // Refresh the user config to get the new connection
@@ -135,7 +163,7 @@ export const UserConfigProvider = ({ children }: { children: React.ReactNode }) 
             setError(err instanceof Error ? err.message : 'Failed to create connection');
             console.error('Error creating connection:', err);
         }
-    }, [userId, fetchUserConfig]);
+    }, [userId, fetchUserConfig, getValidToken]);
 
     // Fetch user config when userId changes
     useEffect(() => {
