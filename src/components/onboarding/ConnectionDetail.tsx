@@ -6,14 +6,10 @@ import { BackArrow } from '../common/BackArrow';
 import { Modal } from '../common/Modal';
 import { useUserConfig } from '../../utils/UserConfigProvider';
 import { MarkdownContent } from "../Chat/MarkdownContent";
+import type { Connection } from "@/types/connectors";
 
 interface ConnectionDetailProps {
-    connection: {
-        id: string;
-        name: string;
-        description: string;
-        icon: string;
-    };
+    connection: Connection;
     onBack: () => void;
     onClose: () => void;
 }
