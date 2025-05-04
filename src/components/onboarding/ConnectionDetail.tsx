@@ -55,16 +55,10 @@ const getConnectionFields = (connectionName: string) => {
 			return {
 				fields: [
 					{
-						name: "SHOPIFY_SHOP_DOMAIN",
-						label: "Shop Domain",
+						name: "shop",
+						label: "shop",
 						type: "text",
 						placeholder: "your-store.myshopify.com",
-					},
-					{
-						name: "SHOPIFY_ACCESS_TOKEN",
-						label: "Access Token",
-						type: "password",
-						placeholder: "Enter your access token",
 					},
 				],
 				markdown: `
@@ -130,7 +124,7 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [formData, setFormData] = useState<Record<string, string>>({});
 	const connectionConfig = getConnectionFields(connection.name);
-	const [redirect, setRedirect] = useState<string | null>(null);
+	const [session, setSession] = useState<string | null>(null);
 	const { getValidToken } = useAuth();
 	const { createConnection } = useUserConfig();
 
@@ -138,9 +132,9 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 		const fetchRedirectUrl = async () => {
 			try {
 				const response = await fetch(
-					`${API_BASE_URL}/v0/connectors/${connection.name.toLowerCase()}/login`,
+					`${API_BASE_URL}/v0/oauth/session`,
 					{
-						method: "GET",
+						method: "POST",
 						headers: {
 							Authorization: `Bearer ${await getValidToken()}`,
 						},
@@ -150,26 +144,24 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 					throw new Error(`HTTP error! status: ${response.status}`);
 				}
 
-				// Get the redirect URL from the response
-				const { redirect } = await response.json();
+				const { session } = await response.json();
 
-				// Redirect to OAuth page
-				if (redirect) {
-					setRedirect(redirect);
-				} else {
-					throw new Error("No redirect URL received");
-				}
+				setSession(session);
+
 			} catch (error) {
 				console.error("Error initiating Google auth:", error);
 			}
 		};
 		fetchRedirectUrl();
-	}, [getValidToken, connection.name.toLowerCase]);
+	}, [getValidToken]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		const tab = window.open(redirect, "_blank");
+		const tab = window.open(
+			`${API_BASE_URL}/v0/connectors/${connection.name.toLowerCase()}/authorize?session=${session}&shop=${formData.shop}`,
+			"_blank",
+		);
 
 		if (!tab) {
 			throw new Error("Failed to open popup");
@@ -177,6 +169,34 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 
 		tab.focus();
 
+        // console.log(formData);
+
+        // try {
+        //     const response = await fetch(
+        //         `${API_BASE_URL}/v0/connectors/${connection.name.toLowerCase()}/authorize?shop=${formData.shop}`,
+        //         {
+        //             method: "GET",
+        //             headers: {
+        //                 Authorization: `Bearer ${await getValidToken()}`,
+        //             },
+        //         },
+        //     );
+        //     if (!response.ok) {
+        //         throw new Error(`HTTP error! status: ${response.status}`);
+        //     }
+
+        //     // Get the redirect URL from the response
+        //     const { redirect } = await response.json();
+
+        //     // Redirect to OAuth page
+        //     if (redirect) {
+        //         setRedirect(redirect);
+        //     } else {
+        //         throw new Error("No redirect URL received");
+        //     }
+        // } catch (error) {
+        //     console.error("Error initiating Google auth:", error);
+        // }
 		// setIsLoading(true);
 		// try {
 		//     await createConnection(connection.name.toLowerCase(), formData);

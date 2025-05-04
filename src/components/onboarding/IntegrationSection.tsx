@@ -24,7 +24,7 @@ export const IntegrationSection: React.FC<IntegrationsSectionProps> = ({
 		// setSelectedIntegration(integration);
 		try {
 			const response = await fetch(
-				`${API_BASE_URL}/v0/connectors/${integration.name.toLowerCase()}/login`,
+				`${API_BASE_URL}/v0/connectors/${integration.name.toLowerCase()}/authorize`,
 				{
 					method: "GET",
 					headers: {
