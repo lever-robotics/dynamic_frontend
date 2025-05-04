@@ -2,6 +2,7 @@ import type { Connection } from "@/types/connectors";
 import { useAuth } from "@/utils/AuthProvider";
 import { useState } from "react";
 import { ConnectionCard } from "./ConnectionCard";
+import { ConnectionDetail } from "./ConnectionDetail";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface IntegrationsSectionProps {
@@ -63,18 +64,18 @@ export const IntegrationSection: React.FC<IntegrationsSectionProps> = ({
 							connection={connection}
 							isHovering={isHovering}
 							setIsHovering={setIsHovering}
-							onClick={() => handleIntegrationClick(connection)}
+							onClick={() => setSelectedIntegration(connection)}
 						/>
 					))}
 				</div>
 			</div>
-			{/* {selectedIntegration && (
-        <IntegrationModal
-          integration={selectedIntegration}
-          onClose={() => setSelectedIntegration(null)}
-          onConnect={onConnect}
-        />
-      )} */}
+			{selectedIntegration && (
+				<ConnectionDetail
+					connection={selectedIntegration}
+					onClose={() => setSelectedIntegration(null)}
+					onBack={() => setSelectedIntegration(null)}
+				/>
+			)}
 		</section>
 	);
 };
