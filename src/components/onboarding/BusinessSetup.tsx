@@ -23,7 +23,7 @@ export function BusinessSetup({
 	const [logoUrl, setLogoUrl] = useState(defaultLogo);
 	const [isHovering, setIsHovering] = useState<string | null>(null);
 	const { connections } = useUserConfig();
-
+	console.log("setup BusinessInfo");
 	const applicableConnections = Connections.map(
 		(connection: Connection) => ({
 			...connection,

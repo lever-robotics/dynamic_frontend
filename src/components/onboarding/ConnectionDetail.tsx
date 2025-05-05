@@ -168,44 +168,6 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 		}
 
 		tab.focus();
-
-        // console.log(formData);
-
-        // try {
-        //     const response = await fetch(
-        //         `${API_BASE_URL}/v0/connectors/${connection.name.toLowerCase()}/authorize?shop=${formData.shop}`,
-        //         {
-        //             method: "GET",
-        //             headers: {
-        //                 Authorization: `Bearer ${await getValidToken()}`,
-        //             },
-        //         },
-        //     );
-        //     if (!response.ok) {
-        //         throw new Error(`HTTP error! status: ${response.status}`);
-        //     }
-
-        //     // Get the redirect URL from the response
-        //     const { redirect } = await response.json();
-
-        //     // Redirect to OAuth page
-        //     if (redirect) {
-        //         setRedirect(redirect);
-        //     } else {
-        //         throw new Error("No redirect URL received");
-        //     }
-        // } catch (error) {
-        //     console.error("Error initiating Google auth:", error);
-        // }
-		// setIsLoading(true);
-		// try {
-		//     await createConnection(connection.name.toLowerCase(), formData);
-		//     onBack();
-		// } catch (error) {
-		//     console.error('Failed to create connection:', error);
-		// } finally {
-		//     setIsLoading(false);
-		// }
 	};
 
 	const handleFieldChange = (fieldName: string, value: string) => {

@@ -16,27 +16,21 @@ interface Connection {
 
 interface BlueprintProps {
     onClose: () => void;
-    businessInfo?: {
-        name: string;
-        url: string;
-    };
 }
 
-export function Blueprint({ onClose, businessInfo }: BlueprintProps) {
+export function Blueprint({ onClose }: BlueprintProps) {
     const [showConnectionStore, setShowConnectionStore] = useState(false);
     const [showConnectionDetail, setShowConnectionDetail] = useState(false);
     const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
 
     const sendOnConnect = useCallback(() => {
-        if (businessInfo) {
-            return {
-                type: "flag",
-                flag: "blueprint",
-                context: JSON.stringify(businessInfo),
-            } as FlagChunk;
-        }
-        return null;
-    }, [businessInfo]);
+        return {
+            type: "flag",
+            // flag: "blueprint",
+            flag: "query",
+            context: JSON.stringify({}),
+        } as FlagChunk;
+    }, []);
 
     const handleSelectConnection = (connection: Connection) => {
         setSelectedConnection(connection);

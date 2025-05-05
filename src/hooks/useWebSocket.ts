@@ -1,5 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { Payload, ToLLMMessage, WebSocketMessage, WebSocketMessageType } from "@/types/chat";
+import type {
+	Payload,
+	ToLLMMessage,
+	WebSocketMessage,
+	WebSocketMessageType,
+} from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -42,7 +47,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
 		try {
 			const token = await getValidToken();
-			const wsUrl = `ws://localhost:8000/ws?token=${token}`;
+			const wsUrl = `${import.meta.env.VITE_API_URL}/ws?token=${token}`;
 
 			const ws = new WebSocket(wsUrl);
 			wsRef.current = ws;
