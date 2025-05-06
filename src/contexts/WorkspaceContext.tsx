@@ -39,7 +39,7 @@ interface WorkspaceContextType {
 	isLoading: boolean;
 	error: string | null;
 	// Thread management functions
-	createThread: (name: string) => Promise<void>;
+	createThread: (name: string) => Promise<string>;
 	switchThread: (threadId: string) => Promise<void>;
 	addMessage: (message: MessageBubble) => Promise<void>;
 	addArtifact: (

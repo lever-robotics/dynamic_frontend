@@ -1,6 +1,5 @@
 import type React from "react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import { SearchQuery } from "./LeverApp";
 import { ToolStateDisplay } from "./ToolStateDisplay";
 
 interface QueryMetadata {
