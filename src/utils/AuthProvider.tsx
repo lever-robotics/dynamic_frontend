@@ -1,11 +1,11 @@
+import type { Session, User } from "@supabase/supabase-js";
 import {
+	type ReactNode,
 	createContext,
 	useContext,
 	useEffect,
 	useState,
-	type ReactNode,
 } from "react";
-import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./SupabaseClient";
 
 interface AuthResponse {
@@ -97,7 +97,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	return (
 		<AuthContext.Provider
-			value={{ getValidToken, isAuthenticated, signUp, signIn, signOut, userId }}
+			value={{
+				getValidToken,
+				isAuthenticated,
+				signUp,
+				signIn,
+				signOut,
+				userId,
+			}}
 		>
 			{children}
 		</AuthContext.Provider>

@@ -1,13 +1,16 @@
+import type {
+	MessageBubble as MessageBubbleType,
+	ToolExecutionBubble,
+} from "@/types/chat";
 import type React from "react";
-import { useRef, useEffect } from "react";
-import type { MessageBubble as MessageBubbleType, ToolExecutionBubble } from "@/types/chat";
+import { useEffect, useRef } from "react";
 import { MessageBubble } from "./MessageBubble";
 
 const toolNameMapping: Record<string, string> = {
-	"agent_write_analysis_report": "Analysis Report",
-	"agent_execute_python_code": "Python Code Execution",
-	"agent_execute_sql_query": "SQL Query",
-	"agent_read_business_json": "Business Data Analysis",
+	agent_write_analysis_report: "Analysis Report",
+	agent_execute_python_code: "Python Code Execution",
+	agent_execute_sql_query: "SQL Query",
+	agent_read_business_json: "Business Data Analysis",
 	// Add more mappings as needed
 };
 
@@ -27,16 +30,16 @@ export function MessageList({
 
 	// Log messages whenever they change
 	useEffect(() => {
-		console.log('Messages list:', messages);
+		console.log("Messages list:", messages);
 	}, [messages]);
 
 	// Check scroll position on every render
 	const shouldScroll =
 		containerRef.current &&
 		containerRef.current.scrollHeight -
-		containerRef.current.scrollTop -
-		containerRef.current.clientHeight <
-		100;
+			containerRef.current.scrollTop -
+			containerRef.current.clientHeight <
+			100;
 
 	if (shouldScroll) {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

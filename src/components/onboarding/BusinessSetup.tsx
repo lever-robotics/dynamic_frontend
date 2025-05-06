@@ -1,13 +1,13 @@
 "use client";
+import defaultLogo from "@/assets/default_business_logo.png";
+import type { Connection } from "@/types/connectors";
+import { Connections } from "@/types/connectors";
+import { useUserConfig } from "@/utils/UserConfigProvider";
 import type * as React from "react";
 import { useState } from "react";
-import defaultLogo from "@/assets/default_business_logo.png";
 import { Modal } from "../common/Modal";
-import type { Connection } from "@/types/connectors";
-import type { BusinessInfo } from "./Onboarding";
-import { useUserConfig } from "@/utils/UserConfigProvider";
 import { IntegrationSection } from "./IntegrationSection";
-import { Connections } from "@/types/connectors";
+import type { BusinessInfo } from "./Onboarding";
 
 interface BusinessSetupProps {
 	onClose: () => void;
@@ -24,14 +24,10 @@ export function BusinessSetup({
 	const [isHovering, setIsHovering] = useState<string | null>(null);
 	const { connections } = useUserConfig();
 	console.log("setup BusinessInfo");
-	const applicableConnections = Connections.map(
-		(connection: Connection) => ({
-			...connection,
-			isConnected: connections.some(
-				(conn) => conn.type === connection.type,
-			),
-		}),
-	);
+	const applicableConnections = Connections.map((connection: Connection) => ({
+		...connection,
+		isConnected: connections.some((conn) => conn.type === connection.type),
+	}));
 
 	const handleContinue = () => {
 		if (businessName && businessUrl) {

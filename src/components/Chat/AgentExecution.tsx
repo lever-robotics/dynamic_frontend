@@ -1,10 +1,10 @@
-import { useState } from "react";
 import type {
 	MessageBubble as AgentExecutionBubble,
 	ToolExecutionBubble,
 } from "@/types/chat";
-import { ToolExecution } from "./ToolExecution";
+import { useState } from "react";
 import { LoadingSpinner } from "../LoadingSpinner";
+import { ToolExecution } from "./ToolExecution";
 
 interface AgentExecutionProps {
 	agent: AgentExecutionBubble;
@@ -65,7 +65,10 @@ export function AgentExecution({ agent, onToolSelect }: AgentExecutionProps) {
 									className="cursor-pointer hover:bg-gray-50 rounded transition-colors"
 									onClick={() => onToolSelect?.(chunk.toolCall)}
 								>
-									<ToolExecution toolExecution={chunk.toolCall} compact={true} />
+									<ToolExecution
+										toolExecution={chunk.toolCall}
+										compact={true}
+									/>
 								</div>
 							))}
 						</div>

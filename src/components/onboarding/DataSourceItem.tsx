@@ -1,6 +1,6 @@
-import { useState } from "react";
 import type { Connection, Entity } from "@/types/connectors";
 import type { DataConnector } from "@/types/connectors";
+import { useState } from "react";
 
 interface DataSourceItemProps {
 	isImage?: boolean;

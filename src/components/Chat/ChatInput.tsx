@@ -8,7 +8,12 @@ interface ChatInputProps {
 	isLaunchMode?: boolean;
 }
 
-export function ChatInput({ isConnected = true, onSubmit, error, isLaunchMode = false }: ChatInputProps) {
+export function ChatInput({
+	isConnected = true,
+	onSubmit,
+	error,
+	isLaunchMode = false,
+}: ChatInputProps) {
 	const [inputValue, setInputValue] = useState("");
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -30,12 +35,14 @@ export function ChatInput({ isConnected = true, onSubmit, error, isLaunchMode = 
 					onChange={(e) => setInputValue(e.target.value)}
 					placeholder={isLaunchMode ? "Analyze your data" : "Type a message..."}
 					className={`bg-white w-full resize-none rounded-full border border-input px-4 py-3 pr-12 text-sm shadow-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] max-h-[132px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] leading-relaxed ${
-						isLaunchMode ? "placeholder:text-transparent placeholder:bg-clip-text placeholder:bg-gradient-to-r placeholder:from-primary-400 placeholder:to-secondary-200" : "placeholder:text-muted-foreground"
+						isLaunchMode
+							? "placeholder:text-transparent placeholder:bg-clip-text placeholder:bg-gradient-to-r placeholder:from-primary-400 placeholder:to-secondary-200"
+							: "placeholder:text-muted-foreground"
 					}`}
 					disabled={!isLaunchMode && !isConnected}
 					rows={1}
 					onKeyDown={(e) => {
-						if (e.key === 'Enter' && !e.shiftKey) {
+						if (e.key === "Enter" && !e.shiftKey) {
 							e.preventDefault();
 							handleSubmit(e);
 						}
@@ -66,4 +73,4 @@ export function ChatInput({ isConnected = true, onSubmit, error, isLaunchMode = 
 			{error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 		</form>
 	);
-} 
+}

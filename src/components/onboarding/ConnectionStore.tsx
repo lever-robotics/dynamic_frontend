@@ -1,9 +1,9 @@
+import { type Connection, Connections } from "@/types/connectors";
 import type * as React from "react";
 import { useState } from "react";
 import { BackArrow } from "../common/BackArrow";
 import { Modal } from "../common/Modal";
 import { ConnectionCard } from "./ConnectionCard";
-import { type Connection, Connections } from "@/types/connectors";
 import { ConnectionDetail } from "./ConnectionDetail";
 
 interface ConnectionStoreProps {

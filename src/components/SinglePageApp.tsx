@@ -1,10 +1,11 @@
-import React, { useCallback, useState, useEffect } from "react";
-import { SidebarComp } from "./Sidebar";
-import { ChatDisplay } from "./Chat/ChatDisplay";
-import { Whiteboard } from "./Whiteboard";
-import { LaunchChat } from "./LaunchChat";
-import type { FlagChunk } from "@/types/chat";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import type { FlagChunk } from "@/types/chat";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { ChatDisplay } from "./Chat/ChatDisplay";
+import { LaunchChat } from "./LaunchChat";
+import { SidebarComp } from "./Sidebar";
+import { Whiteboard } from "./Whiteboard";
 
 interface SinglePageAppProps {
 	setShowSettings: (show: boolean) => void;
@@ -13,10 +14,12 @@ interface SinglePageAppProps {
 
 // ChatWrapper component to handle workspace context
 function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
-	const {state: { currentThreadId } } = useWorkspace();
+	const {
+		state: { currentThreadId },
+	} = useWorkspace();
 
 	const sendOnConnect = useCallback(() => {
-		console.log('[ChatWrapper] Creating initial connection message');
+		console.log("[ChatWrapper] Creating initial connection message");
 		return {
 			type: "flag",
 			flag: "query",
@@ -33,24 +36,36 @@ function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
 	);
 }
 
-export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, setShowBlueprint }) => {
-	console.log('[SinglePageApp] Rendering');
+export const SinglePageApp: React.FC<SinglePageAppProps> = ({
+	setShowSettings,
+	setShowBlueprint,
+}) => {
+	console.log("[SinglePageApp] Rendering");
 	const [showLaunchChat, setShowLaunchChat] = useState(true);
 	const [isLaunchMode, setIsLaunchMode] = useState(false);
-	const [isInitializing, setIsInitializing] = useState(false); //starting up the workspace 
-	const { state: { threads, currentThreadId }, createThread, setView, initializeWorkspace, setLaunchChatMessage } = useWorkspace();
+	const [isInitializing, setIsInitializing] = useState(false); //starting up the workspace
+	const {
+		state: { threads, currentThreadId },
+		createThread,
+		setView,
+		initializeWorkspace,
+		setLaunchChatMessage,
+	} = useWorkspace();
 
 	// Initialize workspace on mount
 	useEffect(() => {
-		console.log('[SinglePageApp] Initializing workspace');
+		console.log("[SinglePageApp] Initializing workspace");
 		initializeWorkspace();
 	}, [initializeWorkspace]);
 
 	// this function is called when on the launchchat compoent when the user clicks to start a new analysis, this gives it time to incilize the workspace, create the thread
 	const handleStartAnalysis = async (message: string) => {
-		console.log('[SinglePageApp] Create THread, set currentThread, added to threads turn off launch chat displaty:', message);
+		console.log(
+			"[SinglePageApp] Create THread, set currentThread, added to threads turn off launch chat displaty:",
+			message,
+		);
 		if (isInitializing) {
-			console.log('[SinglePageApp] Already initializing, skipping');
+			console.log("[SinglePageApp] Already initializing, skipping");
 			return;
 		}
 
@@ -60,16 +75,16 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, s
 			// Create a new thread with the message as the title
 			const threadId = await createThread(message);
 			setLaunchChatMessage(message);
-			console.log('[SinglePageApp] Created thread with ID:', threadId);
+			console.log("[SinglePageApp] Created thread with ID:", threadId);
 
 			// Set the view to DocViewer
-			setView('DocViewer');
+			setView("DocViewer");
 
 			// Hide the launch chat
 			setShowLaunchChat(false);
-			console.log('[SinglePageApp] Analysis started successfully');
+			console.log("[SinglePageApp] Analysis started successfully");
 		} catch (error) {
-			console.error('[SinglePageApp] Failed to start analysis:', error);
+			console.error("[SinglePageApp] Failed to start analysis:", error);
 			// Handle error appropriately
 		} finally {
 			setIsInitializing(false);
@@ -104,7 +119,7 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, s
 								<ChatWrapper isLaunchMode={isLaunchMode} />
 							) : (
 								<div className="w-full h-full bg-[#F4F5F7]/[0.43] flex items-center justify-center">
-									<div className="text-gray-400"></div>
+									<div className="text-gray-400" />
 								</div>
 							)}
 						</div>
@@ -115,4 +130,4 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({ setShowSettings, s
 	);
 };
 
-export default SinglePageApp; 
+export default SinglePageApp;

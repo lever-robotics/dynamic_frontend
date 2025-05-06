@@ -1,16 +1,14 @@
+import type { DataConnector } from "@/types/connectors";
 import {
 	createContext,
-	useContext,
-	useState,
-	useEffect,
 	useCallback,
-    useMemo,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
 } from "react";
 import { useAuth } from "./AuthProvider";
-import type { DataConnector } from "@/types/connectors";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-
-
 
 interface UserConfig {
 	completed_onboarding: boolean;
@@ -31,7 +29,7 @@ interface UserConfigContextType {
 		connectionType: string,
 		keys: Record<string, string>,
 	) => Promise<void>;
-    connections: DataConnector[];
+	connections: DataConnector[];
 }
 
 const UserConfigContext = createContext<UserConfigContextType | undefined>(
@@ -193,9 +191,9 @@ export const UserConfigProvider = ({
 		[userId, fetchUserConfig, getValidToken],
 	);
 
-    const connections = useMemo(() => {
-        return userConfig?.data_connectors || [];
-    }, [userConfig]);
+	const connections = useMemo(() => {
+		return userConfig?.data_connectors || [];
+	}, [userConfig]);
 
 	// Fetch user config when userId changes
 	useEffect(() => {
@@ -213,7 +211,7 @@ export const UserConfigProvider = ({
 				fetchUserConfig,
 				updateConnectionMeta,
 				createConnection,
-                connections,
+				connections,
 			}}
 		>
 			{children}

@@ -1,8 +1,8 @@
+import bigqueryIcon from "@/assets/bigquery.png";
 import gsIcon from "@/assets/gs.png";
 import odooIcon from "@/assets/odoo.png";
-import shopifyIcon from "@/assets/shopify.png";
 import quickBooksIcon from "@/assets/quick_books.png";
-import bigqueryIcon from "@/assets/bigquery.png";
+import shopifyIcon from "@/assets/shopify.png";
 
 export interface DataConnector {
 	id: string;
@@ -14,33 +14,33 @@ export interface DataConnector {
 }
 
 export interface Connection {
-    name: string;
-    type: string;
-    description: string;
-    icon: string;
-    url: string;
-    isExpanded: boolean;
-    isConnected: boolean;
-    isAvailable: boolean;
+	name: string;
+	type: string;
+	description: string;
+	icon: string;
+	url: string;
+	isExpanded: boolean;
+	isConnected: boolean;
+	isAvailable: boolean;
 }
 
 export interface CombinedConnection {
-    connection: Connection;
-    dataConnector: DataConnector;
+	connection: Connection;
+	dataConnector: DataConnector;
 }
 
 export interface Entity {
-    name: string;
-    displayName: string;
-    description: string;
-    fields: Array<{
-        name: string;
-        displayName: string;
-        description: string;
-    }>;
+	name: string;
+	displayName: string;
+	description: string;
+	fields: Array<{
+		name: string;
+		displayName: string;
+		description: string;
+	}>;
 }
 
-export const Connections: Connection[] = [	
+export const Connections: Connection[] = [
 	{
 		name: "Google Sheets",
 		type: "google_sheets",

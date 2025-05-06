@@ -1,13 +1,13 @@
+import type { Connection } from "@/types/connectors";
+import { useAuth } from "@/utils/AuthProvider";
 import type * as React from "react";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { BackArrow } from "../common/BackArrow";
-import { Modal } from "../common/Modal";
 import { useUserConfig } from "../../utils/UserConfigProvider";
 import { MarkdownContent } from "../Chat/MarkdownContent";
-import type { Connection } from "@/types/connectors";
-import { useAuth } from "@/utils/AuthProvider";
+import { BackArrow } from "../common/BackArrow";
+import { Modal } from "../common/Modal";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface ConnectionDetailProps {

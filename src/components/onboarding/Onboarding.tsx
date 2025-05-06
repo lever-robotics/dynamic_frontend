@@ -1,13 +1,13 @@
-import { useState, useCallback } from "react";
-import { Modal } from "../common/Modal";
-import { ChatDisplay } from "../Chat/ChatDisplay";
+import { ToolProvider } from "@/contexts/ToolContext";
 import type { FlagChunk, ToolExecutionBubble } from "@/types/chat";
+import { useCallback, useState } from "react";
+import { ChatDisplay } from "../Chat/ChatDisplay";
+import { Modal } from "../common/Modal";
 import { DocumentView } from "./BusinessOverview";
-import { ToolDetail } from "./ToolDetail";
 import { BusinessSetup } from "./BusinessSetup";
 import { LeftPanel } from "./LeftPanel";
 import { RightPanel } from "./RightPanel";
-import { ToolProvider } from "@/contexts/ToolContext";
+import { ToolDetail } from "./ToolDetail";
 
 interface OnboardingProps {
 	onClose: () => void;

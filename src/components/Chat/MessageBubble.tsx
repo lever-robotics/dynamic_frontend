@@ -1,11 +1,11 @@
-import type React from "react";
-import { processText } from "@/utils/messageUtils";
 import type {
 	MessageBubble as MessageBubbleType,
 	ToolExecutionBubble,
 } from "@/types/chat";
-import { ToolExecution } from "./ToolExecution";
+import { processText } from "@/utils/messageUtils";
+import type React from "react";
 import { MarkdownContent } from "./MarkdownContent";
+import { ToolExecution } from "./ToolExecution";
 
 interface MessageBubbleProps {
 	message: MessageBubbleType;
@@ -13,7 +13,11 @@ interface MessageBubbleProps {
 	toolNameMapping: Record<string, string>;
 }
 
-export function MessageBubble({ message, onToolSelect, toolNameMapping }: MessageBubbleProps) {
+export function MessageBubble({
+	message,
+	onToolSelect,
+	toolNameMapping,
+}: MessageBubbleProps) {
 	if (message.type === "user") {
 		return (
 			<div className="flex justify-end">
@@ -27,9 +31,11 @@ export function MessageBubble({ message, onToolSelect, toolNameMapping }: Messag
 	if (message.type === "tool") {
 		return (
 			<div className="flex justify-start">
-				<article 
+				<article
 					className={`flex overflow-hidden flex-col px-3 py-3 mt-3.5 w-full bg-secondary-300 bg-opacity-30 rounded-2xl max-w-[324px] border border-gray-200 transition-colors duration-200 ${
-						onToolSelect ? 'hover:bg-secondary-300 hover:bg-opacity-50 cursor-pointer' : ''
+						onToolSelect
+							? "hover:bg-secondary-300 hover:bg-opacity-50 cursor-pointer"
+							: ""
 					}`}
 					onClick={() => {
 						if (onToolSelect && message.chunks[0]?.toolCall) {
@@ -37,7 +43,11 @@ export function MessageBubble({ message, onToolSelect, toolNameMapping }: Messag
 						}
 					}}
 					onKeyDown={(e) => {
-						if ((e.key === 'Enter' || e.key === ' ') && onToolSelect && message.chunks[0]?.toolCall) {
+						if (
+							(e.key === "Enter" || e.key === " ") &&
+							onToolSelect &&
+							message.chunks[0]?.toolCall
+						) {
 							onToolSelect(message.chunks[0].toolCall);
 						}
 					}}
@@ -51,7 +61,9 @@ export function MessageBubble({ message, onToolSelect, toolNameMapping }: Messag
 									<ToolExecution
 										toolExecution={{
 											...chunk.toolCall,
-											tool: toolNameMapping[chunk.toolCall.tool] || chunk.toolCall.tool
+											tool:
+												toolNameMapping[chunk.toolCall.tool] ||
+												chunk.toolCall.tool,
 										}}
 										compact={true}
 									/>

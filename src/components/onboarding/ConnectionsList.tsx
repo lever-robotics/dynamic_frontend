@@ -1,7 +1,11 @@
+import type {
+	CombinedConnection,
+	DataConnector,
+	Entity,
+} from "@/types/connectors";
+import { Connections } from "@/types/connectors";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import { DataSourceItem } from "./DataSourceItem";
-import type { CombinedConnection, Entity, DataConnector } from "@/types/connectors";
-import { Connections } from "@/types/connectors";
 
 interface ConnectionsListProps {
 	selectedEntityName: string | null;
@@ -18,15 +22,19 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
 	onSelectConnection,
 	onAddConnection,
 }) => {
-    const { userConfig, isLoading } = useUserConfig();
-    const connections = userConfig?.data_connectors || [];
+	const { userConfig, isLoading } = useUserConfig();
+	const connections = userConfig?.data_connectors || [];
 
-    const applicableConnections: CombinedConnection[] = connections.map((dataConnector) => {
-        return {
-            dataConnector,
-            connection: Connections.find((conn) => conn.type === dataConnector.type),
-        };
-    });
+	const applicableConnections: CombinedConnection[] = connections.map(
+		(dataConnector) => {
+			return {
+				dataConnector,
+				connection: Connections.find(
+					(conn) => conn.type === dataConnector.type,
+				),
+			};
+		},
+	);
 
 	return (
 		<div className="w-1/3 border-r border-gray-200 flex flex-col">

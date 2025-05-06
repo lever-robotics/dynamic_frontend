@@ -1,19 +1,19 @@
-import { useState, useCallback, useEffect, memo } from "react";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import type {
-	MessageBubble,
-	WebSocketMessage,
-	ToolExecutionBubble,
-	MessageChunk,
-	ToLLMMessage,
 	AgentChunk,
-	ToolChunk,
+	MessageBubble,
+	MessageChunk,
 	MessageChunkBubble,
 	Payload,
+	ToLLMMessage,
+	ToolChunk,
+	ToolExecutionBubble,
+	WebSocketMessage,
 } from "@/types/chat";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { memo, useCallback, useEffect, useState } from "react";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 interface ChatDisplayProps {
 	onClose?: () => void;
@@ -31,8 +31,12 @@ export const ChatDisplay = memo(function ChatDisplay({
 	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 	const [isInitializing, setIsInitializing] = useState(false);
 	const [hasInitialized, setHasInitialized] = useState(false);
-	const { state: { messages, currentThreadId, launchChatMessage }, addMessage, addArtifact, setSelectedTool } = useWorkspace();
-
+	const {
+		state: { messages, currentThreadId, launchChatMessage },
+		addMessage,
+		addArtifact,
+		setSelectedTool,
+	} = useWorkspace();
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
@@ -40,21 +44,27 @@ export const ChatDisplay = memo(function ChatDisplay({
 			const { payload, messageId } = wsMessage;
 
 			// Check if this is the final message and if so then save Agent output to the database.
-			if (payload.type === "agent" &&
-				(payload as AgentChunk).status === "complete") {
-				console.log('[ChatDisplay] Final message received:', payload);
+			if (
+				payload.type === "agent" &&
+				(payload as AgentChunk).status === "complete"
+			) {
+				console.log("[ChatDisplay] Final message received:", payload);
 
 				// Use a timeout to ensure all messages are processed
 				setTimeout(() => {
 					// Find the index of the last user message
-					const lastUserMessageIndex = localMessages.length - 1 -
-						[...localMessages].reverse().findIndex(msg => msg.type === "user");
+					const lastUserMessageIndex =
+						localMessages.length -
+						1 -
+						[...localMessages]
+							.reverse()
+							.findIndex((msg) => msg.type === "user");
 
 					if (lastUserMessageIndex !== -1) {
 						// Get all messages from the last user message
 						const messagesToSave = localMessages.slice(lastUserMessageIndex);
 
-						console.log('[ChatDisplay] Saving messages:', messagesToSave);
+						console.log("[ChatDisplay] Saving messages:", messagesToSave);
 
 						// Track which messages we've already saved
 						const savedMessageIds = new Set<string>();
@@ -89,7 +99,8 @@ export const ChatDisplay = memo(function ChatDisplay({
 								const updatedChunks = [...prev[messageIndex].chunks];
 								updatedChunks[lastChunkIndex] = {
 									...updatedChunks[lastChunkIndex],
-									content: updatedChunks[lastChunkIndex].content + newChunk.content,
+									content:
+										updatedChunks[lastChunkIndex].content + newChunk.content,
 								};
 
 								const updatedMessage = {
@@ -128,7 +139,11 @@ export const ChatDisplay = memo(function ChatDisplay({
 				case "agent": {
 					// Keep agent logic for tracking purposes but don't display
 					const agentChunk = payload as AgentChunk;
-					console.log('[ChatDisplay] Agent status update:', agentChunk.name, agentChunk.status);
+					console.log(
+						"[ChatDisplay] Agent status update:",
+						agentChunk.name,
+						agentChunk.status,
+					);
 					break;
 				}
 				case "tool": {
@@ -152,20 +167,20 @@ export const ChatDisplay = memo(function ChatDisplay({
 						switch (tool) {
 							case "agent_write_analysis_report":
 								if (result) {
-									console.log('[ChatDisplay] Adding document:', result);
-									addArtifact?.('document', result);
+									console.log("[ChatDisplay] Adding document:", result);
+									addArtifact?.("document", result);
 								}
 								break;
 							case "agent_execute_python_code":
 								if (image) {
-									console.log('[ChatDisplay] Adding image:', image);
-									addArtifact?.('image', image);
+									console.log("[ChatDisplay] Adding image:", image);
+									addArtifact?.("image", image);
 								}
 								break;
 							case "agent_execute_sql_query":
 								if (result) {
-									console.log('[ChatDisplay] Adding query:', result);
-									addArtifact?.('query', result);
+									console.log("[ChatDisplay] Adding query:", result);
+									addArtifact?.("query", result);
 								}
 								break;
 							default:
@@ -187,7 +202,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 				}
 			}
 		},
-		[localMessages, addMessage]
+		[localMessages, addMessage, addArtifact],
 	);
 
 	// WebSocket connection with message handling
@@ -195,22 +210,23 @@ export const ChatDisplay = memo(function ChatDisplay({
 		onMessage: handleMessage,
 	});
 
-
 	// Initialize launch mode setup
 	const initializeChat = useCallback(async () => {
 		// Prevent multiple initializations
 		if (hasInitialized || isInitializing) {
-			console.log('[ChatDisplay] Already initialized or initializing, skipping');
+			console.log(
+				"[ChatDisplay] Already initialized or initializing, skipping",
+			);
 			return;
 		}
 
-		console.log('[ChatDisplay] Starting initialization');
+		console.log("[ChatDisplay] Starting initialization");
 		setIsInitializing(true);
 
 		try {
 			// Send initial connection message in both modes
 			const msg = sendOnConnect();
-			console.log('[ChatDisplay] Sending initial connection message:', msg);
+			console.log("[ChatDisplay] Sending initial connection message:", msg);
 			await sendMessage(msg.type, msg);
 
 			if (isLaunchMode) {
@@ -224,10 +240,13 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 				// In launch mode, start fresh with just this message
 				setLocalMessages([userMessage]);
-				// await addMessage(userMessage); Actually save the user message after the assistnat has repsponsed 
+				// await addMessage(userMessage); Actually save the user message after the assistnat has repsponsed
 
 				// Send message to LLM
-				await sendMessage("toLLM", { type: "toLLM", text: launchChatMessage } as ToLLMMessage);
+				await sendMessage("toLLM", {
+					type: "toLLM",
+					text: launchChatMessage,
+				} as ToLLMMessage);
 			} else {
 				// Normal mode: set to all messages from context
 				setLocalMessages(messages);
@@ -235,26 +254,34 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 			// Mark as initialized
 			setHasInitialized(true);
-			console.log('[ChatDisplay] Initialization complete');
+			console.log("[ChatDisplay] Initialization complete");
 		} catch (error) {
-			console.error('[ChatDisplay] Error during initialization:', error);
+			console.error("[ChatDisplay] Error during initialization:", error);
 			setHasInitialized(false); // Allow retry on error
 		} finally {
 			setIsInitializing(false);
 		}
-	}, [messages, isLaunchMode, addMessage, launchChatMessage, isInitializing, setLocalMessages, hasInitialized, sendOnConnect, sendMessage, setLocalMessages]);
+	}, [
+		messages,
+		isLaunchMode,
+		launchChatMessage,
+		isInitializing,
+		hasInitialized,
+		sendOnConnect,
+		sendMessage,
+	]);
 
 	// Initialize when all conditions are met
 	useEffect(() => {
 		if (isConnected) {
-			console.log('[ChatDisplay] Conditions met, attempting initialization');
+			console.log("[ChatDisplay] Conditions met, attempting initialization");
 			initializeChat();
 		}
-	}, [isConnected]); //Execute on is connected 
+	}, [isConnected, initializeChat]); //Execute on is connected
 
 	// Handle new user messages
 	const handleNewMessage = async (content: string) => {
-		console.log('[ChatDisplay] Handling new message:', content);
+		console.log("[ChatDisplay] Handling new message:", content);
 		const userMessageId = crypto.randomUUID();
 		const assistantMessageId = crypto.randomUUID();
 
@@ -265,10 +292,10 @@ export const ChatDisplay = memo(function ChatDisplay({
 		};
 
 		// Add user message to both local and workspace state
-		setLocalMessages(prev => [...prev, userMessage]);
+		setLocalMessages((prev) => [...prev, userMessage]);
 		// addMessage(userMessage); Add the user message when its rendered in the begingn
 
-		console.log('[ChatDisplay] Sending message to LLM');
+		console.log("[ChatDisplay] Sending message to LLM");
 		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	};
 

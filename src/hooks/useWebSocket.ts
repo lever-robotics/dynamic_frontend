@@ -1,4 +1,3 @@
-import { useState, useRef, useCallback, useEffect } from "react";
 import type {
 	Payload,
 	ToLLMMessage,
@@ -6,6 +5,7 @@ import type {
 	WebSocketMessageType,
 } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL;
 // const WS_URL =

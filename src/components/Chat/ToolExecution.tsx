@@ -1,5 +1,8 @@
+import type {
+	ToolExecutionBubble as ToolExecutionType,
+	ToolStatus,
+} from "@/types/chat";
 import type React from "react";
-import type { ToolExecutionBubble as ToolExecutionType, ToolStatus } from "@/types/chat";
 import { LoadingSpinner } from "../LoadingSpinner";
 
 interface ToolExecutionProps {
@@ -7,7 +10,10 @@ interface ToolExecutionProps {
 	compact?: boolean;
 }
 
-export function ToolExecution({ toolExecution, compact = false }: ToolExecutionProps) {
+export function ToolExecution({
+	toolExecution,
+	compact = false,
+}: ToolExecutionProps) {
 	const statusColors = {
 		starting: "bg-yellow-50 text-yellow-700",
 		running: "bg-blue-50 text-blue-700",
@@ -28,9 +34,19 @@ export function ToolExecution({ toolExecution, compact = false }: ToolExecutionP
 						{toolExecution.status === "running" ? (
 							<LoadingSpinner size="sm" />
 						) : toolExecution.status === "complete" ? (
-							<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-label="Completed">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								className="h-4 w-4"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+								aria-label="Completed"
+							>
 								<title>Completed</title>
-								<path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+								<path
+									fillRule="evenodd"
+									d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+									clipRule="evenodd"
+								/>
 							</svg>
 						) : (
 							toolExecution.status || "starting"
@@ -50,13 +66,25 @@ export function ToolExecution({ toolExecution, compact = false }: ToolExecutionP
 			<div className={`flex items-center justify-between p-2 ${statusColor}`}>
 				<span className="font-medium">{toolExecution.tool}</span>
 				{toolExecution.status === "complete" && (
-					<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-label="Completed">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						className="h-4 w-4"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+						aria-label="Completed"
+					>
 						<title>Completed</title>
-						<path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+						<path
+							fillRule="evenodd"
+							d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+							clipRule="evenodd"
+						/>
 					</svg>
 				)}
 				{toolExecution.status === "running" && <LoadingSpinner size="sm" />}
-				{!toolExecution.status && <span className="text-sm capitalize">starting</span>}
+				{!toolExecution.status && (
+					<span className="text-sm capitalize">starting</span>
+				)}
 			</div>
 
 			{/* Tool Arguments */}

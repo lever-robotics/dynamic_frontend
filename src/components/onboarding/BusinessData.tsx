@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { ConnectionDetail } from "./ConnectionDetail";
+import type { DataConnector, Entity } from "@/types/connectors";
 import { useUserConfig } from "@/utils/UserConfigProvider";
+import { useEffect, useState } from "react";
+import { ConnectionDetail } from "./ConnectionDetail";
+import { ConnectionStore } from "./ConnectionStore";
 import { ConnectionsList } from "./ConnectionsList";
 import { EntityDetails } from "./EntityDetails";
-import type { DataConnector, Entity } from "@/types/connectors";
-import { ConnectionStore } from "./ConnectionStore";
 
 export function BusinessData() {
 	const [showConnectionStore, setShowConnectionStore] = useState(false);
