@@ -2,6 +2,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 import AuthModal from "./components/AuthModal";
 // import { client } from './config/apollo-client';
+
 import { LeverApp } from "./components/LeverApp";
 import { useAuth } from "./utils/AuthProvider";
 import { useUserConfig } from "./utils/UserConfigProvider";
