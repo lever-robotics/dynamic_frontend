@@ -17,6 +17,7 @@ export const App = () => {
 
 	//If use config is not complete then return loading
 	if (!userConfig) {
+		console.log("Loading...");
 		return <div>Loading...</div>;
 	}
 
