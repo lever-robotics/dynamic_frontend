@@ -87,23 +87,29 @@ Your shop domain is the URL of your Shopify store without the "https://" prefix.
 			return {
 				fields: [
 					{
-						name: "GOOGLE_SHEETS_CREDENTIALS",
-						label: "Service Account JSON",
+						name: "project_id",
+						label: "Project ID",
 						type: "text",
-						placeholder: "Paste your service account JSON",
+						placeholder: "Paste your project ID",
+					},
+					{
+						name: "dataset_id",
+						label: "Dataset ID",
+						type: "text",
+						placeholder: "Paste your dataset ID",
 					},
 				],
 				markdown: `
-# Google Sheets Connection Setup
+# BigQuery Connection Setup
 
 ## Setting Up Service Account
 
 1. Go to the Google Cloud Console
 2. Create a new project or select an existing one
-3. Enable the Google Sheets API
+3. Enable the BigQuery API
 4. Create a service account
 5. Generate a new private key (JSON format)
-6. Share your Google Sheet with the service account email
+6. Share your BigQuery dataset with the service account email
 7. Paste the JSON credentials below
                 `,
 			};
@@ -131,15 +137,12 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 	useEffect(() => {
 		const fetchRedirectUrl = async () => {
 			try {
-				const response = await fetch(
-					`${API_BASE_URL}/v0/oauth/session`,
-					{
-						method: "POST",
-						headers: {
-							Authorization: `Bearer ${await getValidToken()}`,
-						},
+				const response = await fetch(`${API_BASE_URL}/v0/oauth/session`, {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${await getValidToken()}`,
 					},
-				);
+				});
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`);
 				}
@@ -147,7 +150,6 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 				const { session } = await response.json();
 
 				setSession(session);
-
 			} catch (error) {
 				console.error("Error initiating Google auth:", error);
 			}
@@ -158,8 +160,22 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
+		const queryParams = new URLSearchParams({
+			session: session || "",
+		});
+
+		switch (connection.name.toLowerCase()) {
+			case "shopify":
+				queryParams.append("shop", formData.shop || "");
+				break;
+			case "bigquery":
+				queryParams.append("project_id", formData.project_id || "");
+				queryParams.append("dataset_id", formData.dataset_id || "");
+				break;
+		}
+
 		const tab = window.open(
-			`${API_BASE_URL}/v0/connectors/${connection.name.toLowerCase()}/authorize?session=${session}&shop=${formData.shop}`,
+			`${API_BASE_URL}/v0/connectors/${connection.name.toLowerCase()}/authorize?${queryParams.toString()}`,
 			"_blank",
 		);
 

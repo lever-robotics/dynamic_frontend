@@ -2,6 +2,7 @@ import type React from "react";
 import { useState } from "react";
 import { useAuth } from "@/utils/AuthProvider";
 import { Modal } from "./common/Modal";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 // import { GoogleConnect } from "./GoogleConnect";
 // import { GooglePicker } from "./GooglePicker";
 // import type { Blueprint } from "@/types/blueprint";
@@ -28,7 +29,7 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 	onClose,
 	showBlueprint,
 }) => {
-	const { signOut } = useAuth();
+	const { signOut, getValidToken } = useAuth();
 	const [settings, setSettings] = useState<Setting[]>([
 		{
 			id: "notifications",
@@ -49,6 +50,20 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 			enabled: true,
 		},
 	]);
+
+	const testFunction = async () => {
+		const token = await getValidToken();
+		await fetch(`${API_BASE_URL}/v0/connectors/bigquery/query`, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${token}`,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+			  sql: 'SELECT * FROM `bigquery-public-data.thelook_ecommerce.orders` LIMIT 10'
+			})
+		  });
+	};
 
 	const handleToggle = (settingId: string) => {
 		setSettings(
@@ -110,6 +125,13 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 				<div className="mt-auto pt-6 border-t border-gray-200 flex flex-col gap-4">
 					{/* <GoogleConnect /> */}
 					{/* <GooglePicker onSelect={() => { }} /> */}
+					<button
+						type="button"
+						onClick={testFunction}
+						className="w-2/4 mx-auto flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+					>
+						Test Function
+					</button>
 					<button
 						type="button"
 						onClick={handleSignOut}
