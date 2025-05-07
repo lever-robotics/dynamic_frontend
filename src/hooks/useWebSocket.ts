@@ -24,6 +24,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 	const [error, setError] = useState<string | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
 	const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+	const reconnectAttemptsRef = useRef(0);
+	const MAX_RECONNECT_ATTEMPTS = 3;
 	const optionsRef = useRef(options);
 	const isConnectingRef = useRef(false);
 	const { getValidToken, userId } = useAuth();
@@ -58,6 +60,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 				setError(null);
 				optionsRef.current.onConnect?.();
 				isConnectingRef.current = false;
+				reconnectAttemptsRef.current = 0;
 			};
 
 			ws.onclose = (event) => {
@@ -68,9 +71,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
 				// Only attempt reconnect if it wasn't a clean closure
 				if (!event.wasClean) {
-					reconnectTimeoutRef.current = setTimeout(() => {
-						connect();
-					}, 5000);
+					if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+						reconnectAttemptsRef.current++;
+						reconnectTimeoutRef.current = setTimeout(() => {
+							connect();
+						}, 5000);
+					}
 				}
 			};
 
