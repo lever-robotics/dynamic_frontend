@@ -21,6 +21,7 @@ interface UserConfigContextType {
 	isLoading: boolean;
 	error: string | null;
 	fetchUserConfig: () => Promise<void>;
+	upsertUserConfig: (userConfig: UserConfig) => Promise<void>;
 	updateConnectionMeta: (
 		connectionId: string,
 		meta: DataConnector["meta"],
@@ -99,6 +100,47 @@ export const UserConfigProvider = ({
 			setIsLoading(false);
 		}
 	}, [userId, getValidToken]);
+
+	const upsertUserConfig = useCallback(
+		async (userConfig: UserConfig) => {
+			if (!userId) return;
+
+			const token = await getValidToken();
+			if (!token) {
+				setError("Failed to get valid token");
+				return;
+			}
+			console.log(userConfig);
+			try {
+				const updateResp = await fetch(
+					`${import.meta.env.VITE_API_URL}/v0/config`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify(userConfig),
+					},
+				);
+				const updateBody = await updateResp.json();
+
+				if (updateBody.error) {
+					throw new Error(updateBody.error);
+				}
+
+				await fetchUserConfig();
+			} catch (err) {
+				setError(
+					err instanceof Error ? err.message : "Failed to update user config",
+				);
+				console.error("Error updating user config", err);
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[userId, fetchUserConfig, getValidToken],
+	);
 
 	const updateConnectionMeta = useCallback(
 		async (connectionId: string, meta: DataConnector["meta"]) => {
@@ -209,6 +251,7 @@ export const UserConfigProvider = ({
 				isLoading,
 				error,
 				fetchUserConfig,
+				upsertUserConfig,
 				updateConnectionMeta,
 				createConnection,
 				connections,
