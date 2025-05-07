@@ -10,7 +10,7 @@ import { BusinessSetup } from "./onboarding/BusinessSetup";
 
 // LeverApp component with new flow implementation
 export const LeverApp: React.FC = () => {
-	const { userConfig } = useUserConfig(); // universal configurations for the user
+	const { userConfig, upsertUserConfig } = useUserConfig(); // universal configurations for the user
 	const [isFirstTime, setIsFirstTime] = useState(
 		!userConfig?.completed_onboarding,
 	);
@@ -45,7 +45,11 @@ export const LeverApp: React.FC = () => {
 				{isFirstTime && (
 					<>
 						<BusinessSetup
-							onClose={() => setIsFirstTime(true)}
+							onClose={() => {
+								userConfig.completed_onboarding = true;
+								upsertUserConfig(userConfig);
+								setIsFirstTime(false);
+							}}
 							setBusinessInfo={setBusinessInfo}
 						/>
 						{businessInfo && (
