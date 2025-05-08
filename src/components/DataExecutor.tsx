@@ -21,6 +21,7 @@ import { useAuth } from "@/utils/AuthProvider";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
 import { useState } from "react";
+import * as XLSX from "xlsx";
 import { TabGroup } from "./onboarding/TabGroup";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -118,21 +119,48 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	};
 
 	const handleDownloadCSV = () => {
+		if (!results.length) return;
+
+		// Escape fields that contain commas or quotes
+		const escapeCSV = (field: any) => {
+			if (field === null || field === undefined) return "";
+			const stringField = String(field);
+			if (stringField.includes(",") || stringField.includes('"')) {
+				return `"${stringField.replace(/"/g, '""')}"`;
+			}
+			return stringField;
+		};
+
 		const csvContent = [
-			columns.join(","),
-			...results.map((row) => columns.map((col) => row[col]).join(",")),
+			columns.map(escapeCSV).join(","),
+			...results.map((row) =>
+				columns.map((col) => escapeCSV(row[col])).join(","),
+			),
 		].join("\n");
 
 		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
-		link.href = URL.createObjectURL(blob);
-		link.download = "query_results.csv";
+		link.setAttribute("href", url);
+		link.setAttribute("download", "query_results.csv");
+		document.body.appendChild(link);
 		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
 	};
 
 	const handleDownloadExcel = () => {
-		// TODO: Implement Excel download
-		console.log("Downloading Excel...");
+		if (!results.length) return;
+
+		// Create a worksheet
+		const worksheet = XLSX.utils.json_to_sheet(results);
+
+		// Create a workbook
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, "Query Results");
+
+		// Generate Excel file
+		XLSX.writeFile(workbook, "query_results.xlsx");
 	};
 
 	const handleCopyResults = () => {
