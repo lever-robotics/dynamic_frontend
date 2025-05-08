@@ -10,7 +10,7 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({
 	connection,
 	onClick,
 }) => {
-	const [isHovering, setIsHovering] = useState<string | null>(null);
+	const [isHovering, setIsHovering] = useState(false);
 
 	return (
 		<button
@@ -18,10 +18,8 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({
 			className={`flex gap-4 items-center p-4 rounded-xl border cursor-pointer transition-all w-full ${
 				!connection.isAvailable ? "opacity-50 cursor-not-allowed" : ""
 			} ${connection.isConnected ? "border-primary-500 bg-primary-50" : ""}`}
-			onMouseEnter={() =>
-				connection.isAvailable && setIsHovering(connection.name)
-			}
-			onMouseLeave={() => setIsHovering(null)}
+			onMouseEnter={() => connection.isAvailable && setIsHovering(true)}
+			onMouseLeave={() => setIsHovering(false)}
 			onClick={() => connection.isAvailable && onClick()}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
@@ -29,12 +27,11 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({
 				}
 			}}
 			style={{
-				background:
-					isHovering === connection.name
-						? "rgb(var(--primary-200))"
-						: connection.isConnected
-							? "rgb(var(--primary-300))"
-							: "white",
+				background: isHovering
+					? "rgb(var(--primary-200))"
+					: connection.isConnected
+						? "rgb(var(--primary-300))"
+						: "white",
 			}}
 		>
 			<img

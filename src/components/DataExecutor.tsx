@@ -21,7 +21,7 @@ import { Connections } from "@/types/connectors";
 import { useAuth } from "@/utils/AuthProvider";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { ConnectionCard } from "./onboarding/ConnectionCard";
 import { TabGroup } from "./onboarding/TabGroup";
@@ -32,9 +32,13 @@ interface DataExecutorProps {
 	initialQuery?: Artifact | null;
 }
 
+interface QueryResult {
+	[key: string]: string | number | boolean | null;
+}
+
 export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	const [query, setQuery] = useState(initialQuery?.content || "");
-	const [results, setResults] = useState<any[]>([]);
+	const [results, setResults] = useState<QueryResult[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
 	const [selectedConnector, setSelectedConnector] = useState<string>("");
@@ -47,6 +51,13 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	const availableConnections = Connections.filter((conn) =>
 		connectors.some((connector) => connector.type === conn.type),
 	);
+
+	// Set the first connection as selected when component mounts
+	useEffect(() => {
+		if (availableConnections.length > 0 && !selectedConnector) {
+			setSelectedConnector(availableConnections[0].name);
+		}
+	}, [availableConnections, selectedConnector]);
 
 	const connectionTabs: Tab[] = availableConnections.map((conn) => ({
 		label: conn.name,
@@ -191,7 +202,13 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	return (
 		<div className="flex flex-col h-full w-full p-4 space-y-4">
 			{/* Tab Group */}
-			<TabGroupInject tabs={connectionTabs} activeTab={selectedConnector} />
+			<div className="bg-transparent">
+				<TabGroupInject
+					tabs={connectionTabs}
+					activeTab={selectedConnector}
+					className="bg-transparent"
+				/>
+			</div>
 
 			{/* SQL Editor Section */}
 			<div className="h-[200px] flex justify-center">
