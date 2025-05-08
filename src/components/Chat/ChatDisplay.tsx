@@ -31,6 +31,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 	const [isInitializing, setIsInitializing] = useState(false);
 	const [hasInitialized, setHasInitialized] = useState(false);
+	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
 	const {
 		state: { messages, currentThreadId, launchChatMessage },
 		addMessage,
@@ -81,6 +82,8 @@ export const ChatDisplay = memo(function ChatDisplay({
 					}
 				}, 1000); // Wait 1 second to ensure all messages are processed
 			}
+
+			console.log("[ChatDisplay] Received message:", payload);
 
 			switch (payload.type) {
 				case "text": {
@@ -152,7 +155,10 @@ export const ChatDisplay = memo(function ChatDisplay({
 						const newChunk: MessageChunkBubble = {
 							toolCall: {
 								tool: toolChunk.tool,
-								arguments: toolChunk.arguments,
+								arguments:
+									typeof toolChunk.arguments === "string"
+										? JSON.parse(toolChunk.arguments)
+										: toolChunk.arguments,
 								status: toolChunk.status,
 								result: toolChunk.result,
 								error: toolChunk.error,
@@ -164,37 +170,69 @@ export const ChatDisplay = memo(function ChatDisplay({
 						const result = toolChunk.result;
 						const image = toolChunk.image;
 
+						console.log("[ChatDisplay] Tool result:", toolChunk);
+
 						switch (tool) {
-							case "agent_write_analysis_report":
+							case "agent_user_potential_responses": {
+								const toolArgs =
+									typeof toolChunk.arguments === "string"
+										? JSON.parse(toolChunk.arguments)
+										: toolChunk.arguments;
+								console.log(
+									"[ChatDisplay] Adding potential responses:",
+									toolArgs,
+								);
+								try {
+									if (
+										toolArgs &&
+										typeof toolArgs === "object" &&
+										"potential_responses" in toolArgs
+									) {
+										setPotentialResponses(toolArgs.potential_responses);
+									}
+								} catch (error) {
+									console.error(
+										"[ChatDisplay] Error handling potential responses:",
+										error,
+									);
+								}
+								break;
+							}
+							case "write_bi_report": {
 								if (result) {
 									console.log("[ChatDisplay] Adding document:", result);
 									addArtifact?.("document", result);
 								}
 								break;
-							case "agent_execute_python_code":
+							}
+							case "agent_execute_python_code": {
 								if (image) {
 									console.log("[ChatDisplay] Adding image:", image);
 									addArtifact?.("image", image);
 								}
 								break;
-							case "agent_execute_sql_query":
+							}
+							case "agent_execute_sql_query": {
 								if (result) {
 									console.log("[ChatDisplay] Adding query:", result);
 									addArtifact?.("query", result);
 								}
-								break;
-							default:
-								console.log(`Unhandled tool type: ${tool}`);
-						}
 
-						// Create new tool message
-						if (toolChunk.status === "complete") {
-							const newMessage: MessageBubble = {
-								id: messageId,
-								type: "tool",
-								chunks: [newChunk],
-							};
-							return [...prev, newMessage];
+								// Only Show tool when it's complete
+								if (toolChunk.status === "complete") {
+									const newMessage: MessageBubble = {
+										id: messageId,
+										type: "tool",
+										chunks: [newChunk],
+									};
+									return [...prev, newMessage];
+								}
+								break;
+							}
+							default: {
+								console.log(`Unhandled tool type: ${tool}`);
+								break;
+							}
 						}
 						return prev;
 					});
@@ -337,6 +375,25 @@ export const ChatDisplay = memo(function ChatDisplay({
 					[setSelectedTool],
 				)}
 			/>
+
+			{/* Potential Responses */}
+			{potentialResponses.length > 0 && (
+				<div className="flex flex-wrap gap-2 p-4 bg-white border-t">
+					{potentialResponses.map((response) => (
+						<button
+							key={response}
+							type="button"
+							onClick={() => {
+								handleNewMessage(response);
+								setPotentialResponses([]);
+							}}
+							className="px-4 py-2 text-sm bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors"
+						>
+							{response}
+						</button>
+					))}
+				</div>
+			)}
 
 			{/* Chat Input */}
 			<ChatInput

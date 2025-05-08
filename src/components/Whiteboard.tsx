@@ -6,8 +6,9 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import html2pdf from "html2pdf.js";
 import { Download } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { DataExecutor } from "./DataExecutor";
 import { DocumentEditor } from "./DocumentEditor";
 import { GraphViewer } from "./GraphViewer";
@@ -22,6 +23,7 @@ export function Whiteboard() {
 		setQuery,
 	} = useWorkspace();
 	const [activeTab, setActiveTab] = useState(0);
+	const documentRef = useRef<HTMLDivElement>(null);
 
 	// Create tabs from artifacts
 	const tabs = [
@@ -30,9 +32,63 @@ export function Whiteboard() {
 		...artifacts.queries.map((_, index) => `Query ${index + 1}`),
 	];
 
-	const handleDownloadPDF = () => {
-		// TODO: Implement PDF download functionality
-		console.log("Downloading PDF...");
+	const handleDownloadPDF = async () => {
+		if (!documentRef.current) return;
+
+		// Get all page elements
+		const pages = documentRef.current.querySelectorAll(
+			".bg-white.border.rounded-lg",
+		);
+		if (!pages.length) return;
+
+		// Configure PDF options
+		const opt = {
+			margin: [0.5, 0.5, 0.5, 0.5], // [top, right, bottom, left] in inches
+			filename: "document.pdf",
+			image: { type: "jpeg", quality: 0.98 },
+			html2canvas: {
+				scale: 2,
+				useCORS: true,
+				letterRendering: true,
+				windowWidth: 816, // 8.5 inches at 96 DPI
+				windowHeight: 1056, // 11 inches at 96 DPI
+				scrollY: 0,
+				scrollX: 0,
+			},
+			jsPDF: {
+				unit: "in",
+				format: "letter",
+				orientation: "portrait",
+				compress: true,
+			},
+			pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+		};
+
+		try {
+			// Create a worker for PDF generation
+			const worker = html2pdf().set(opt);
+
+			// Process each page
+			for (let i = 0; i < pages.length; i++) {
+				const page = pages[i];
+				if (i === 0) {
+					// First page
+					await worker.from(page).save();
+				} else {
+					// Additional pages
+					await worker
+						.from(page)
+						.toPdf()
+						.get("pdf")
+						.then((pdf: any) => {
+							pdf.addPage();
+						})
+						.save();
+				}
+			}
+		} catch (error) {
+			console.error("Error generating PDF:", error);
+		}
 	};
 
 	const handleTabChange = (index: number) => {
@@ -61,7 +117,11 @@ export function Whiteboard() {
 	const renderView = () => {
 		switch (currentView) {
 			case "DocViewer":
-				return <DocumentEditor />;
+				return (
+					<div ref={documentRef} className="w-full">
+						<DocumentEditor />
+					</div>
+				);
 			case "GraphViewer":
 				return <GraphViewer />;
 			default:

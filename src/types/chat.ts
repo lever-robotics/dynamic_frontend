@@ -49,7 +49,7 @@ export interface ToolChunk extends Payload {
 	type: "tool";
 	tool: string;
 	agentName: string;
-	arguments: Record<string, any>;
+	arguments: string;
 	status: ToolStatus;
 	result?: any;
 	image?: string;

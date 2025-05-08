@@ -25,7 +25,7 @@ function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
 		return {
 			type: "flag",
 			flag: "query",
-			context: JSON.stringify({
+			context: {
 				business_overview: userConfig.business_overview || "",
 				data_connectors: userConfig.data_connectors || [],
 				messages: messages || [],
@@ -34,7 +34,7 @@ function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
 					documents: artifacts.documents || [],
 					queries: artifacts.queries || [],
 				},
-			}),
+			},
 		} as FlagChunk;
 	}, [userConfig, messages, artifacts]);
 

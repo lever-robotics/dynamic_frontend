@@ -31,10 +31,10 @@ export function Blueprint({ onClose }: BlueprintProps) {
 			type: "flag",
 			// flag: "blueprint",
 			flag: "query",
-			context: JSON.stringify({
+			context: {
 				business_overview: userConfig.business_overview || "",
 				data_connectors: userConfig.data_connectors || [],
-			}),
+			},
 		} as FlagChunk;
 	}, [userConfig]);
 
