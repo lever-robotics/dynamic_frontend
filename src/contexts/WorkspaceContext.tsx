@@ -11,26 +11,29 @@ interface Thread {
 	created_at: string;
 }
 
-interface Artifact {
+export interface Artifact {
 	artifact_type: "image" | "document" | "query";
 	content: string;
 	created_at: string;
+	id: string;
+}
+
+export interface Artifacts {
+	images: Artifact[];
+	documents: Artifact[];
+	queries: Artifact[];
 }
 
 interface WorkspaceState {
 	threads: Thread[];
 	currentThreadId: string | null;
 	messages: MessageBubble[];
-	artifacts: {
-		images: string[];
-		documents: string[];
-		queries: string[];
-	};
+	artifacts: Artifacts;
 	currentView: WhiteboardView;
 	selectedTool: ToolExecutionBubble | null;
-	document: string | null;
-	image: string | null;
-	query: string | null;
+	document: Artifact | null;
+	image: Artifact | null;
+	query: Artifact | null;
 	launchChatMessage: string | null;
 }
 
@@ -46,12 +49,13 @@ interface WorkspaceContextType {
 		type: "image" | "document" | "query",
 		content: string,
 	) => Promise<void>;
+	updateArtifact: (artifact: Artifact) => Promise<void>;
 	// Whiteboard functions
 	setView: (view: WhiteboardView) => void;
 	setSelectedTool: (tool: ToolExecutionBubble | null) => void;
-	setDocument: (document: string | null) => void;
-	setImage: (image: string | null) => void;
-	setQuery: (query: string | null) => void;
+	setDocument: (document: Artifact | null) => void;
+	setImage: (image: Artifact | null) => void;
+	setQuery: (query: Artifact | null) => void;
 	setLaunchChatMessage: (message: string) => void;
 	initializeWorkspace: () => Promise<void>;
 }
@@ -65,7 +69,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 	const { userId } = useAuth();
 	const [state, setState] = useState<WorkspaceState>({
 		threads: [],
-		currentThreadId: null,
+		currentThreadId: "",
 		messages: [],
 		artifacts: {
 			images: [],
@@ -123,6 +127,63 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 		}
 	}, [userId, state.currentThreadId]);
 
+	const getArtifacts = async (threadId: string) => {
+		try {
+			const { data: artifacts, error: artifactsError } = await supabase
+				.from("thread_artifacts")
+				.select("artifact_type, content, created_at, id")
+				.eq("thread_id", threadId);
+
+			if (artifactsError) throw artifactsError;
+
+			console.log("[WorkspaceContext] Loaded artifacts:", artifacts?.length);
+
+			// Process artifacts
+			const processedArtifacts: Artifacts = {
+				images: artifacts
+					.filter((a) => a.artifact_type === "image")
+					.sort(
+						(a, b) =>
+							new Date(b.created_at).getTime() -
+							new Date(a.created_at).getTime(),
+					),
+				documents: artifacts
+					.filter((a) => a.artifact_type === "document")
+					.sort(
+						(a, b) =>
+							new Date(b.created_at).getTime() -
+							new Date(a.created_at).getTime(),
+					),
+				queries: artifacts
+					.filter((a) => a.artifact_type === "query")
+					.sort(
+						(a, b) =>
+							new Date(b.created_at).getTime() -
+							new Date(a.created_at).getTime(),
+					),
+			};
+
+			// Get latest of each type
+			const latestDocument = processedArtifacts.documents[0] || null;
+			const latestImage = processedArtifacts.images[0] || null;
+			const latestQuery: Artifact | null =
+				processedArtifacts.queries[0] || null;
+
+			setState((prev) => ({
+				...prev,
+				artifacts: processedArtifacts,
+				document: latestDocument,
+				image: latestImage,
+				query: latestQuery,
+			}));
+		} catch (err) {
+			console.error("[WorkspaceContext] Error loading thread content:", err);
+			setError(
+				err instanceof Error ? err.message : "Failed to load thread content",
+			);
+		}
+	};
+
 	const loadThreadContent = async (threadId: string) => {
 		try {
 			const { data: messages, error: messagesError } = await supabase
@@ -135,7 +196,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
 			const { data: artifacts, error: artifactsError } = await supabase
 				.from("thread_artifacts")
-				.select("artifact_type, content, created_at")
+				.select("artifact_type, content, created_at, id")
 				.eq("thread_id", threadId);
 
 			if (artifactsError) throw artifactsError;
@@ -144,37 +205,35 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 			console.log("[WorkspaceContext] Loaded artifacts:", artifacts?.length);
 
 			// Process artifacts
-			const processedArtifacts = {
+			const processedArtifacts: Artifacts = {
 				images: artifacts
 					.filter((a) => a.artifact_type === "image")
 					.sort(
 						(a, b) =>
 							new Date(b.created_at).getTime() -
 							new Date(a.created_at).getTime(),
-					)
-					.map((a) => a.content),
+					),
 				documents: artifacts
 					.filter((a) => a.artifact_type === "document")
 					.sort(
 						(a, b) =>
 							new Date(b.created_at).getTime() -
 							new Date(a.created_at).getTime(),
-					)
-					.map((a) => a.content),
+					),
 				queries: artifacts
 					.filter((a) => a.artifact_type === "query")
 					.sort(
 						(a, b) =>
 							new Date(b.created_at).getTime() -
 							new Date(a.created_at).getTime(),
-					)
-					.map((a) => a.content),
+					),
 			};
 
 			// Get latest of each type
 			const latestDocument = processedArtifacts.documents[0] || null;
 			const latestImage = processedArtifacts.images[0] || null;
-			const latestQuery = processedArtifacts.queries[0] || null;
+			const latestQuery: Artifact | null =
+				processedArtifacts.queries[0] || null;
 
 			setState((prev) => ({
 				...prev,
@@ -254,6 +313,60 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 		}
 	};
 
+	const updateArtifact = async (artifact: Artifact) => {
+		if (!state.currentThreadId) return;
+
+		try {
+			const { error } = await supabase.from("thread_artifacts").update([
+				{
+					thread_id: state.currentThreadId,
+					artifact_type: artifact.artifact_type,
+					content: artifact.content,
+					id: artifact.id,
+				},
+			]);
+
+			if (error) throw error;
+
+			const newState = { ...state };
+			switch (artifact.artifact_type) {
+				case "image": {
+					const old = newState.artifacts.images.findIndex(
+						(a) => a.id === artifact.id,
+					);
+					if (old) {
+						newState.artifacts.images[old] = artifact;
+					}
+					break;
+				}
+				case "document": {
+					const old = newState.artifacts.documents.findIndex(
+						(a) => a.id === artifact.id,
+					);
+					if (old) {
+						newState.artifacts.documents[old] = artifact;
+					}
+					break;
+				}
+				case "query": {
+					const old = newState.artifacts.queries.findIndex(
+						(a) => a.id === artifact.id,
+					);
+					if (old) {
+						newState.artifacts.queries[old] = artifact;
+					}
+					break;
+				}
+			}
+
+			setState(newState);
+		} catch (err) {
+			setError(
+				err instanceof Error ? err.message : "Failed to update artifact",
+			);
+		}
+	};
+
 	const addArtifact = async (
 		type: "image" | "document" | "query",
 		content: string,
@@ -272,31 +385,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
 			if (error) throw error;
 
-			setState((prev) => ({
-				...prev,
-				artifacts: {
-					...prev.artifacts,
-					[type === "image"
-						? "images"
-						: type === "document"
-							? "documents"
-							: "queries"]: [
-						...prev.artifacts[
-							type === "image"
-								? "images"
-								: type === "document"
-									? "documents"
-									: "queries"
-						],
-						content,
-					],
-				},
-				[type === "image"
-					? "image"
-					: type === "document"
-						? "document"
-						: "query"]: content,
-			}));
+			await getArtifacts(state.currentThreadId);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to add artifact");
 		}
@@ -316,21 +405,21 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 		}));
 	};
 
-	const setDocument = (document: string | null) => {
+	const setDocument = (document: Artifact | null) => {
 		setState((prev) => ({
 			...prev,
 			document,
 		}));
 	};
 
-	const setImage = (image: string | null) => {
+	const setImage = (image: Artifact | null) => {
 		setState((prev) => ({
 			...prev,
 			image,
 		}));
 	};
 
-	const setQuery = (query: string | null) => {
+	const setQuery = (query: Artifact | null) => {
 		setState((prev) => ({
 			...prev,
 			query,
@@ -354,6 +443,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 				switchThread,
 				addMessage,
 				addArtifact,
+				updateArtifact,
 				setView,
 				setSelectedTool,
 				setDocument,

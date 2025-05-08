@@ -107,7 +107,7 @@ Here's a bar chart showing our regional performance:
 \`\`\`
 `;
 
-	const document = artifacts.documents[0] || sampleDocument;
+	const document = artifacts.documents[0]?.content || sampleDocument;
 
 	return (
 		<div

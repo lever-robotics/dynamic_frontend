@@ -2,8 +2,8 @@ import type * as React from "react";
 
 interface TabGroupProps {
 	tabs: string[];
-	activeTab: number;
-	onTabChange: (index: number) => void;
+	activeTab: string;
+	onTabChange: (tab: string) => void;
 }
 
 export const TabGroup: React.FC<TabGroupProps> = ({
@@ -21,8 +21,8 @@ export const TabGroup: React.FC<TabGroupProps> = ({
 				<Tab
 					key={tab}
 					label={tab}
-					isActive={index === activeTab}
-					onClick={() => onTabChange(index)}
+					isActive={tab === activeTab}
+					onClick={() => onTabChange(tab)}
 				/>
 			))}
 		</nav>

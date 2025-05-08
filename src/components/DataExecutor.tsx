@@ -15,30 +15,38 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import type { Artifact } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/utils/AuthProvider";
+import { useUserConfig } from "@/utils/UserConfigProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { TabGroup } from "./onboarding/TabGroup";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface DataExecutorProps {
-	initialQuery?: string | null;
+	initialQuery?: Artifact | null;
 }
 
 export function DataExecutor({ initialQuery }: DataExecutorProps) {
-	const [query, setQuery] = useState(initialQuery || "");
+	const [query, setQuery] = useState(initialQuery?.content || "");
 	const [results, setResults] = useState<any[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
-	const { addArtifact } = useWorkspace();
+	const [selectedConnector, setSelectedConnector] = useState<string>("");
+	const { userConfig } = useUserConfig();
+	const { addArtifact, updateArtifact } = useWorkspace();
 	const { getValidToken } = useAuth();
+
+	const connectors = userConfig?.data_connectors || [];
+
 	const handleExecute = async () => {
 		// TODO: Implement SQL execution
 		console.log("Executing SQL:", query);
 
 		const token = await getValidToken();
 		const response = await fetch(
-			`${API_BASE_URL}/v0/connectors/bigquery/query`,
+			`${API_BASE_URL}/v0/connectors/${selectedConnector}/query`,
 			{
 				method: "POST",
 				headers: {
@@ -60,7 +68,14 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 		setColumns(Object.keys(exampleRow));
 		setResults(data);
 
-		addArtifact("query", query);
+		if (initialQuery) {
+			updateArtifact({
+				...initialQuery,
+				content: query,
+			});
+		} else {
+			addArtifact("query", query);
+		}
 
 		// setResults(data);
 		// // Test with a larger dataset
@@ -129,6 +144,13 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 
 	return (
 		<div className="flex flex-col h-full w-full p-4 space-y-4">
+			{/* Tab Group */}
+			<TabGroup
+				tabs={connectors.map((connector) => connector.type)}
+				activeTab={selectedConnector}
+				onTabChange={setSelectedConnector}
+			/>
+
 			{/* SQL Editor Section */}
 			<div className="h-[200px] flex justify-center">
 				<div className="h-full relative w-full max-w-4xl">
