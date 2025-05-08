@@ -11,6 +11,7 @@ export const TabGroup: React.FC<TabGroupProps> = ({
 	activeTab,
 	onTabChange,
 }) => {
+	console.log("Tabs:", tabs);
 	return (
 		<nav
 			role="tablist"

@@ -86,10 +86,12 @@ export const UserConfigProvider = ({
 				throw new Error(connectorsBody.error);
 			}
 
+			const connectors = Object.values(connectorsBody.data) as DataConnector[];
+
 			setUserConfig({
 				completed_onboarding: configBody.data.completed_onboarding,
 				business_overview: configBody.data.business_overview,
-				data_connectors: connectorsBody.data,
+				data_connectors: connectors,
 			});
 		} catch (err) {
 			setError(

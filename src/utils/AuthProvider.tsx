@@ -66,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 		const now = Math.floor(Date.now() / 1000);
 		if (session.expires_at && session.expires_at < now) {
+			console.log("Refreshing session");
 			const { data: refreshedSession } = await supabase.auth.refreshSession();
 			setSession(refreshedSession.session);
 			return refreshedSession.session?.access_token;

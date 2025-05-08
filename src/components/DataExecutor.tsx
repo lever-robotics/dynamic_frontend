@@ -16,8 +16,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/utils/AuthProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
 import { useEffect, useState } from "react";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface DataExecutorProps {
 	initialQuery?: string | null;
@@ -28,47 +30,76 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	const [results, setResults] = useState<any[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
-
-	const handleExecute = () => {
+	const { addArtifact } = useWorkspace();
+	const { getValidToken } = useAuth();
+	const handleExecute = async () => {
 		// TODO: Implement SQL execution
 		console.log("Executing SQL:", query);
-		// Test with a larger dataset
-		setColumns([
-			"id",
-			"customer_name",
-			"order_date",
-			"product_name",
-			"quantity",
-			"unit_price",
-			"total_amount",
-			"status",
-			"shipping_address",
-			"payment_method",
-			"discount_applied",
-			"tax_amount",
-		]);
 
-		// Generate 50 rows of test data
-		const testData = Array.from({ length: 50 }, (_, i) => ({
-			id: i + 1,
-			customer_name: `Customer ${i + 1}`,
-			order_date: new Date(2024, 0, i + 1).toISOString().split("T")[0],
-			product_name: `Product ${(i % 5) + 1}`,
-			quantity: Math.floor(Math.random() * 10) + 1,
-			unit_price: (Math.random() * 100).toFixed(2),
-			total_amount: (Math.random() * 1000).toFixed(2),
-			status: ["Pending", "Processing", "Shipped", "Delivered"][
-				Math.floor(Math.random() * 4)
-			],
-			shipping_address: `${Math.floor(Math.random() * 1000)} Main St, City ${i + 1}`,
-			payment_method: ["Credit Card", "PayPal", "Bank Transfer"][
-				Math.floor(Math.random() * 3)
-			],
-			discount_applied: (Math.random() * 20).toFixed(2),
-			tax_amount: (Math.random() * 50).toFixed(2),
-		}));
+		const token = await getValidToken();
+		const response = await fetch(
+			`${API_BASE_URL}/v0/connectors/bigquery/query`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					sql: query,
+				}),
+			},
+		);
 
-		setResults(testData);
+		const body = await response.json();
+		const data = body.data;
+		console.log("Query results:", data);
+
+		const exampleRow = data[0];
+
+		setColumns(Object.keys(exampleRow));
+		setResults(data);
+
+		addArtifact("query", query);
+
+		// setResults(data);
+		// // Test with a larger dataset
+		// setColumns([
+		// 	"id",
+		// 	"customer_name",
+		// 	"order_date",
+		// 	"product_name",
+		// 	"quantity",
+		// 	"unit_price",
+		// 	"total_amount",
+		// 	"status",
+		// 	"shipping_address",
+		// 	"payment_method",
+		// 	"discount_applied",
+		// 	"tax_amount",
+		// ]);
+
+		// // Generate 50 rows of test data
+		// const testData = Array.from({ length: 50 }, (_, i) => ({
+		// 	id: i + 1,
+		// 	customer_name: `Customer ${i + 1}`,
+		// 	order_date: new Date(2024, 0, i + 1).toISOString().split("T")[0],
+		// 	product_name: `Product ${(i % 5) + 1}`,
+		// 	quantity: Math.floor(Math.random() * 10) + 1,
+		// 	unit_price: (Math.random() * 100).toFixed(2),
+		// 	total_amount: (Math.random() * 1000).toFixed(2),
+		// 	status: ["Pending", "Processing", "Shipped", "Delivered"][
+		// 		Math.floor(Math.random() * 4)
+		// 	],
+		// 	shipping_address: `${Math.floor(Math.random() * 1000)} Main St, City ${i + 1}`,
+		// 	payment_method: ["Credit Card", "PayPal", "Bank Transfer"][
+		// 		Math.floor(Math.random() * 3)
+		// 	],
+		// 	discount_applied: (Math.random() * 20).toFixed(2),
+		// 	tax_amount: (Math.random() * 50).toFixed(2),
+		// }));
+
+		// setResults(testData);
 	};
 
 	const handleDownloadCSV = () => {
@@ -176,11 +207,11 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{results.map((row) => (
-								<TableRow key={row.id}>
-									{columns.map((column) => (
+							{results.map((row, index) => (
+								<TableRow key={index}>
+									{columns.map((column, index) => (
 										<TableCell
-											key={`${row.id}-${column}`}
+											key={`${index}-${column}`}
 											className="whitespace-nowrap"
 										>
 											{row[column]}

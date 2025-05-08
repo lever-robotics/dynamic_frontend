@@ -23,6 +23,7 @@ interface SidebarProps {
 	setShowLaunchChat: (show: boolean) => void;
 	setShowBlueprint: (show: boolean) => void;
 	setIsLaunchMode: (isLaunchMode: boolean) => void;
+	handleQueryDataClick: () => Promise<void>;
 }
 
 export const SidebarComp: React.FC<SidebarProps> = ({
@@ -30,6 +31,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	setShowLaunchChat,
 	setShowBlueprint,
 	setIsLaunchMode,
+	handleQueryDataClick,
 }) => {
 	const {
 		state: { threads, currentThreadId },
@@ -59,10 +61,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 
 	const handleBlueprintClick = () => {
 		setShowBlueprint(true);
-	};
-
-	const handleQueryDataClick = () => {
-		setView("DataExecutor");
 	};
 
 	return (
