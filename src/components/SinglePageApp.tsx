@@ -1,5 +1,6 @@
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type { FlagChunk } from "@/types/chat";
+import { useUserConfig } from "@/utils/UserConfigProvider";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { ChatDisplay } from "./Chat/ChatDisplay";
@@ -15,17 +16,27 @@ interface SinglePageAppProps {
 // ChatWrapper component to handle workspace context
 function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
 	const {
-		state: { currentThreadId },
+		state: { currentThreadId, messages, artifacts },
 	} = useWorkspace();
+	const { userConfig } = useUserConfig();
 
 	const sendOnConnect = useCallback(() => {
 		console.log("[ChatWrapper] Creating initial connection message");
 		return {
 			type: "flag",
 			flag: "query",
-			context: JSON.stringify({}),
+			context: JSON.stringify({
+				business_overview: userConfig.business_overview || "",
+				data_connectors: userConfig.data_connectors || [],
+				messages: messages || [],
+				artifacts: {
+					images: artifacts.images || [],
+					documents: artifacts.documents || [],
+					queries: artifacts.queries || [],
+				},
+			}),
 		} as FlagChunk;
-	}, []);
+	}, [userConfig, messages, artifacts]);
 
 	return (
 		<ChatDisplay

@@ -1,5 +1,6 @@
 import { ToolProvider } from "@/contexts/ToolContext";
 import type { FlagChunk } from "@/types/chat";
+import { useUserConfig } from "@/utils/UserConfigProvider";
 import { useCallback, useState } from "react";
 import { Modal } from "../common/Modal";
 import { ConnectionDetail } from "./ConnectionDetail";
@@ -23,15 +24,19 @@ export function Blueprint({ onClose }: BlueprintProps) {
 	const [showConnectionDetail, setShowConnectionDetail] = useState(false);
 	const [selectedConnection, setSelectedConnection] =
 		useState<Connection | null>(null);
+	const { userConfig } = useUserConfig();
 
 	const sendOnConnect = useCallback(() => {
 		return {
 			type: "flag",
 			// flag: "blueprint",
 			flag: "query",
-			context: JSON.stringify({}),
+			context: JSON.stringify({
+				business_overview: userConfig.business_overview || "",
+				data_connectors: userConfig.data_connectors || [],
+			}),
 		} as FlagChunk;
-	}, []);
+	}, [userConfig]);
 
 	const handleSelectConnection = (connection: Connection) => {
 		setSelectedConnection(connection);
