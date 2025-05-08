@@ -21,7 +21,7 @@ export function Whiteboard() {
 		setImage,
 		setQuery,
 	} = useWorkspace();
-	const [activeTab, setActiveTab] = useState(0);
+	const [activeTab, setActiveTab] = useState<string>("");
 
 	// Create tabs from artifacts
 	const tabs = [
@@ -29,14 +29,17 @@ export function Whiteboard() {
 		...artifacts.images.map((_, index) => `Image ${index + 1}`),
 		...artifacts.queries.map((_, index) => `Query ${index + 1}`),
 	];
+	console.log("Tabs:", tabs);
+	console.log("Active Tab:", activeTab);
 
 	const handleDownloadPDF = () => {
 		// TODO: Implement PDF download functionality
 		console.log("Downloading PDF...");
 	};
 
-	const handleTabChange = (index: number) => {
-		setActiveTab(index);
+	const handleTabChange = (tab: string) => {
+		const index = tabs.findIndex((t) => t === tab);
+		setActiveTab(tab);
 		// Determine the type of artifact based on the index
 		const documentCount = artifacts.documents.length;
 		const imageCount = artifacts.images.length;
