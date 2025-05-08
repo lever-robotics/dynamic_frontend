@@ -92,35 +92,10 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 	};
 
 	const handleQueryDataClick = async () => {
-		setShowLaunchChat(false);
-		setIsLaunchMode(true);
+		if (currentThreadId === "") {
+			await handleStartAnalysis("Query Data");
+		}
 		setView("DataExecutor");
-
-		if (isInitializing) {
-			console.log("[SinglePageApp] Already initializing, skipping");
-			return;
-		}
-
-		try {
-			setIsLaunchMode(true);
-			setIsInitializing(true);
-			// Create a new thread with the message as the title
-			const threadId = await createThread("Query Data");
-			setLaunchChatMessage("Query Data");
-			console.log("[SinglePageApp] Created thread with ID:", threadId);
-
-			// Set the view to DocExecutor
-			setView("DataExecutor");
-
-			// Hide the launch chat
-			setShowLaunchChat(false);
-			console.log("[SinglePageApp] Analysis started successfully");
-		} catch (error) {
-			console.error("[SinglePageApp] Failed to start analysis:", error);
-			// Handle error appropriately
-		} finally {
-			setIsInitializing(false);
-		}
 	};
 
 	return (

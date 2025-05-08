@@ -15,23 +15,25 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import type { Artifact } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/utils/AuthProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface DataExecutorProps {
-	initialQuery?: string | null;
+	initialQuery?: Artifact | null;
 }
 
 export function DataExecutor({ initialQuery }: DataExecutorProps) {
-	const [query, setQuery] = useState(initialQuery || "");
+	const [query, setQuery] = useState(initialQuery?.content || "");
 	const [results, setResults] = useState<any[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
-	const { addArtifact } = useWorkspace();
+	const { addArtifact, updateArtifact } = useWorkspace();
 	const { getValidToken } = useAuth();
+
 	const handleExecute = async () => {
 		// TODO: Implement SQL execution
 		console.log("Executing SQL:", query);
@@ -60,7 +62,14 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 		setColumns(Object.keys(exampleRow));
 		setResults(data);
 
-		addArtifact("query", query);
+		if (initialQuery) {
+			updateArtifact({
+				...initialQuery,
+				content: query,
+			});
+		} else {
+			addArtifact("query", query);
+		}
 
 		// setResults(data);
 		// // Test with a larger dataset
