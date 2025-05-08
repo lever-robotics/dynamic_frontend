@@ -1,18 +1,17 @@
 import type { Connection } from "@/types/connectors";
+import { useState } from "react";
 
 interface ConnectionCardProps {
 	connection: Connection;
-	isHovering: string | null;
-	setIsHovering: (value: string | null) => void;
 	onClick: () => void;
 }
 
 export const ConnectionCard: React.FC<ConnectionCardProps> = ({
 	connection,
-	isHovering,
-	setIsHovering,
 	onClick,
 }) => {
+	const [isHovering, setIsHovering] = useState<string | null>(null);
+
 	return (
 		<button
 			type="button"

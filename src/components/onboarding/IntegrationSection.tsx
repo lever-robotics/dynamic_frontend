@@ -7,14 +7,10 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface IntegrationsSectionProps {
 	connections: Connection[];
-	isHovering: string | null;
-	setIsHovering: (value: string | null) => void;
 }
 
 export const IntegrationSection: React.FC<IntegrationsSectionProps> = ({
 	connections,
-	isHovering,
-	setIsHovering,
 }) => {
 	const { getValidToken } = useAuth();
 	const [selectedIntegration, setSelectedIntegration] =
@@ -62,8 +58,6 @@ export const IntegrationSection: React.FC<IntegrationsSectionProps> = ({
 						<ConnectionCard
 							key={connection.name}
 							connection={connection}
-							isHovering={isHovering}
-							setIsHovering={setIsHovering}
 							onClick={() => setSelectedIntegration(connection)}
 						/>
 					))}

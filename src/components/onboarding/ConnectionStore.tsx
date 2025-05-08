@@ -42,8 +42,6 @@ export const ConnectionStore: React.FC<ConnectionStoreProps> = ({
 										<ConnectionCard
 											key={connection.type}
 											connection={connection}
-											isHovering={isHovering}
-											setIsHovering={setIsHovering}
 											onClick={() => setSelectedConnection(connection)}
 										/>
 									))}
@@ -60,8 +58,6 @@ export const ConnectionStore: React.FC<ConnectionStoreProps> = ({
 											<ConnectionCard
 												key={connection.type}
 												connection={connection}
-												isHovering={isHovering}
-												setIsHovering={setIsHovering}
 												onClick={() => setSelectedConnection(connection)}
 											/>
 										))}
