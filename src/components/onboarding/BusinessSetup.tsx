@@ -21,7 +21,6 @@ export function BusinessSetup({
 	const [businessName, setBusinessName] = useState("My Business");
 	const [businessUrl, setBusinessUrl] = useState("https://mybusiness.com");
 	const [logoUrl, setLogoUrl] = useState(defaultLogo);
-	const [isHovering, setIsHovering] = useState<string | null>(null);
 	const { connections } = useUserConfig();
 	console.log("setup BusinessInfo");
 	const applicableConnections = Connections.map((connection: Connection) => ({
@@ -82,11 +81,7 @@ export function BusinessSetup({
 						/>
 					</div>
 				</section>
-				<IntegrationSection
-					connections={applicableConnections}
-					isHovering={isHovering}
-					setIsHovering={setIsHovering}
-				/>
+				<IntegrationSection connections={applicableConnections} />
 				<div className="mt-4">
 					<button
 						type="button"

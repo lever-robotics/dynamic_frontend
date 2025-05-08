@@ -17,12 +17,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type { Artifact } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
+import { Connections } from "@/types/connectors";
 import { useAuth } from "@/utils/AuthProvider";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { ConnectionCard } from "./onboarding/ConnectionCard";
 import { TabGroup } from "./onboarding/TabGroup";
+import { type Tab, TabGroupInject } from "./onboarding/TabGroupInject";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface DataExecutorProps {
@@ -40,6 +43,21 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	const { getValidToken } = useAuth();
 
 	const connectors = userConfig?.data_connectors || [];
+
+	const availableConnections = Connections.filter((conn) =>
+		connectors.some((connector) => connector.type === conn.type),
+	);
+
+	const connectionTabs: Tab[] = availableConnections.map((conn) => ({
+		label: conn.name,
+		content: (
+			<ConnectionCard
+				key={conn.type}
+				connection={conn}
+				onClick={() => setSelectedConnector(conn.name)}
+			/>
+		),
+	}));
 
 	const handleExecute = async () => {
 		// TODO: Implement SQL execution
@@ -173,11 +191,7 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	return (
 		<div className="flex flex-col h-full w-full p-4 space-y-4">
 			{/* Tab Group */}
-			<TabGroup
-				tabs={connectors.map((connector) => connector.type)}
-				activeTab={selectedConnector}
-				onTabChange={setSelectedConnector}
-			/>
+			<TabGroupInject tabs={connectionTabs} activeTab={selectedConnector} />
 
 			{/* SQL Editor Section */}
 			<div className="h-[200px] flex justify-center">
