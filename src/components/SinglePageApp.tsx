@@ -58,10 +58,10 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 	const {
 		state: { threads, currentThreadId, artifacts },
 		createThread,
-		setView,
-		setDocument,
+		setCurrentArtifact,
 		initializeWorkspace,
 		setLaunchChatMessage,
+		addArtifact,
 	} = useWorkspace();
 
 	// Initialize workspace on mount
@@ -89,9 +89,8 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 			setLaunchChatMessage(message);
 			console.log("[SinglePageApp] Created thread with ID:", threadId);
 
-			// Set the view to DocViewer
-			setView("DocViewer");
-			setDocument(artifacts.documents[0]);
+			// Set the current artifact to the first document
+			setCurrentArtifact(artifacts.documents[0]);
 
 			// Hide the launch chat
 			setShowLaunchChat(false);
@@ -107,11 +106,18 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 	const handleQueryDataClick = async () => {
 		if (currentThreadId === "") {
 			const threadId = await createThread("Query Data");
-			setView("DataExecutor");
+			// Create a blank query artifact
+			await addArtifact("query", "");
+			// Set the current artifact to the first query
+			setCurrentArtifact(artifacts.queries[artifacts.queries.length - 1]);
 			// Hide the launch chat
 			setShowLaunchChat(false);
+		} else {
+			// Create a blank query artifact
+			await addArtifact("query", "");
+			// Set the current artifact to the first query
+			setCurrentArtifact(artifacts.queries[artifacts.queries.length - 1]);
 		}
-		setView("DataExecutor");
 	};
 
 	return (
@@ -128,18 +134,18 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 			</div>
 
 			{/* Main Content Area */}
-			<div className="flex-1 h-full">
+			<div className="flex-1 h-full overflow-hidden">
 				{showLaunchChat ? (
 					<LaunchChat onStartAnalysis={handleStartAnalysis} />
 				) : (
 					<div className="flex h-full">
 						{/* Whiteboard Area - Fixed width */}
-						<div className="w-[calc(100%-500px)] h-full bg-white border-r border-gray-200">
+						<div className="w-[calc(100%-500px)] h-full bg-white border-r border-gray-200 overflow-hidden">
 							<Whiteboard />
 						</div>
 
 						{/* Chat Area - Fixed width */}
-						<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43]">
+						<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43] shrink-0">
 							{!isInitializing && currentThreadId ? (
 								<ChatWrapper isLaunchMode={isLaunchMode} />
 							) : (

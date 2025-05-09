@@ -13,19 +13,21 @@ export const TabGroup: React.FC<TabGroupProps> = ({
 }) => {
 	console.log("Tabs:", tabs);
 	return (
-		<nav
-			role="tablist"
-			className="inline-flex items-center h-10 rounded-lg bg-background p-3 text-muted-foreground"
-		>
-			{tabs.map((tab, index) => (
-				<Tab
-					key={tab}
-					label={tab}
-					isActive={tab === activeTab}
-					onClick={() => onTabChange(tab)}
-				/>
-			))}
-		</nav>
+		<div className="w-full overflow-x-auto">
+			<nav
+				role="tablist"
+				className="inline-flex items-center h-10 rounded-lg bg-background p-3 text-muted-foreground"
+			>
+				{tabs.map((tab, index) => (
+					<Tab
+						key={tab}
+						label={tab}
+						isActive={tab === activeTab}
+						onClick={() => onTabChange(tab)}
+					/>
+				))}
+			</nav>
+		</div>
 	);
 };
 

@@ -15,16 +15,14 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import type { Artifact } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
 import { Connections } from "@/types/connectors";
 import { useAuth } from "@/utils/AuthProvider";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as XLSX from "xlsx";
 import { ConnectionCard } from "./onboarding/ConnectionCard";
-import { TabGroup } from "./onboarding/TabGroup";
 import { type Tab, TabGroupInject } from "./onboarding/TabGroupInject";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -34,12 +32,12 @@ interface QueryResult {
 
 export function DataExecutor() {
 	const {
-		state: { query },
+		state: { currentArtifact },
 		addArtifact,
 		updateArtifact,
 	} = useWorkspace();
 
-	const [TempQuery, setTempQuery] = useState(query?.content || "");
+	const [TempQuery, setTempQuery] = useState(currentArtifact?.content || "");
 	const [results, setResults] = useState<QueryResult[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
@@ -67,7 +65,7 @@ export function DataExecutor() {
 
 	const handleExecute = async () => {
 		// TODO: Implement SQL execution
-		console.log("Executing SQL:", query);
+		console.log("Executing SQL:", currentArtifact?.content);
 
 		const token = await getValidToken();
 		const response = await fetch(
@@ -79,7 +77,7 @@ export function DataExecutor() {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					query,
+					query: currentArtifact?.content,
 				}),
 			},
 		);
@@ -92,15 +90,6 @@ export function DataExecutor() {
 
 		setColumns(Object.keys(exampleRow));
 		setResults(data);
-
-		if (query) {
-			updateArtifact({
-				...query,
-				content: TempQuery,
-			});
-		} else {
-			addArtifact("query", TempQuery);
-		}
 
 		// setResults(data);
 		// // Test with a larger dataset

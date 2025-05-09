@@ -25,6 +25,8 @@
 
 * {
 	box-sizing: border-box;
+	scrollbar-width: thin;
+	scrollbar-color: #cbd5e1 transparent;
 }
 
 /* #root {

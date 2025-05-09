@@ -16,14 +16,24 @@ import { TabGroup } from "./onboarding/TabGroup";
 
 export function Whiteboard() {
 	const {
-		state: { currentView, artifacts },
-		setView,
-		setDocument,
-		setImage,
-		setQuery,
+		state: { currentArtifact, artifacts },
+		setCurrentArtifact,
 	} = useWorkspace();
 	const [activeTab, setActiveTab] = useState(0);
 	const documentRef = useRef<HTMLDivElement>(null);
+
+	if (!currentArtifact || !artifacts.documents.length) return;
+
+	const artifactExists = [
+		...artifacts.documents,
+		...artifacts.images,
+		...artifacts.queries,
+	].some((artifact) => artifact.id === currentArtifact.id);
+
+	if (!artifactExists) {
+		setCurrentArtifact(artifacts.documents[0]);
+		setActiveTab(0);
+	}
 
 	// Create tabs from artifacts
 	const tabs = [
@@ -44,18 +54,15 @@ export function Whiteboard() {
 
 		if (index < documentCount) {
 			// Document tab
-			setDocument(artifacts.documents[index]);
-			setView("DocViewer");
+			setCurrentArtifact(artifacts.documents[index]);
 		} else if (index < documentCount + imageCount) {
 			// Image tab
 			const imageIndex = index - documentCount;
-			setImage(artifacts.images[imageIndex]);
-			setView("GraphViewer");
+			setCurrentArtifact(artifacts.images[imageIndex]);
 		} else {
 			// Query tab
 			const queryIndex = index - documentCount - imageCount;
-			setQuery(artifacts.queries[queryIndex]);
-			setView("DataExecutor");
+			setCurrentArtifact(artifacts.queries[queryIndex]);
 		}
 	};
 
@@ -119,17 +126,21 @@ export function Whiteboard() {
 	};
 
 	const renderView = () => {
-		switch (currentView) {
-			case "DocViewer":
+		if (!currentArtifact) return null;
+
+		switch (currentArtifact.artifact_type) {
+			case "document":
 				return (
 					<div ref={documentRef} className="w-full h-full">
 						<DocumentEditor />
 					</div>
 				);
-			case "GraphViewer":
+			case "image":
 				return <GraphViewer />;
-			default:
+			case "query":
 				return <DataExecutor />;
+			default:
+				return null;
 		}
 	};
 
@@ -138,7 +149,7 @@ export function Whiteboard() {
 			{/* Content area with download button and scrollable content */}
 			<div className="flex-1 relative min-h-0">
 				{/* Floating download button */}
-				{currentView === "DocViewer" && (
+				{currentArtifact?.artifact_type === "document" && (
 					<div className="absolute top-4 right-8 z-50">
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
@@ -165,7 +176,7 @@ export function Whiteboard() {
 
 			{/* Fixed tab section */}
 			{tabs.length > 0 && (
-				<div className="flex-none bg-white border-t border-gray-200 p-2">
+				<div className="flex-none bg-white border-t border-gray-200">
 					<TabGroup
 						tabs={tabs}
 						activeTab={tabs[activeTab]}

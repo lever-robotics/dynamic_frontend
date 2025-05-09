@@ -26,23 +26,22 @@ export const ChatDisplay = memo(function ChatDisplay({
 	sendOnConnect,
 	isLaunchMode = false,
 }: ChatDisplayProps) {
-	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	const [localMessages, setLocalMessages] = useState<MessageBubble[]>([]);
-	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 	const [isInitializing, setIsInitializing] = useState(false);
 	const [hasInitialized, setHasInitialized] = useState(false);
 	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
 	const {
-		state: { messages, currentThreadId, launchChatMessage, artifacts },
+		state: { currentThreadId, launchChatMessage, artifacts },
 		addMessage,
 		addArtifact,
-		setSelectedTool,
+		setCurrentArtifactById,
 		updateArtifact,
+		fetchThreadMessages,
 	} = useWorkspace();
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
-		(wsMessage: WebSocketMessage) => {
+		async (wsMessage: WebSocketMessage) => {
 			const { payload, messageId } = wsMessage;
 
 			// Check if this is the final message and if so then save Agent output to the database.
@@ -176,140 +175,96 @@ export const ChatDisplay = memo(function ChatDisplay({
 								: toolChunk.arguments;
 						console.log("[ChatDisplay] Tool result:", toolChunk);
 
-						switch (tool) {
-							case "agent_user_potential_responses": {
-								try {
-									if (
-										toolArgs &&
-										typeof toolArgs === "object" &&
-										"potential_responses" in toolArgs
-									) {
-										setPotentialResponses(toolArgs.potential_responses);
+						// Create an async function to handle the tool processing
+						const processTool = async () => {
+							switch (tool) {
+								case "agent_user_potential_responses": {
+									try {
+										if (
+											toolArgs &&
+											typeof toolArgs === "object" &&
+											"potential_responses" in toolArgs
+										) {
+											setPotentialResponses(toolArgs.potential_responses);
+										}
+									} catch (error) {
+										console.error(
+											"[ChatDisplay] Error handling potential responses:",
+											error,
+										);
 									}
-								} catch (error) {
-									console.error(
-										"[ChatDisplay] Error handling potential responses:",
-										error,
-									);
+									break;
 								}
-								break;
-							}
-							case "write_bi_report": {
-								const report = toolArgs.report;
-								if (report) {
-									console.log("[ChatDisplay] Updating first document:", report);
-									const firstDocument = artifacts.documents[0];
-									if (firstDocument) {
-										updateArtifact({
-											...firstDocument,
-											content: report,
-										});
-										artifacts.documents[0] = {
-											...firstDocument,
-											content: report,
+								case "write_bi_report": {
+									const report = toolArgs.report;
+									if (report) {
+										console.log(
+											"[ChatDisplay] Updating first document:",
+											report,
+										);
+										const firstDocument = artifacts.documents[0];
+										if (firstDocument) {
+											updateArtifact({
+												...firstDocument,
+												content: report,
+											});
+											artifacts.documents[0] = {
+												...firstDocument,
+												content: report,
+											};
+											newChunk.toolCall.artifactId = firstDocument.id;
+										} else {
+											// Create new document and get its ID
+											const artifactId = await addArtifact("document", report);
+											if (artifactId) {
+												newChunk.toolCall.artifactId = artifactId;
+											}
+										}
+									}
+
+									// Only Show tool when it's complete
+									if (toolChunk.status === "complete") {
+										const newMessage: MessageBubble = {
+											id: messageId,
+											type: "tool",
+											chunks: [newChunk],
 										};
-									} else {
-										addArtifact("document", report);
+										return [...prev, newMessage];
 									}
+									break;
 								}
+								case "agent_execute_bigquery": {
+									const query = toolArgs.query;
 
-								// Only Show tool when it's complete
-								if (toolChunk.status === "complete") {
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												...newChunk,
-												toolCall: {
-													...newChunk.toolCall,
-													artifactId: artifacts.documents[0]?.id,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
+									if (query) {
+										console.log("[ChatDisplay] Adding query:", query);
+										// Create new query and get its ID
+										const artifactId = await addArtifact("query", query);
+										if (artifactId) {
+											newChunk.toolCall.artifactId = artifactId;
+										}
+									}
+									// Only Show tool when it's complete
+									if (toolChunk.status === "complete") {
+										const newMessage: MessageBubble = {
+											id: messageId,
+											type: "tool",
+											chunks: [newChunk],
+										};
+										return [...prev, newMessage];
+									}
+									break;
 								}
-								break;
+								default: {
+									console.log(`Unhandled tool type: ${tool}`);
+									break;
+								}
 							}
-							case "agent_execute_python_code": {
-								if (image) {
-									console.log("[ChatDisplay] Adding image:", image);
-									addArtifact?.("image", image);
-								}
-								// Only Show tool when it's complete
-								if (toolChunk.status === "complete") {
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												...newChunk,
-												toolCall: {
-													...newChunk.toolCall,
-													artifactId: artifacts.images[0]?.id,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
-								}
-								break;
-							}
-							case "agent_execute_sql_query": {
-								if (result) {
-									console.log("[ChatDisplay] Adding query:", result);
-									addArtifact?.("query", result);
-								}
+							return prev;
+						};
 
-								// Only Show tool when it's complete
-								if (toolChunk.status === "complete") {
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												...newChunk,
-												toolCall: {
-													...newChunk.toolCall,
-													artifactId: artifacts.queries[0]?.id,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
-								}
-								break;
-							}
-							case "agent_execute_bigquery": {
-								if (result) {
-									console.log("[ChatDisplay] Adding query:", result);
-									addArtifact?.("query", result);
-								}
-								// Only Show tool when it's complete
-								if (toolChunk.status === "complete") {
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												...newChunk,
-												toolCall: {
-													...newChunk.toolCall,
-													artifactId: artifacts.queries[0]?.id,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
-								}
-								break;
-							}
-							default: {
-								console.log(`Unhandled tool type: ${tool}`);
-								break;
-							}
-						}
+						// Execute the async function
+						processTool().catch(console.error);
 						return prev;
 					});
 					break;
@@ -361,8 +316,9 @@ export const ChatDisplay = memo(function ChatDisplay({
 					type: "toLLM",
 					text: launchChatMessage,
 				} as ToLLMMessage);
-			} else {
-				// Normal mode: set to all messages from context
+			} else if (currentThreadId) {
+				// Normal mode: fetch messages using the workspace context function
+				const messages = await fetchThreadMessages(currentThreadId);
 				setLocalMessages(messages);
 			}
 
@@ -376,13 +332,14 @@ export const ChatDisplay = memo(function ChatDisplay({
 			setIsInitializing(false);
 		}
 	}, [
-		messages,
+		currentThreadId,
 		isLaunchMode,
 		launchChatMessage,
 		isInitializing,
 		hasInitialized,
 		sendOnConnect,
 		sendMessage,
+		fetchThreadMessages,
 	]);
 
 	// Initialize when all conditions are met
@@ -445,10 +402,12 @@ export const ChatDisplay = memo(function ChatDisplay({
 			<MessageList
 				messages={localMessages}
 				onToolSelect={useCallback(
-					(tool) => {
-						setSelectedTool?.(tool);
+					(tool: ToolExecutionBubble) => {
+						if (tool.artifactId) {
+							setCurrentArtifactById(tool.artifactId);
+						}
 					},
-					[setSelectedTool],
+					[setCurrentArtifactById],
 				)}
 			/>
 
