@@ -129,7 +129,7 @@ export function Whiteboard() {
 			case "GraphViewer":
 				return <GraphViewer />;
 			default:
-				return <DataExecutor initialQuery={query} />;
+				return <DataExecutor />;
 		}
 	};
 

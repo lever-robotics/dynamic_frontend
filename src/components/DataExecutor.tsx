@@ -28,15 +28,11 @@ import { TabGroup } from "./onboarding/TabGroup";
 import { type Tab, TabGroupInject } from "./onboarding/TabGroupInject";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-interface DataExecutorProps {
-	initialQuery?: Artifact | null;
-}
-
 interface QueryResult {
 	[key: string]: string | number | boolean | null;
 }
 
-export function DataExecutor({ initialQuery }: DataExecutorProps) {
+export function DataExecutor() {
 	const {
 		state: { query },
 		addArtifact,
@@ -97,9 +93,9 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 		setColumns(Object.keys(exampleRow));
 		setResults(data);
 
-		if (initialQuery) {
+		if (query) {
 			updateArtifact({
-				...initialQuery,
+				...query,
 				content: TempQuery,
 			});
 		} else {

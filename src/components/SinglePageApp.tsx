@@ -73,7 +73,7 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 	// this function is called when on the launchchat compoent when the user clicks to start a new analysis, this gives it time to incilize the workspace, create the thread
 	const handleStartAnalysis = async (message: string) => {
 		console.log(
-			"[SinglePageApp] Create THread, set currentThread, added to threads turn off launch chat displaty:",
+			"[SinglePageApp] Create Thread, set currentThread, added to threads turn off launch chat displaty:",
 			message,
 		);
 		if (isInitializing) {
@@ -106,7 +106,10 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 
 	const handleQueryDataClick = async () => {
 		if (currentThreadId === "") {
-			await handleStartAnalysis("Query Data");
+			const threadId = await createThread("Query Data");
+			setView("DataExecutor");
+			// Hide the launch chat
+			setShowLaunchChat(false);
 		}
 		setView("DataExecutor");
 	};
