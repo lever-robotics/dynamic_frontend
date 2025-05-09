@@ -60,12 +60,12 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	}, [availableConnections, selectedConnector]);
 
 	const connectionTabs: Tab[] = availableConnections.map((conn) => ({
-		label: conn.name,
+		label: conn.type,
 		content: (
 			<ConnectionCard
 				key={conn.type}
 				connection={conn}
-				onClick={() => setSelectedConnector(conn.name)}
+				onClick={() => setSelectedConnector(conn.type)}
 			/>
 		),
 	}));
@@ -84,7 +84,7 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					sql: query,
+					query,
 				}),
 			},
 		);
