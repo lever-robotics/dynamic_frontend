@@ -56,9 +56,10 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 	const [isLaunchMode, setIsLaunchMode] = useState(false);
 	const [isInitializing, setIsInitializing] = useState(false); //starting up the workspace
 	const {
-		state: { threads, currentThreadId },
+		state: { threads, currentThreadId, artifacts },
 		createThread,
 		setView,
+		setDocument,
 		initializeWorkspace,
 		setLaunchChatMessage,
 	} = useWorkspace();
@@ -90,6 +91,7 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 
 			// Set the view to DocViewer
 			setView("DocViewer");
+			setDocument(artifacts.documents[0]);
 
 			// Hide the launch chat
 			setShowLaunchChat(false);
@@ -110,7 +112,7 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 	};
 
 	return (
-		<div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
+		<div className="flex w-screen h-screen overflow-hidden bg-portage-50">
 			{/* Sidebar - Fixed width */}
 			<div className="w-[240px] h-full bg-[#F4F5F7] border-r border-gray-200 shrink-0">
 				<SidebarComp
@@ -122,17 +124,18 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 				/>
 			</div>
 
-			{/* Main Content Area - Combined view */}
+			{/* Main Content Area */}
 			<div className="flex-1 h-full">
 				{showLaunchChat ? (
 					<LaunchChat onStartAnalysis={handleStartAnalysis} />
 				) : (
 					<div className="flex h-full">
-						{/* Whiteboard Area */}
+						{/* Whiteboard Area - Fixed width */}
 						<div className="w-[calc(100%-500px)] h-full bg-white border-r border-gray-200">
 							<Whiteboard />
 						</div>
-						{/* Chat Display or Placeholder */}
+
+						{/* Chat Area - Fixed width */}
 						<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43]">
 							{!isInitializing && currentThreadId ? (
 								<ChatWrapper isLaunchMode={isLaunchMode} />

@@ -210,7 +210,9 @@ export function MarkdownContent({
 	className = "",
 }: MarkdownContentProps) {
 	return (
-		<div className={`prose prose-sm max-w-none dark:prose-invert ${className}`}>
+		<div
+			className={`prose prose-sm max-w-none dark:prose-invert overflow-visible ${className}`}
+		>
 			<ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
 		</div>
 	);
