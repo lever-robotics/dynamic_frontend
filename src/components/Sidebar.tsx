@@ -81,13 +81,16 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 			</div>
 
 			{/* Main Menu Section */}
-			<SidebarContent className="flex-1 ml-1 justify-center">
-				<SidebarGroup className="overflow-y-auto scrollbar-hide max-h-[calc(100vh-300px)]">
-					<SidebarGroupContent>
-						<div className="px-4 py-2">
+			<SidebarContent className="flex-1 ml-1 flex flex-col">
+				<SidebarGroup className="flex flex-col h-full">
+					<SidebarGroupContent className="flex flex-col h-full">
+						{/* Fixed top divider */}
+						<div className="px-4 py-2 flex-shrink-0">
 							<hr className="border-t border-gray-200" />
 						</div>
-						<div className="overflow-y-auto scrollbar-hide max-h-[calc(100vh-300px)]">
+
+						{/* Scrollable threads list */}
+						<div className="flex-1 overflow-y-auto scrollbar-hide">
 							<SidebarMenu>
 								{threads.map((thread) => (
 									<SidebarMenuItem key={thread.id}>
@@ -103,7 +106,9 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 								))}
 							</SidebarMenu>
 						</div>
-						<div className="px-4 py-2 mt-4">
+
+						{/* Fixed bottom button */}
+						<div className="px-4 py-2 mt-4 flex-shrink-0">
 							<Button
 								onClick={handleNewAnalysisClick}
 								className={cn(
