@@ -78,7 +78,7 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					sql: query,
+					query,
 				}),
 			},
 		);
