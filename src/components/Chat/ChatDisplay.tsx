@@ -33,10 +33,11 @@ export const ChatDisplay = memo(function ChatDisplay({
 	const [hasInitialized, setHasInitialized] = useState(false);
 	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
 	const {
-		state: { messages, currentThreadId, launchChatMessage },
+		state: { messages, currentThreadId, launchChatMessage, artifacts },
 		addMessage,
 		addArtifact,
 		setSelectedTool,
+		updateArtifact,
 	} = useWorkspace();
 
 	// Handle incoming WebSocket messages
@@ -169,19 +170,14 @@ export const ChatDisplay = memo(function ChatDisplay({
 						const tool = toolChunk.tool;
 						const result = toolChunk.result;
 						const image = toolChunk.image;
-
+						const toolArgs =
+							typeof toolChunk.arguments === "string"
+								? JSON.parse(toolChunk.arguments)
+								: toolChunk.arguments;
 						console.log("[ChatDisplay] Tool result:", toolChunk);
 
 						switch (tool) {
 							case "agent_user_potential_responses": {
-								const toolArgs =
-									typeof toolChunk.arguments === "string"
-										? JSON.parse(toolChunk.arguments)
-										: toolChunk.arguments;
-								console.log(
-									"[ChatDisplay] Adding potential responses:",
-									toolArgs,
-								);
 								try {
 									if (
 										toolArgs &&
@@ -199,9 +195,28 @@ export const ChatDisplay = memo(function ChatDisplay({
 								break;
 							}
 							case "write_bi_report": {
-								if (result) {
-									console.log("[ChatDisplay] Adding document:", result);
-									addArtifact?.("document", result);
+								const report = toolArgs.report;
+								if (report) {
+									console.log("[ChatDisplay] Updating first document:", report);
+									const firstDocument = artifacts.documents[0];
+									if (firstDocument) {
+										updateArtifact({
+											...firstDocument,
+											content: report,
+										});
+									} else {
+										addArtifact("document", report);
+									}
+								}
+
+								// Only Show tool when it's complete
+								if (toolChunk.status === "complete") {
+									const newMessage: MessageBubble = {
+										id: messageId,
+										type: "tool",
+										chunks: [newChunk],
+									};
+									return [...prev, newMessage];
 								}
 								break;
 							}
@@ -229,6 +244,22 @@ export const ChatDisplay = memo(function ChatDisplay({
 								}
 								break;
 							}
+							case "agent_execute_bigquery": {
+								if (result) {
+									console.log("[ChatDisplay] Adding query:", result);
+									addArtifact?.("query", result);
+								}
+								// Only Show tool when it's complete
+								if (toolChunk.status === "complete") {
+									const newMessage: MessageBubble = {
+										id: messageId,
+										type: "tool",
+										chunks: [newChunk],
+									};
+									return [...prev, newMessage];
+								}
+								break;
+							}
 							default: {
 								console.log(`Unhandled tool type: ${tool}`);
 								break;
@@ -240,7 +271,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 				}
 			}
 		},
-		[localMessages, addMessage, addArtifact],
+		[localMessages, addMessage, addArtifact, updateArtifact, artifacts],
 	);
 
 	// WebSocket connection with message handling

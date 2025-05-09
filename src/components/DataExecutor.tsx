@@ -41,31 +41,25 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	const [results, setResults] = useState<QueryResult[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
-	const [selectedConnector, setSelectedConnector] = useState<string>("");
 	const { userConfig } = useUserConfig();
-	const { addArtifact, updateArtifact } = useWorkspace();
-	const { getValidToken } = useAuth();
-
 	const connectors = userConfig?.data_connectors || [];
 
 	const availableConnections = Connections.filter((conn) =>
 		connectors.some((connector) => connector.type === conn.type),
 	);
-
-	// Set the first connection as selected when component mounts
-	useEffect(() => {
-		if (availableConnections.length > 0 && !selectedConnector) {
-			setSelectedConnector(availableConnections[0].name);
-		}
-	}, [availableConnections, selectedConnector]);
+	const [selectedConnector, setSelectedConnector] = useState<string>(
+		availableConnections[0].type,
+	);
+	const { addArtifact, updateArtifact } = useWorkspace();
+	const { getValidToken } = useAuth();
 
 	const connectionTabs: Tab[] = availableConnections.map((conn) => ({
-		label: conn.name,
+		label: conn.type,
 		content: (
 			<ConnectionCard
 				key={conn.type}
 				connection={conn}
-				onClick={() => setSelectedConnector(conn.name)}
+				onClick={() => setSelectedConnector(conn.type)}
 			/>
 		),
 	}));
