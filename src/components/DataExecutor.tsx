@@ -37,7 +37,13 @@ interface QueryResult {
 }
 
 export function DataExecutor({ initialQuery }: DataExecutorProps) {
-	const [query, setQuery] = useState(initialQuery?.content || "");
+	const {
+		state: { query },
+		addArtifact,
+		updateArtifact,
+	} = useWorkspace();
+
+	const [TempQuery, setTempQuery] = useState(query?.content || "");
 	const [results, setResults] = useState<QueryResult[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
@@ -50,7 +56,6 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 	const [selectedConnector, setSelectedConnector] = useState<string>(
 		availableConnections[0].type,
 	);
-	const { addArtifact, updateArtifact } = useWorkspace();
 	const { getValidToken } = useAuth();
 
 	const connectionTabs: Tab[] = availableConnections.map((conn) => ({
@@ -95,10 +100,10 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 		if (initialQuery) {
 			updateArtifact({
 				...initialQuery,
-				content: query,
+				content: TempQuery,
 			});
 		} else {
-			addArtifact("query", query);
+			addArtifact("query", TempQuery);
 		}
 
 		// setResults(data);
@@ -208,8 +213,8 @@ export function DataExecutor({ initialQuery }: DataExecutorProps) {
 			<div className="h-[200px] flex justify-center">
 				<div className="h-full relative w-full max-w-4xl">
 					<Textarea
-						value={query}
-						onChange={(e) => setQuery(e.target.value)}
+						value={TempQuery}
+						onChange={(e) => setTempQuery(e.target.value)}
 						placeholder="Enter your SQL query here..."
 						className={cn(
 							"w-full h-full",

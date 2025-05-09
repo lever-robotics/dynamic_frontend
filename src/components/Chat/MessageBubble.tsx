@@ -1,3 +1,4 @@
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type {
 	MessageBubble as MessageBubbleType,
 	ToolExecutionBubble,
@@ -18,6 +19,58 @@ export function MessageBubble({
 	onToolSelect,
 	toolNameMapping,
 }: MessageBubbleProps) {
+	const {
+		setView,
+		setDocument,
+		setImage,
+		setQuery,
+		state: { artifacts },
+	} = useWorkspace();
+
+	const handleToolSelect = (tool: ToolExecutionBubble) => {
+		// First call the original onToolSelect if it exists
+		if (onToolSelect) {
+			onToolSelect(tool);
+		}
+
+		// Then switch to the appropriate tab based on the tool type
+		if (tool.artifactId) {
+			switch (tool.tool) {
+				case "write_bi_report": {
+					const artifact = artifacts.documents.find(
+						(doc) => doc.id === tool.artifactId,
+					);
+					if (artifact) {
+						setDocument(artifact);
+						setView("DocViewer");
+					}
+					break;
+				}
+				case "agent_execute_python_code": {
+					const artifact = artifacts.images.find(
+						(img) => img.id === tool.artifactId,
+					);
+					if (artifact) {
+						setImage(artifact);
+						setView("GraphViewer");
+					}
+					break;
+				}
+				case "agent_execute_sql_query":
+				case "agent_execute_bigquery": {
+					const artifact = artifacts.queries.find(
+						(query) => query.id === tool.artifactId,
+					);
+					if (artifact) {
+						setQuery(artifact);
+						setView("DataExecutor");
+					}
+					break;
+				}
+			}
+		}
+	};
+
 	if (message.type === "user") {
 		return (
 			<div className="flex justify-end">
@@ -38,17 +91,16 @@ export function MessageBubble({
 							: ""
 					}`}
 					onClick={() => {
-						if (onToolSelect && message.chunks[0]?.toolCall) {
-							onToolSelect(message.chunks[0].toolCall);
+						if (message.chunks[0]?.toolCall) {
+							handleToolSelect(message.chunks[0].toolCall);
 						}
 					}}
 					onKeyDown={(e) => {
 						if (
 							(e.key === "Enter" || e.key === " ") &&
-							onToolSelect &&
 							message.chunks[0]?.toolCall
 						) {
-							onToolSelect(message.chunks[0].toolCall);
+							handleToolSelect(message.chunks[0].toolCall);
 						}
 					}}
 					tabIndex={onToolSelect ? 0 : -1}

@@ -16,13 +16,13 @@ import { TabGroup } from "./onboarding/TabGroup";
 
 export function Whiteboard() {
 	const {
-		state: { currentView, artifacts, document, image, query },
+		state: { currentView, artifacts },
 		setView,
 		setDocument,
 		setImage,
 		setQuery,
 	} = useWorkspace();
-	const [activeTab, setActiveTab] = useState<string>("");
+	const [activeTab, setActiveTab] = useState(0);
 	const documentRef = useRef<HTMLDivElement>(null);
 
 	// Create tabs from artifacts
@@ -36,7 +36,7 @@ export function Whiteboard() {
 
 	const handleTabChange = (tab: string) => {
 		const index = tabs.findIndex((t) => t === tab);
-		setActiveTab(tab);
+		setActiveTab(index);
 
 		// Determine the type of artifact based on the index
 		const documentCount = artifacts.documents.length;
@@ -168,8 +168,8 @@ export function Whiteboard() {
 				<div className="flex-none bg-white border-t border-gray-200 p-2">
 					<TabGroup
 						tabs={tabs}
-						activeTab={activeTab}
-						onTabChange={handleTabChange}
+						activeTab={tabs[activeTab]}
+						onTabChange={(tab) => handleTabChange(tab)}
 					/>
 				</div>
 			)}

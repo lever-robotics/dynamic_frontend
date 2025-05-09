@@ -27,6 +27,7 @@ export interface ToolExecutionBubble {
 	status?: ToolStatus;
 	result?: any;
 	error?: string;
+	artifactId?: string; // ID of the artifact created by this tool
 }
 
 export interface Payload {

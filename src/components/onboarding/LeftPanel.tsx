@@ -12,8 +12,8 @@ export function LeftPanel() {
 			<div className="flex justify-center py-6">
 				<TabGroup
 					tabs={tabs}
-					activeTab={activeTab}
-					onTabChange={setActiveTab}
+					activeTab={tabs[activeTab]}
+					onTabChange={(tab) => setActiveTab(tabs.indexOf(tab))}
 				/>
 			</div>
 			<div className="flex-1 overflow-auto">

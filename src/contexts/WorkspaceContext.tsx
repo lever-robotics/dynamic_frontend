@@ -448,49 +448,53 @@ Here's a bar chart showing our regional performance:
 		if (!state.currentThreadId) return;
 
 		try {
-			const { error } = await supabase.from("thread_artifacts").update([
-				{
-					thread_id: state.currentThreadId,
-					artifact_type: artifact.artifact_type,
+			const { error } = await supabase
+				.from("thread_artifacts")
+				.update({
 					content: artifact.content,
-					id: artifact.id,
-				},
-			]);
+				})
+				.eq("id", artifact.id)
+				.eq("thread_id", state.currentThreadId);
 
 			if (error) throw error;
 
-			const newState = { ...state };
-			switch (artifact.artifact_type) {
-				case "image": {
-					const old = newState.artifacts.images.findIndex(
-						(a) => a.id === artifact.id,
-					);
-					if (old) {
-						newState.artifacts.images[old] = artifact;
+			setState((prev) => {
+				const newState = { ...prev };
+				switch (artifact.artifact_type) {
+					case "image": {
+						const index = newState.artifacts.images.findIndex(
+							(a) => a.id === artifact.id,
+						);
+						if (index !== -1) {
+							newState.artifacts.images[index] = artifact;
+						}
+						break;
 					}
-					break;
-				}
-				case "document": {
-					const old = newState.artifacts.documents.findIndex(
-						(a) => a.id === artifact.id,
-					);
-					if (old) {
-						newState.artifacts.documents[old] = artifact;
+					case "document": {
+						const index = newState.artifacts.documents.findIndex(
+							(a) => a.id === artifact.id,
+						);
+						if (index !== -1) {
+							newState.artifacts.documents[index] = artifact;
+							// Also update the current document if it's the same one
+							if (prev.document?.id === artifact.id) {
+								newState.document = artifact;
+							}
+						}
+						break;
 					}
-					break;
-				}
-				case "query": {
-					const old = newState.artifacts.queries.findIndex(
-						(a) => a.id === artifact.id,
-					);
-					if (old) {
-						newState.artifacts.queries[old] = artifact;
+					case "query": {
+						const index = newState.artifacts.queries.findIndex(
+							(a) => a.id === artifact.id,
+						);
+						if (index !== -1) {
+							newState.artifacts.queries[index] = artifact;
+						}
+						break;
 					}
-					break;
 				}
-			}
-
-			setState(newState);
+				return newState;
+			});
 		} catch (err) {
 			setError(
 				err instanceof Error ? err.message : "Failed to update artifact",

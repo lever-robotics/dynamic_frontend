@@ -204,6 +204,10 @@ export const ChatDisplay = memo(function ChatDisplay({
 											...firstDocument,
 											content: report,
 										});
+										artifacts.documents[0] = {
+											...firstDocument,
+											content: report,
+										};
 									} else {
 										addArtifact("document", report);
 									}
@@ -214,7 +218,15 @@ export const ChatDisplay = memo(function ChatDisplay({
 									const newMessage: MessageBubble = {
 										id: messageId,
 										type: "tool",
-										chunks: [newChunk],
+										chunks: [
+											{
+												...newChunk,
+												toolCall: {
+													...newChunk.toolCall,
+													artifactId: artifacts.documents[0]?.id,
+												},
+											},
+										],
 									};
 									return [...prev, newMessage];
 								}
@@ -224,6 +236,23 @@ export const ChatDisplay = memo(function ChatDisplay({
 								if (image) {
 									console.log("[ChatDisplay] Adding image:", image);
 									addArtifact?.("image", image);
+								}
+								// Only Show tool when it's complete
+								if (toolChunk.status === "complete") {
+									const newMessage: MessageBubble = {
+										id: messageId,
+										type: "tool",
+										chunks: [
+											{
+												...newChunk,
+												toolCall: {
+													...newChunk.toolCall,
+													artifactId: artifacts.images[0]?.id,
+												},
+											},
+										],
+									};
+									return [...prev, newMessage];
 								}
 								break;
 							}
@@ -238,7 +267,15 @@ export const ChatDisplay = memo(function ChatDisplay({
 									const newMessage: MessageBubble = {
 										id: messageId,
 										type: "tool",
-										chunks: [newChunk],
+										chunks: [
+											{
+												...newChunk,
+												toolCall: {
+													...newChunk.toolCall,
+													artifactId: artifacts.queries[0]?.id,
+												},
+											},
+										],
 									};
 									return [...prev, newMessage];
 								}
@@ -254,7 +291,15 @@ export const ChatDisplay = memo(function ChatDisplay({
 									const newMessage: MessageBubble = {
 										id: messageId,
 										type: "tool",
-										chunks: [newChunk],
+										chunks: [
+											{
+												...newChunk,
+												toolCall: {
+													...newChunk.toolCall,
+													artifactId: artifacts.queries[0]?.id,
+												},
+											},
+										],
 									};
 									return [...prev, newMessage];
 								}
