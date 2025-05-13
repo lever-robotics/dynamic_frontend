@@ -53,16 +53,18 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 
 	const testFunction = async () => {
 		const token = await getValidToken();
-		await fetch(`${API_BASE_URL}/v0/connectors/bigquery/query`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
+		const response = await fetch(
+			`${API_BASE_URL}/v0/connectors/shopify/introspect`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json",
+				},
 			},
-			body: JSON.stringify({
-				sql: "SELECT * FROM `bigquery-public-data.thelook_ecommerce.orders` LIMIT 10",
-			}),
-		});
+		);
+		const data = await response.json();
+		console.log(data);
 	};
 
 	const handleToggle = (settingId: string) => {

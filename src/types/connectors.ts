@@ -11,6 +11,21 @@ export interface DataConnector {
 		version: string;
 		entities: Array<Entity>;
 	};
+	schema: Array<{
+		table_id: string;
+		schema: Array<SchemaFields>;
+		sample_data: Array<{ [key: string]: unknown }>;
+	}>;
+}
+
+export interface Schema {
+	table_id: string;
+	schema: Array<SchemaFields>;
+}
+
+export interface SchemaFields {
+	name: string;
+	type: string;
 }
 
 export interface Connection {
