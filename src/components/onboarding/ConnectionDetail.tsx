@@ -164,19 +164,31 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 			session: session || "",
 		});
 
-		switch (connection.name.toLowerCase()) {
+		const connector = connection.name.toLowerCase();
+
+		switch (connector) {
 			case "shopify":
-				queryParams.append("shop", formData.shop || "");
+				queryParams.append("shop", formData.shop.trim() || "");
 				break;
 			case "bigquery":
-				queryParams.append("project_id", formData.project_id || "");
-				queryParams.append("dataset_id", formData.dataset_id || "");
+				queryParams.append("project_id", formData.project_id.trim() || "");
+				queryParams.append("dataset_id", formData.dataset_id.trim() || "");
 				break;
 		}
 
+		window.addEventListener("message", (event) => {
+			if (event.origin !== API_BASE_URL) return;
+
+			if (event.data.status === "success") {
+				console.log("Logged in!");
+				onClose();
+			}
+		});
+
 		const tab = window.open(
-			`${API_BASE_URL}/v0/connectors/${connection.name.toLowerCase()}/authorize?${queryParams.toString()}`,
-			"_blank",
+			`${API_BASE_URL}/v0/connectors/${connector}/authorize?${queryParams.toString()}`,
+			"OAuthLogin",
+			`width=500,height=600,resizable=yes,scrollbars=yes,toolbar=no,menubar=no,location=no,status=no,left=${(window.screen.width - 500) / 2},top=${(window.screen.height - 600) / 2}`,
 		);
 
 		if (!tab) {
