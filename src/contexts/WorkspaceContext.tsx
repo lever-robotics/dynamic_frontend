@@ -14,6 +14,10 @@ export interface Artifact {
 	content: string;
 	created_at: string;
 	id: string;
+	metadata?: {
+		data_source?: "bigquery" | "shopify";
+		[key: string]: string | number | boolean | null;
+	};
 }
 
 export interface Artifacts {
@@ -42,6 +46,10 @@ interface WorkspaceContextType {
 	addArtifact: (
 		type: "image" | "document" | "query",
 		content: string,
+		metadata?: {
+			data_source?: "bigquery" | "shopify";
+			[key: string]: string | number | boolean | null;
+		},
 	) => Promise<string | null>; // returns the artifact id
 	updateArtifact: (artifact: Artifact) => Promise<void>;
 	// Whiteboard functions
@@ -489,6 +497,10 @@ Here's a bar chart showing our regional performance:
 	const addArtifact = async (
 		type: "image" | "document" | "query",
 		content: string,
+		metadata?: {
+			data_source?: "bigquery" | "shopify";
+			[key: string]: string | number | boolean | null;
+		},
 	): Promise<string | null> => {
 		if (!state.currentThreadId) return null;
 
@@ -501,6 +513,7 @@ Here's a bar chart showing our regional performance:
 						artifact_type: type,
 						content,
 						created_at: new Date().toISOString(),
+						metadata: metadata || {},
 					},
 				])
 				.select()
@@ -515,6 +528,7 @@ Here's a bar chart showing our regional performance:
 					artifact_type: type,
 					content,
 					created_at: newArtifact.created_at,
+					metadata: metadata || {},
 				};
 
 				const typeMap = {

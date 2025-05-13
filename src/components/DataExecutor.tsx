@@ -20,7 +20,7 @@ import { Connections } from "@/types/connectors";
 import { useAuth } from "@/utils/AuthProvider";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { ConnectionCard } from "./onboarding/ConnectionCard";
 import { type Tab, TabGroupInject } from "./onboarding/TabGroupInject";
@@ -33,7 +33,6 @@ interface QueryResult {
 export function DataExecutor() {
 	const {
 		state: { currentArtifact },
-		addArtifact,
 		updateArtifact,
 	} = useWorkspace();
 
@@ -41,6 +40,14 @@ export function DataExecutor() {
 	const [results, setResults] = useState<QueryResult[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
+
+	// Update TempQuery when currentArtifact changes
+	useEffect(() => {
+		if (currentArtifact?.content) {
+			setTempQuery(currentArtifact.content);
+		}
+	}, [currentArtifact]); // Watch the entire currentArtifact object
+
 	const { userConfig } = useUserConfig();
 	const connectors = userConfig?.data_connectors || [];
 
@@ -51,6 +58,17 @@ export function DataExecutor() {
 		availableConnections[0].type,
 	);
 	const { getValidToken } = useAuth();
+
+	if (currentArtifact?.metadata?.data_source) {
+		const dataSource = currentArtifact.metadata.data_source;
+		// Find the matching connection type
+		const matchingConnection = availableConnections.find(
+			(conn) => conn.type.toLowerCase() === dataSource.toLowerCase(),
+		);
+		if (matchingConnection) {
+			setSelectedConnector(matchingConnection.type);
+		}
+	}
 
 	const connectionTabs: Tab[] = availableConnections.map((conn) => ({
 		label: conn.type,
@@ -63,79 +81,65 @@ export function DataExecutor() {
 		),
 	}));
 
+	const getPlaceholderText = () => {
+		switch (selectedConnector.toLowerCase()) {
+			case "shopify":
+				return "Enter your GraphQL query here...";
+			case "bigquery":
+				return "Enter your SQL query here...";
+			default:
+				return "Enter your query here...";
+		}
+	};
+
 	const handleExecute = async () => {
-		// TODO: Implement SQL execution
-		console.log("Executing SQL:", currentArtifact?.content);
-
-		const token = await getValidToken();
-		const response = await fetch(
-			`${API_BASE_URL}/v0/connectors/${selectedConnector}/query`,
-			{
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
+		if (isExecuting) return; // Prevent multiple executions
+		setIsExecuting(true);
+		try {
+			const token = await getValidToken();
+			const response = await fetch(
+				`${API_BASE_URL}/v0/connectors/${selectedConnector}/query`,
+				{
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						query: TempQuery,
+					}),
 				},
-				body: JSON.stringify({
-					query: currentArtifact?.content,
-				}),
-			},
-		);
+			);
 
-		const body = await response.json();
-		const data = body.data;
-		console.log("Query results:", data);
+			const body = await response.json();
+			const data = body.data;
+			console.log("Query results:", data);
 
-		const exampleRow = data[0];
+			if (data && data.length > 0) {
+				const exampleRow = data[0];
+				setColumns(Object.keys(exampleRow));
+				setResults(data);
 
-		setColumns(Object.keys(exampleRow));
-		setResults(data);
-
-		// setResults(data);
-		// // Test with a larger dataset
-		// setColumns([
-		// 	"id",
-		// 	"customer_name",
-		// 	"order_date",
-		// 	"product_name",
-		// 	"quantity",
-		// 	"unit_price",
-		// 	"total_amount",
-		// 	"status",
-		// 	"shipping_address",
-		// 	"payment_method",
-		// 	"discount_applied",
-		// 	"tax_amount",
-		// ]);
-
-		// // Generate 50 rows of test data
-		// const testData = Array.from({ length: 50 }, (_, i) => ({
-		// 	id: i + 1,
-		// 	customer_name: `Customer ${i + 1}`,
-		// 	order_date: new Date(2024, 0, i + 1).toISOString().split("T")[0],
-		// 	product_name: `Product ${(i % 5) + 1}`,
-		// 	quantity: Math.floor(Math.random() * 10) + 1,
-		// 	unit_price: (Math.random() * 100).toFixed(2),
-		// 	total_amount: (Math.random() * 1000).toFixed(2),
-		// 	status: ["Pending", "Processing", "Shipped", "Delivered"][
-		// 		Math.floor(Math.random() * 4)
-		// 	],
-		// 	shipping_address: `${Math.floor(Math.random() * 1000)} Main St, City ${i + 1}`,
-		// 	payment_method: ["Credit Card", "PayPal", "Bank Transfer"][
-		// 		Math.floor(Math.random() * 3)
-		// 	],
-		// 	discount_applied: (Math.random() * 20).toFixed(2),
-		// 	tax_amount: (Math.random() * 50).toFixed(2),
-		// }));
-
-		// setResults(testData);
+				// Update the artifact with the new query and preserve metadata
+				if (currentArtifact) {
+					await updateArtifact({
+						...currentArtifact,
+						content: TempQuery,
+					});
+				}
+			}
+		} catch (error) {
+			console.error("Error executing query:", error);
+		} finally {
+			setIsExecuting(false);
+		}
 	};
 
 	const handleDownloadCSV = () => {
 		if (!results.length) return;
 
 		// Escape fields that contain commas or quotes
-		const escapeCSV = (field: any) => {
+		const escapeCSV = (field: string | number | boolean | null) => {
 			if (field === null || field === undefined) return "";
 			const stringField = String(field);
 			if (stringField.includes(",") || stringField.includes('"')) {
@@ -200,7 +204,7 @@ export function DataExecutor() {
 					<Textarea
 						value={TempQuery}
 						onChange={(e) => setTempQuery(e.target.value)}
-						placeholder="Enter your SQL query here..."
+						placeholder={getPlaceholderText()}
 						className={cn(
 							"w-full h-full",
 							"font-mono text-sm",
@@ -212,6 +216,7 @@ export function DataExecutor() {
 						onClick={handleExecute}
 						className="absolute bottom-4 right-4"
 						size="icon"
+						disabled={isExecuting}
 					>
 						<Play className="h-4 w-4" />
 					</Button>
@@ -272,11 +277,11 @@ export function DataExecutor() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{results.map((row, index) => (
-								<TableRow key={index}>
-									{columns.map((column, index) => (
+							{results.map((row, rowIndex) => (
+								<TableRow key={`row-${rowIndex}-${JSON.stringify(row)}`}>
+									{columns.map((column) => (
 										<TableCell
-											key={`${index}-${column}`}
+											key={`${column}-${row[column]}`}
 											className="whitespace-nowrap"
 										>
 											{row[column]}
