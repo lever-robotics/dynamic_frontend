@@ -35,7 +35,7 @@ function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
 					queries: artifacts.queries || [],
 				},
 			},
-		} as FlagChunk;
+		} as unknown as FlagChunk;
 	}, [userConfig, messages, artifacts]);
 
 	return (

@@ -11,7 +11,7 @@ import {
 	Tooltip,
 } from "chart.js";
 import { Bar, Doughnut, Line, Pie } from "react-chartjs-2";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
@@ -37,8 +37,8 @@ interface CodeProps {
 	node?: unknown;
 	inline?: boolean;
 	className?: string;
-	children: React.ReactNode;
-	[key: string]: unknown;
+	children?: React.ReactNode;
+	[key: string]: any;
 }
 
 interface ChartConfig {
@@ -103,7 +103,7 @@ const ChartRenderer = ({ config }: { config: ChartConfig }) => {
 	}
 };
 
-const markdownComponents = {
+const markdownComponents: Components = {
 	// Code blocks with syntax highlighting
 	code({ node, inline, className, children, ...props }: CodeProps) {
 		const match = /language-(\w+)/.exec(className || "");

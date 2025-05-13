@@ -35,7 +35,7 @@ export function Blueprint({ onClose }: BlueprintProps) {
 				business_overview: userConfig.business_overview || "",
 				data_connectors: userConfig.data_connectors || [],
 			},
-		} as FlagChunk;
+		} as unknown as FlagChunk;
 	}, [userConfig]);
 
 	const handleSelectConnection = (connection: Connection) => {
