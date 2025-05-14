@@ -8,7 +8,7 @@ import {
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import html2pdf from "html2pdf.js";
 import { Download } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DataExecutor } from "./DataExecutor";
 import { DocumentEditor } from "./DocumentEditor";
 import { GraphViewer } from "./GraphViewer";
@@ -41,6 +41,41 @@ export function Whiteboard() {
 		...artifacts.images.map((_, index) => `Image ${index + 1}`),
 		...artifacts.queries.map((_, index) => `Query ${index + 1}`),
 	];
+
+	// Update active tab when currentArtifact changes
+	useEffect(() => {
+		if (!currentArtifact) return;
+
+		const documentCount = artifacts.documents.length;
+		const imageCount = artifacts.images.length;
+
+		// Find the index of the current artifact in its respective array
+		let newActiveTab = -1;
+		if (currentArtifact.artifact_type === "document") {
+			newActiveTab = artifacts.documents.findIndex(
+				(a) => a.id === currentArtifact.id,
+			);
+		} else if (currentArtifact.artifact_type === "image") {
+			newActiveTab =
+				documentCount +
+				artifacts.images.findIndex((a) => a.id === currentArtifact.id);
+		} else if (currentArtifact.artifact_type === "query") {
+			newActiveTab =
+				documentCount +
+				imageCount +
+				artifacts.queries.findIndex((a) => a.id === currentArtifact.id);
+		}
+
+		if (newActiveTab !== -1) {
+			setActiveTab(newActiveTab);
+		}
+	}, [
+		currentArtifact,
+		artifacts.documents,
+		artifacts.images,
+		artifacts.queries,
+	]);
+
 	console.log("Tabs:", tabs);
 	console.log("Active Tab:", activeTab);
 

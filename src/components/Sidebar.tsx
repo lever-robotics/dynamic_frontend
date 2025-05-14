@@ -56,6 +56,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	};
 
 	const handleNewAnalysisClick = () => {
+		switchThread("");
 		setShowLaunchChat(true);
 	};
 

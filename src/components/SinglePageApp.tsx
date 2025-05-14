@@ -62,6 +62,7 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 		initializeWorkspace,
 		setLaunchChatMessage,
 		addArtifact,
+		setCurrentArtifactById,
 	} = useWorkspace();
 
 	// Initialize workspace on mount
@@ -107,16 +108,16 @@ export const SinglePageApp: React.FC<SinglePageAppProps> = ({
 		if (currentThreadId === "") {
 			const threadId = await createThread("Query Data");
 			// Create a blank query artifact
-			await addArtifact("query", "");
+			const id = await addArtifact("query", "");
 			// Set the current artifact to the first query
-			setCurrentArtifact(artifacts.queries[artifacts.queries.length - 1]);
+			setCurrentArtifactById(id);
 			// Hide the launch chat
 			setShowLaunchChat(false);
 		} else {
 			// Create a blank query artifact
-			await addArtifact("query", "");
+			const id = await addArtifact("query", "");
 			// Set the current artifact to the first query
-			setCurrentArtifact(artifacts.queries[artifacts.queries.length - 1]);
+			setCurrentArtifactById(id);
 		}
 	};
 

@@ -29,8 +29,8 @@ export function Blueprint({ onClose }: BlueprintProps) {
 	const sendOnConnect = useCallback(() => {
 		return {
 			type: "flag",
-			// flag: "blueprint",
-			flag: "query",
+			flag: "blueprint",
+			// flag: "query",
 			context: {
 				business_overview: userConfig.business_overview || "",
 				data_connectors: userConfig.data_connectors || [],
