@@ -19,7 +19,7 @@ export function GraphViewer() {
 					<div className="h-[500px] border rounded-lg bg-gray-50 flex items-center justify-center">
 						{image ? (
 							<img
-								src={image}
+								src={image.content}
 								alt="Graph visualization"
 								className="max-w-full max-h-full object-contain"
 							/>
