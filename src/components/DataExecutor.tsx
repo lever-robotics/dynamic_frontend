@@ -41,7 +41,6 @@ export function DataExecutor() {
 
 	const [TempQuery, setTempQuery] = useState(query?.content || "");
 	const [results, setResults] = useState<QueryResult[]>([]);
-	const [isExecuting, setIsExecuting] = useState(false);
 	const [columns, setColumns] = useState<string[]>([]);
 	const { userConfig } = useUserConfig();
 	const connectors = userConfig?.data_connectors || [];
@@ -79,7 +78,7 @@ export function DataExecutor() {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					query,
+					query: TempQuery,
 				}),
 			},
 		);
@@ -210,7 +209,9 @@ export function DataExecutor() {
 				<div className="h-full relative w-full max-w-4xl">
 					<Textarea
 						value={TempQuery}
-						onChange={(e) => setTempQuery(e.target.value)}
+						onChange={(e) => {
+							setTempQuery(e.target.value);
+						}}
 						placeholder="Enter your SQL query here..."
 						className={cn(
 							"w-full h-full",
