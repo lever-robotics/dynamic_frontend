@@ -21,7 +21,7 @@ export function ChatInput({
 		if (!inputValue.trim()) return;
 
 		// In launch mode, we don't need to check connection
-		if (!isLaunchMode) return;
+		if (!isLaunchMode && !isConnected) return;
 
 		onSubmit(inputValue.trim());
 		setInputValue("");

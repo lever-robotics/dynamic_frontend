@@ -104,6 +104,7 @@ export const MainContent: React.FC = () => {
 								key={currentThreadId}
 								sendOnConnect={sendOnConnect}
 								launchMessage={launchMessage}
+								setLaunchMessage={setLaunchMessage}
 							/>
 						</div>
 					</div>

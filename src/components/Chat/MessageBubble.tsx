@@ -129,15 +129,12 @@ export function MessageBubble({
 	}
 
 	// Assistant message
+	const bubble = message.chunks.map((chunk) => chunk.content).join("");
 	return (
 		<div className="flex justify-start">
 			<article className="flex overflow-hidden flex-col px-3 py-3 mt-3.5 w-full bg-white rounded-2xl max-w-[324px] border border-gray-200">
 				<div className="flex flex-col w-full text-xs leading-4 text-slate-600">
-					{message.chunks.map((chunk, index) => (
-						<div key={`${message.id}-chunk-${index}`}>
-							{chunk.content && <MarkdownContent content={chunk.content} />}
-						</div>
-					))}
+					{bubble && <MarkdownContent content={bubble} />}
 				</div>
 			</article>
 		</div>

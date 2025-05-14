@@ -49,7 +49,7 @@ interface WorkspaceContextType {
 	// Thread management functions
 	createThread: (name: string) => Promise<string>;
 	switchThread: (threadId: string) => Promise<void>;
-	addMessage: (message: MessageBubble) => Promise<void>;
+	pushMessages: (messages: MessageBubble[]) => Promise<void>;
 	addArtifact: (
 		type: "image" | "document" | "query",
 		content: string,
@@ -62,6 +62,7 @@ interface WorkspaceContextType {
 	setImage: (image: Artifact | null) => void;
 	setQuery: (query: Artifact | null) => void;
 	currentThreadId: string;
+	messages: MessageBubble[];
 	// initializeWorkspace: () => Promise<void>;
 }
 
@@ -87,9 +88,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 		image: null,
 		query: null,
 	});
+	const [messages, setMessages] = useState<MessageBubble[]>([]);
 	const [currentThreadId, setCurrentThreadId] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	console.log("[WorkspaceContext] messages:", messages);
 
 	useEffect(() => {
 		(async () => {
@@ -225,7 +229,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 				.from("thread_messages")
 				.select("content")
 				.eq("thread_id", threadId)
-				.order("created_at", { ascending: true });
+				.order("order_index", { ascending: true });
 
 			if (messagesError) throw messagesError;
 
@@ -269,6 +273,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 			const latestImage = processedArtifacts.images[0] || null;
 			const latestQuery: Artifact | null =
 				processedArtifacts.queries[0] || null;
+
+			setMessages(messages.map((m) => m.content));
 
 			setState((prev) => ({
 				...prev,
@@ -449,32 +455,83 @@ Here's a bar chart showing our regional performance:
 	};
 
 	const switchThread = async (threadId: string) => {
-		setCurrentThreadId(threadId);
 		await loadThreadContent(threadId);
+		setCurrentThreadId(threadId);
 	};
 
-	const addMessage = async (message: MessageBubble) => {
+	const pushMessages = async (newMessages: MessageBubble[]) => {
 		if (!currentThreadId) return;
 
+		const currentIndex = messages.length;
+
+		const toUpdate = newMessages.slice(currentIndex);
+		console.log("[WorkspaceContext] Pushing messages:", toUpdate);
+
+		setMessages((prev) => [...prev, ...toUpdate]);
 		try {
-			const { error } = await supabase.from("thread_messages").insert([
-				{
+			const { error } = await supabase.from("thread_messages").insert(
+				toUpdate.map((message) => ({
 					thread_id: currentThreadId,
 					message_type: message.type,
 					content: message,
-				},
-			]);
+					order_index: message.orderIndex,
+				})),
+			);
 
 			if (error) throw error;
-
-			setState((prev) => ({
-				...prev,
-				messages: [...prev.messages, message],
-			}));
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to add message");
+			setError(err instanceof Error ? err.message : "Failed to add messages");
 		}
 	};
+
+	// const addMessage = async (message: MessageBubble) => {
+	// 	if (!currentThreadId) return;
+	// 	console.log("[WorkspaceContext] Adding message:", message)
+
+	// 	message.orderIndex = messages.length;
+
+	// 	setMessages((prev) => [...prev, message]);
+	// 	try {
+	// 		const { error } = await supabase.from("thread_messages").insert([
+	// 			{
+	// 				thread_id: currentThreadId,
+	// 				message_type: message.type,
+	// 				content: message,
+	// 				order_index: message.orderIndex,
+	// 			},
+	// 		]);
+
+	// 		if (error) throw error;
+
+	// 	} catch (err) {
+	// 		setError(err instanceof Error ? err.message : "Failed to add message");
+	// 	}
+	// };
+
+	// const addMessages = async (messages: MessageBubble[]) => {
+	// 	if (!currentThreadId) return;
+
+	// 	let tempIndex = messages.length;
+	// 	for (const message of messages) {
+	// 		message.orderIndex = tempIndex;
+	// 		tempIndex++;
+	// 	}
+	// 	setMessages((prev) => [...prev, ...messages]);
+	// 	try {
+	// 		const { error } = await supabase.from("thread_messages").insert(
+	// 			messages.map((message) => ({
+	// 				thread_id: currentThreadId,
+	// 				message_type: message.type,
+	// 				content: message,
+	// 				order_index: message.orderIndex,
+	// 			})),
+	// 		);
+
+	// 		if (error) throw error;
+	// 	} catch (err) {
+	// 		setError(err instanceof Error ? err.message : "Failed to add messages");
+	// 	}
+	// };
 
 	const updateArtifact = async (artifact: Artifact) => {
 		if (!currentThreadId) return;
@@ -593,13 +650,6 @@ Here's a bar chart showing our regional performance:
 		}));
 	};
 
-	const setLaunchChatMessage = (message: string) => {
-		setState((prev) => ({
-			...prev,
-			launchChatMessage: message,
-		}));
-	};
-
 	return (
 		<WorkspaceContext.Provider
 			value={{
@@ -608,7 +658,7 @@ Here's a bar chart showing our regional performance:
 				error,
 				createThread,
 				switchThread,
-				addMessage,
+				pushMessages,
 				addArtifact,
 				updateArtifact,
 				setView,
@@ -617,6 +667,7 @@ Here's a bar chart showing our regional performance:
 				setImage,
 				setQuery,
 				currentThreadId,
+				messages,
 				// initializeWorkspace,
 			}}
 		>

@@ -19,24 +19,28 @@ interface ChatDisplayProps {
 	onClose?: () => void;
 	sendOnConnect?: () => Payload;
 	launchMessage?: string;
+	setLaunchMessage?: (message: string) => void;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
 	onClose,
 	sendOnConnect,
 	launchMessage,
+	setLaunchMessage,
 }: ChatDisplayProps) {
-	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
-	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-	const [isInitializing, setIsInitializing] = useState(false);
-	const [hasInitialized, setHasInitialized] = useState(false);
+	// const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
+	// const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+	// const [isInitializing, setIsInitializing] = useState(false);
+	// const [hasInitialized, setHasInitialized] = useState(false);
 	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
+	// const [isInitialized, setIsInitialized] = useState(false);
 	const {
-		state: { messages, currentThreadId, artifacts },
-		addMessage,
+		state: { artifacts },
+		pushMessages,
 		addArtifact,
 		setSelectedTool,
 		updateArtifact,
+		messages,
 	} = useWorkspace();
 	const [localMessages, setLocalMessages] = useState<MessageBubble[]>(messages);
 
@@ -45,99 +49,30 @@ export const ChatDisplay = memo(function ChatDisplay({
 		(wsMessage: WebSocketMessage) => {
 			const { payload, messageId } = wsMessage;
 
-			// Check if this is the final message and if so then save Agent output to the database.
-			if (
-				payload.type === "agent" &&
-				(payload as AgentChunk).status === "complete"
-			) {
-				console.log("[ChatDisplay] Final message received:", payload);
-
-				// Use a timeout to ensure all messages are processed
-				setTimeout(() => {
-					// Find the index of the last user message
-					const lastUserMessageIndex =
-						localMessages.length -
-						1 -
-						[...localMessages]
-							.reverse()
-							.findIndex((msg) => msg.type === "user");
-
-					if (lastUserMessageIndex !== -1) {
-						// Get all messages from the last user message
-						const messagesToSave = localMessages.slice(lastUserMessageIndex);
-
-						console.log("[ChatDisplay] Saving messages:", messagesToSave);
-
-						// Track which messages we've already saved
-						const savedMessageIds = new Set<string>();
-
-						// Save messages in chronological order (oldest to newest)
-						for (let i = 0; i < messagesToSave.length; i++) {
-							const message = messagesToSave[i];
-							// Only save if we haven't saved this message before
-							if (!savedMessageIds.has(message.id)) {
-								addMessage(message);
-								savedMessageIds.add(message.id);
-							}
-						}
-					}
-				}, 1000); // Wait 1 second to ensure all messages are processed
-			}
-
 			console.log("[ChatDisplay] Received message:", payload);
 
 			switch (payload.type) {
 				case "text": {
-					setLocalMessages((prev) => {
-						const messageIndex = prev.length - 1;
-						const newChunk: MessageChunkBubble = {
-							content: (payload as MessageChunk).content,
-						};
+					const newChunk: MessageChunkBubble = {
+						content: (payload as MessageChunk).content,
+					};
 
-						// Append new text chunk to current message
-						if (prev[messageIndex]?.type === "assistant") {
-							const lastChunkIndex = prev[messageIndex].chunks.length - 1;
+					const updatedMessages = [...localMessages];
+					const messageIndex = updatedMessages.length - 1;
 
-							// Merge with the last chunk if it exists
-							if (lastChunkIndex >= 0) {
-								const updatedChunks = [...prev[messageIndex].chunks];
-								updatedChunks[lastChunkIndex] = {
-									...updatedChunks[lastChunkIndex],
-									content:
-										updatedChunks[lastChunkIndex].content + newChunk.content,
-								};
-
-								const updatedMessage = {
-									...prev[messageIndex],
-									chunks: updatedChunks,
-								};
-								return [
-									...prev.slice(0, messageIndex),
-									updatedMessage,
-									...prev.slice(messageIndex + 1),
-								];
-							}
-
-							// If no chunks exist, add the new chunk
-							const updatedMessage = {
-								...prev[messageIndex],
-								chunks: [...prev[messageIndex].chunks, newChunk],
-							};
-							return [
-								...prev.slice(0, messageIndex),
-								updatedMessage,
-								...prev.slice(messageIndex + 1),
-							];
-						}
-
-						// Create new message
-						const newMessage: MessageBubble = {
+					if (updatedMessages[messageIndex]?.type === "assistant") {
+						updatedMessages[messageIndex].chunks.push(newChunk);
+					} else {
+						updatedMessages.push({
 							id: messageId,
 							type: "assistant",
 							chunks: [newChunk],
-						};
-						return [...prev, newMessage];
-					});
+							orderIndex: updatedMessages.length,
+						});
+					}
+
+					setLocalMessages(updatedMessages);
+
 					break;
 				}
 				case "agent": {
@@ -148,175 +83,113 @@ export const ChatDisplay = memo(function ChatDisplay({
 						agentChunk.name,
 						agentChunk.status,
 					);
+					if (agentChunk.status === "complete") {
+						console.log("[ChatDisplay] Final message received:", payload);
+
+						pushMessages(localMessages);
+					}
 					break;
 				}
 				case "tool": {
-					setLocalMessages((prev) => {
-						const toolChunk = payload as ToolChunk;
-						const newChunk: MessageChunkBubble = {
-							toolCall: {
-								tool: toolChunk.tool,
-								arguments:
-									typeof toolChunk.arguments === "string"
-										? JSON.parse(toolChunk.arguments)
-										: toolChunk.arguments,
-								status: toolChunk.status,
-								result: toolChunk.result,
-								error: toolChunk.error,
-							},
-						};
+					const toolChunk = payload as ToolChunk;
+					const tool = toolChunk.tool;
+					const result = toolChunk.result;
+					const image = toolChunk.image;
+					const toolArgs =
+						typeof toolChunk.arguments === "string"
+							? JSON.parse(toolChunk.arguments)
+							: toolChunk.arguments;
 
-						// Handle different types of tool results
-						const tool = toolChunk.tool;
-						const result = toolChunk.result;
-						const image = toolChunk.image;
-						const toolArgs =
-							typeof toolChunk.arguments === "string"
-								? JSON.parse(toolChunk.arguments)
-								: toolChunk.arguments;
-						console.log("[ChatDisplay] Tool result:", toolChunk);
+					const newChunk: MessageChunkBubble = {
+						toolCall: {
+							tool,
+							arguments: toolArgs,
+							status: toolChunk.status,
+							result,
+							error: toolChunk.error,
+							artifactId: artifacts.documents[0]?.id,
+						},
+					};
 
-						switch (tool) {
-							case "agent_user_potential_responses": {
-								try {
-									if (
-										toolArgs &&
-										typeof toolArgs === "object" &&
-										"potential_responses" in toolArgs
-									) {
-										setPotentialResponses(toolArgs.potential_responses);
-									}
-								} catch (error) {
-									console.error(
-										"[ChatDisplay] Error handling potential responses:",
-										error,
-									);
+					switch (tool) {
+						case "agent_user_potential_responses": {
+							try {
+								if (
+									toolArgs &&
+									typeof toolArgs === "object" &&
+									"potential_responses" in toolArgs
+								) {
+									setPotentialResponses(toolArgs.potential_responses);
 								}
-								break;
+							} catch (error) {
+								console.error(
+									"[ChatDisplay] Error handling potential responses:",
+									error,
+								);
 							}
-							case "write_bi_report": {
-								const report = toolArgs.report;
-								if (report) {
-									console.log("[ChatDisplay] Updating first document:", report);
-									const firstDocument = artifacts.documents[0];
-									if (firstDocument) {
-										updateArtifact({
-											...firstDocument,
-											content: report,
-										});
-										artifacts.documents[0] = {
-											...firstDocument,
-											content: report,
-										};
-									} else {
-										addArtifact("document", report);
-									}
-								}
-
-								// Only Show tool when it's complete
-								if (toolChunk.status === "complete") {
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												...newChunk,
-												toolCall: {
-													...newChunk.toolCall,
-													artifactId: artifacts.documents[0]?.id,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
-								}
-								break;
-							}
-							case "agent_execute_python_code": {
-								if (image) {
-									console.log("[ChatDisplay] Adding image:", image);
-									addArtifact?.("image", image);
-								}
-								// Only Show tool when it's complete
-								if (toolChunk.status === "complete") {
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												...newChunk,
-												toolCall: {
-													...newChunk.toolCall,
-													artifactId: artifacts.images[0]?.id,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
-								}
-								break;
-							}
-							case "agent_execute_sql_query": {
-								if (result) {
-									console.log("[ChatDisplay] Adding query:", result);
-									addArtifact?.("query", result);
-								}
-
-								// Only Show tool when it's complete
-								if (toolChunk.status === "complete") {
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												...newChunk,
-												toolCall: {
-													...newChunk.toolCall,
-													artifactId: artifacts.queries[0]?.id,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
-								}
-								break;
-							}
-							case "agent_execute_bigquery": {
-								if (result) {
-									console.log("[ChatDisplay] Adding query:", result);
-									addArtifact?.("query", result);
-								}
-								// Only Show tool when it's complete
-								if (toolChunk.status === "complete") {
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												...newChunk,
-												toolCall: {
-													...newChunk.toolCall,
-													artifactId: artifacts.queries[0]?.id,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
-								}
-								break;
-							}
-							default: {
-								console.log(`Unhandled tool type: ${tool}`);
-								break;
-							}
+							return;
 						}
-						return prev;
-					});
+						case "write_bi_report": {
+							const report = toolArgs.report;
+							if (report) {
+								console.log("[ChatDisplay] Updating first document:", report);
+								const firstDocument = artifacts.documents[0];
+								if (firstDocument) {
+									updateArtifact({
+										...firstDocument,
+										content: report,
+									});
+									artifacts.documents[0] = {
+										...firstDocument,
+										content: report,
+									};
+								} else {
+									addArtifact("document", report);
+								}
+							}
+							break;
+						}
+						case "agent_execute_python_code": {
+							if (image) {
+								console.log("[ChatDisplay] Adding image:", image);
+								addArtifact?.("image", image);
+							}
+							break;
+						}
+						case "agent_execute_sql_query": {
+							if (result) {
+								console.log("[ChatDisplay] Adding query:", result);
+								addArtifact?.("query", result);
+							}
+							break;
+						}
+						case "agent_execute_bigquery": {
+							if (result) {
+								console.log("[ChatDisplay] Adding query:", result);
+								addArtifact?.("query", result);
+							}
+							break;
+						}
+						default: {
+							console.log(`Unhandled tool type: ${tool}`);
+							break;
+						}
+					}
+
+					if (toolChunk.status === "complete") {
+						const newMessage: MessageBubble = {
+							id: messageId,
+							type: "tool",
+							chunks: [newChunk],
+							orderIndex: localMessages.length,
+						};
+						setLocalMessages((prev) => [...prev, newMessage]);
+					}
 					break;
 				}
 			}
 		},
-		[localMessages, addMessage, addArtifact, updateArtifact, artifacts],
+		[addArtifact, updateArtifact, pushMessages, artifacts, localMessages],
 	);
 
 	// WebSocket connection with message handling
@@ -324,34 +197,22 @@ export const ChatDisplay = memo(function ChatDisplay({
 		onMessage: handleMessage,
 	});
 
+	console.log("[ChatDisplay] launchMessage: ", launchMessage);
 	// Initialize when all conditions are met
 	useEffect(() => {
 		if (isConnected) {
 			console.log("[ChatDisplay] Conditions met, attempting initialization");
 			try {
 				// Send initial connection message in both modes
+				// setIsInitialized(true);
 				const msg = sendOnConnect();
 				console.log("[ChatDisplay] Sending initial connection message:", msg);
 				sendMessage(msg.type, msg);
 
-				if (launchMessage) {
-					// Create and send the launch message
-					const userMessageId = crypto.randomUUID();
-					const userMessage: MessageBubble = {
-						id: userMessageId,
-						type: "user",
-						chunks: [{ content: launchMessage }],
-					};
-
+				if (launchMessage !== "") {
 					// In launch mode, start fresh with just this message
-					setLocalMessages([userMessage]);
-					// await addMessage(userMessage); Actually save the user message after the assistnat has repsponsed
-
-					// Send message to LLM
-					sendMessage("toLLM", {
-						type: "toLLM",
-						text: launchMessage,
-					} as ToLLMMessage);
+					handleNewMessage(launchMessage);
+					setLaunchMessage?.("");
 				}
 
 				console.log("[ChatDisplay] Initialization complete");
@@ -359,27 +220,37 @@ export const ChatDisplay = memo(function ChatDisplay({
 				console.error("[ChatDisplay] Error during initialization:", error);
 			}
 		}
-	}, [isConnected, launchMessage, sendMessage, sendOnConnect]); //Execute on is connected
+	}, [
+		isConnected,
+		launchMessage,
+		// isInitialized,
+		sendMessage,
+		sendOnConnect,
+		setLaunchMessage,
+	]); //Execute on is connected
 
 	// Handle new user messages
 	const handleNewMessage = async (content: string) => {
 		console.log("[ChatDisplay] Handling new message:", content);
 		const userMessageId = crypto.randomUUID();
-		const assistantMessageId = crypto.randomUUID();
 
 		const userMessage: MessageBubble = {
 			id: userMessageId,
 			type: "user",
 			chunks: [{ content }],
+			orderIndex: localMessages.length,
 		};
 
-		// Add user message to both local and workspace state
-		setLocalMessages((prev) => [...prev, userMessage]);
-		// addMessage(userMessage); Add the user message when its rendered in the begingn
+		const updatedMessages = [...localMessages];
+		updatedMessages.push(userMessage);
+		await pushMessages(updatedMessages);
+		setLocalMessages(updatedMessages);
 
 		console.log("[ChatDisplay] Sending message to LLM");
 		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	};
+
+	console.log("[ChatDisplay] localMessages:", localMessages);
 
 	return (
 		<div className="flex flex-col h-full bg-[#F4F5F7]">
