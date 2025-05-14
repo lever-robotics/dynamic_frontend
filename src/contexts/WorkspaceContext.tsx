@@ -1,7 +1,13 @@
 import type { MessageBubble, ToolExecutionBubble } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
 import { supabase } from "@/utils/SupabaseClient";
-import { createContext, useCallback, useContext, useState } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
 
 type WhiteboardView = "DataExecutor" | "DocViewer" | "GraphViewer";
 
@@ -34,7 +40,6 @@ interface WorkspaceState {
 	document: Artifact | null;
 	image: Artifact | null;
 	query: Artifact | null;
-	launchChatMessage: string | null;
 }
 
 interface WorkspaceContextType {
@@ -56,8 +61,8 @@ interface WorkspaceContextType {
 	setDocument: (document: Artifact | null) => void;
 	setImage: (image: Artifact | null) => void;
 	setQuery: (query: Artifact | null) => void;
-	setLaunchChatMessage: (message: string) => void;
-	initializeWorkspace: () => Promise<void>;
+	currentThreadId: string;
+	// initializeWorkspace: () => Promise<void>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
@@ -81,51 +86,80 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 		document: null,
 		image: null,
 		query: null,
-		launchChatMessage: null,
 	});
+	const [currentThreadId, setCurrentThreadId] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const initializeWorkspace = useCallback(async () => {
-		console.log("[WorkspaceContext] Changed ThreadId, or re-rendered");
-		if (!userId) {
-			console.log("[WorkspaceContext] No user ID, skipping initialization");
-			return;
-		}
+	useEffect(() => {
+		(async () => {
+			try {
+				setIsLoading(true);
+				console.log("[WorkspaceContext] Fetching threads");
+				const { data: threads, error: threadsError } = await supabase
+					.from("threads")
+					.select("id, name, created_at")
+					.eq("user_id", userId)
+					.order("created_at", { ascending: false });
 
-		setIsLoading(true);
-		try {
-			console.log("[WorkspaceContext] Fetching threads");
-			const { data: threads, error: threadsError } = await supabase
-				.from("threads")
-				.select("id, name, created_at")
-				.eq("user_id", userId)
-				.order("created_at", { ascending: false });
+				if (threadsError) throw threadsError;
 
-			if (threadsError) throw threadsError;
-
-			console.log("[WorkspaceContext] Found threads:", threads?.length);
-			setState((prev) => ({
-				...prev,
-				threads: threads || [],
-			}));
-
-			if (state.currentThreadId) {
-				console.log(
-					"[WorkspaceContext] Loading content for thread:",
-					state.currentThreadId,
+				console.log("[WorkspaceContext] Found threads:", threads?.length);
+				setState((prev) => ({
+					...prev,
+					threads: threads || [],
+				}));
+			} catch (err) {
+				console.error("[WorkspaceContext] Initialization error:", err);
+				setError(
+					err instanceof Error ? err.message : "Failed to initialize workspace",
 				);
-				await loadThreadContent(state.currentThreadId);
+			} finally {
+				setIsLoading(false);
 			}
-		} catch (err) {
-			console.error("[WorkspaceContext] Initialization error:", err);
-			setError(
-				err instanceof Error ? err.message : "Failed to initialize workspace",
-			);
-		} finally {
-			setIsLoading(false);
-		}
-	}, [userId, state.currentThreadId]);
+		})();
+	}, [userId]);
+
+	// const initializeWorkspace = useCallback(async () => {
+	// 	console.log("[WorkspaceContext] Changed ThreadId, or re-rendered");
+	// 	if (!userId) {
+	// 		console.log("[WorkspaceContext] No user ID, skipping initialization");
+	// 		return;
+	// 	}
+
+	// 	setIsLoading(true);
+	// 	try {
+	// 		console.log("[WorkspaceContext] Fetching threads");
+	// 		const { data: threads, error: threadsError } = await supabase
+	// 			.from("threads")
+	// 			.select("id, name, created_at")
+	// 			.eq("user_id", userId)
+	// 			.order("created_at", { ascending: false });
+
+	// 		if (threadsError) throw threadsError;
+
+	// 		console.log("[WorkspaceContext] Found threads:", threads?.length);
+	// 		setState((prev) => ({
+	// 			...prev,
+	// 			threads: threads || [],
+	// 		}));
+
+	// 		if (state.currentThreadId) {
+	// 			console.log(
+	// 				"[WorkspaceContext] Loading content for thread:",
+	// 				state.currentThreadId,
+	// 			);
+	// 			await loadThreadContent(state.currentThreadId);
+	// 		}
+	// 	} catch (err) {
+	// 		console.error("[WorkspaceContext] Initialization error:", err);
+	// 		setError(
+	// 			err instanceof Error ? err.message : "Failed to initialize workspace",
+	// 		);
+	// 	} finally {
+	// 		setIsLoading(false);
+	// 	}
+	// }, [userId, state.currentThreadId]);
 
 	const getArtifacts = async (threadId: string) => {
 		try {
@@ -185,6 +219,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	const loadThreadContent = async (threadId: string) => {
+		if (threadId === "") return;
 		try {
 			const { data: messages, error: messagesError } = await supabase
 				.from("thread_messages")
@@ -382,10 +417,10 @@ Here's a bar chart showing our regional performance:
 			if (artifactError) throw artifactError;
 
 			// Update state with new thread and initial document
+			setCurrentThreadId(data.id);
 			setState((prev) => ({
 				...prev,
 				threads: [data, ...prev.threads],
-				currentThreadId: data.id,
 				artifacts: {
 					...prev.artifacts,
 					documents: [
@@ -414,20 +449,17 @@ Here's a bar chart showing our regional performance:
 	};
 
 	const switchThread = async (threadId: string) => {
-		setState((prev) => ({
-			...prev,
-			currentThreadId: threadId,
-		}));
+		setCurrentThreadId(threadId);
 		await loadThreadContent(threadId);
 	};
 
 	const addMessage = async (message: MessageBubble) => {
-		if (!state.currentThreadId) return;
+		if (!currentThreadId) return;
 
 		try {
 			const { error } = await supabase.from("thread_messages").insert([
 				{
-					thread_id: state.currentThreadId,
+					thread_id: currentThreadId,
 					message_type: message.type,
 					content: message,
 				},
@@ -445,7 +477,7 @@ Here's a bar chart showing our regional performance:
 	};
 
 	const updateArtifact = async (artifact: Artifact) => {
-		if (!state.currentThreadId) return;
+		if (!currentThreadId) return;
 
 		try {
 			const { error } = await supabase
@@ -454,7 +486,7 @@ Here's a bar chart showing our regional performance:
 					content: artifact.content,
 				})
 				.eq("id", artifact.id)
-				.eq("thread_id", state.currentThreadId);
+				.eq("thread_id", currentThreadId);
 
 			if (error) throw error;
 
@@ -506,12 +538,12 @@ Here's a bar chart showing our regional performance:
 		type: "image" | "document" | "query",
 		content: string,
 	) => {
-		if (!state.currentThreadId) return;
+		if (!currentThreadId) return;
 
 		try {
 			const { error } = await supabase.from("thread_artifacts").insert([
 				{
-					thread_id: state.currentThreadId,
+					thread_id: currentThreadId,
 					artifact_type: type,
 					content,
 					created_at: new Date().toISOString(),
@@ -520,7 +552,7 @@ Here's a bar chart showing our regional performance:
 
 			if (error) throw error;
 
-			await getArtifacts(state.currentThreadId);
+			await getArtifacts(currentThreadId);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to add artifact");
 		}
@@ -584,8 +616,8 @@ Here's a bar chart showing our regional performance:
 				setDocument,
 				setImage,
 				setQuery,
-				setLaunchChatMessage,
-				initializeWorkspace,
+				currentThreadId,
+				// initializeWorkspace,
 			}}
 		>
 			{children}

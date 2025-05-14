@@ -20,9 +20,8 @@ import {
 
 interface SidebarProps {
 	setShowSettings: (show: boolean) => void;
-	setShowLaunchChat: (show: boolean) => void;
+	setShowLaunchChat: () => void;
 	setShowBlueprint: (show: boolean) => void;
-	setIsLaunchMode: (isLaunchMode: boolean) => void;
 	handleQueryDataClick: () => Promise<void>;
 }
 
@@ -30,7 +29,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	setShowSettings,
 	setShowLaunchChat,
 	setShowBlueprint,
-	setIsLaunchMode,
 	handleQueryDataClick,
 }) => {
 	const {
@@ -46,9 +44,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 
 	const handleThreadClick = (threadId: string) => {
 		switchThread(threadId);
-		setShowLaunchChat(false);
 		setView("DocViewer");
-		setIsLaunchMode(false);
 	};
 
 	const handleSettingsClick = () => {
@@ -56,7 +52,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	};
 
 	const handleNewAnalysisClick = () => {
-		setShowLaunchChat(true);
+		setShowLaunchChat();
 	};
 
 	const handleBlueprintClick = () => {

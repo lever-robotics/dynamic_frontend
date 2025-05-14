@@ -18,27 +18,27 @@ import { MessageList } from "./MessageList";
 interface ChatDisplayProps {
 	onClose?: () => void;
 	sendOnConnect?: () => Payload;
-	isLaunchMode?: boolean;
+	launchMessage?: string;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
 	onClose,
 	sendOnConnect,
-	isLaunchMode = false,
+	launchMessage,
 }: ChatDisplayProps) {
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
-	const [localMessages, setLocalMessages] = useState<MessageBubble[]>([]);
 	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 	const [isInitializing, setIsInitializing] = useState(false);
 	const [hasInitialized, setHasInitialized] = useState(false);
 	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
 	const {
-		state: { messages, currentThreadId, launchChatMessage, artifacts },
+		state: { messages, currentThreadId, artifacts },
 		addMessage,
 		addArtifact,
 		setSelectedTool,
 		updateArtifact,
 	} = useWorkspace();
+	const [localMessages, setLocalMessages] = useState<MessageBubble[]>(messages);
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
@@ -324,74 +324,42 @@ export const ChatDisplay = memo(function ChatDisplay({
 		onMessage: handleMessage,
 	});
 
-	// Initialize launch mode setup
-	const initializeChat = useCallback(async () => {
-		// Prevent multiple initializations
-		if (hasInitialized || isInitializing) {
-			console.log(
-				"[ChatDisplay] Already initialized or initializing, skipping",
-			);
-			return;
-		}
-
-		console.log("[ChatDisplay] Starting initialization");
-		setIsInitializing(true);
-
-		try {
-			// Send initial connection message in both modes
-			const msg = sendOnConnect();
-			console.log("[ChatDisplay] Sending initial connection message:", msg);
-			await sendMessage(msg.type, msg);
-
-			if (isLaunchMode) {
-				// Create and send the launch message
-				const userMessageId = crypto.randomUUID();
-				const userMessage: MessageBubble = {
-					id: userMessageId,
-					type: "user",
-					chunks: [{ content: launchChatMessage }],
-				};
-
-				// In launch mode, start fresh with just this message
-				setLocalMessages([userMessage]);
-				// await addMessage(userMessage); Actually save the user message after the assistnat has repsponsed
-
-				// Send message to LLM
-				await sendMessage("toLLM", {
-					type: "toLLM",
-					text: launchChatMessage,
-				} as ToLLMMessage);
-			} else {
-				// Normal mode: set to all messages from context
-				setLocalMessages(messages);
-			}
-
-			// Mark as initialized
-			setHasInitialized(true);
-			console.log("[ChatDisplay] Initialization complete");
-		} catch (error) {
-			console.error("[ChatDisplay] Error during initialization:", error);
-			setHasInitialized(false); // Allow retry on error
-		} finally {
-			setIsInitializing(false);
-		}
-	}, [
-		messages,
-		isLaunchMode,
-		launchChatMessage,
-		isInitializing,
-		hasInitialized,
-		sendOnConnect,
-		sendMessage,
-	]);
-
 	// Initialize when all conditions are met
 	useEffect(() => {
 		if (isConnected) {
 			console.log("[ChatDisplay] Conditions met, attempting initialization");
-			initializeChat();
+			try {
+				// Send initial connection message in both modes
+				const msg = sendOnConnect();
+				console.log("[ChatDisplay] Sending initial connection message:", msg);
+				sendMessage(msg.type, msg);
+
+				if (launchMessage) {
+					// Create and send the launch message
+					const userMessageId = crypto.randomUUID();
+					const userMessage: MessageBubble = {
+						id: userMessageId,
+						type: "user",
+						chunks: [{ content: launchMessage }],
+					};
+
+					// In launch mode, start fresh with just this message
+					setLocalMessages([userMessage]);
+					// await addMessage(userMessage); Actually save the user message after the assistnat has repsponsed
+
+					// Send message to LLM
+					sendMessage("toLLM", {
+						type: "toLLM",
+						text: launchMessage,
+					} as ToLLMMessage);
+				}
+
+				console.log("[ChatDisplay] Initialization complete");
+			} catch (error) {
+				console.error("[ChatDisplay] Error during initialization:", error);
+			}
 		}
-	}, [isConnected, initializeChat]); //Execute on is connected
+	}, [isConnected, launchMessage, sendMessage, sendOnConnect]); //Execute on is connected
 
 	// Handle new user messages
 	const handleNewMessage = async (content: string) => {
@@ -476,7 +444,6 @@ export const ChatDisplay = memo(function ChatDisplay({
 				isConnected={isConnected}
 				onSubmit={handleNewMessage}
 				error={error}
-				isLaunchMode={isLaunchMode}
 			/>
 		</div>
 	);
