@@ -8,7 +8,7 @@ import {
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import html2pdf from "html2pdf.js";
 import { Download } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { DataExecutor } from "./DataExecutor";
 import { DocumentEditor } from "./DocumentEditor";
 import { GraphViewer } from "./GraphViewer";
@@ -19,85 +19,34 @@ export function Whiteboard() {
 		state: { currentArtifact, artifacts },
 		setCurrentArtifact,
 	} = useWorkspace();
-	const [activeTab, setActiveTab] = useState(0);
 	const documentRef = useRef<HTMLDivElement>(null);
 
-	if (!currentArtifact || !artifacts.documents.length) return;
-
-	const artifactExists = [
-		...artifacts.documents,
-		...artifacts.images,
-		...artifacts.queries,
-	].some((artifact) => artifact.id === currentArtifact.id);
-
-	if (!artifactExists) {
-		setCurrentArtifact(artifacts.documents[0]);
-		setActiveTab(0);
-	}
-
-	// Create tabs from artifacts
+	// Create tabs from artifacts with their IDs
 	const tabs = [
-		...artifacts.documents.map((_, index) => `Document ${index + 1}`),
-		...artifacts.images.map((_, index) => `Image ${index + 1}`),
-		...artifacts.queries.map((_, index) => `Query ${index + 1}`),
+		...artifacts.documents.map((doc) => ({ label: "Document", id: doc.id })),
+		...artifacts.images.map((img, index) => ({
+			label: `Image ${index + 1}`,
+			id: img.id,
+		})),
+		...artifacts.queries.map((query, index) => ({
+			label: `Query ${index + 1}`,
+			id: query.id,
+		})),
 	];
 
-	// Update active tab when currentArtifact changes
-	useEffect(() => {
-		if (!currentArtifact) return;
-
-		const documentCount = artifacts.documents.length;
-		const imageCount = artifacts.images.length;
-
-		// Find the index of the current artifact in its respective array
-		let newActiveTab = -1;
-		if (currentArtifact.artifact_type === "document") {
-			newActiveTab = artifacts.documents.findIndex(
-				(a) => a.id === currentArtifact.id,
-			);
-		} else if (currentArtifact.artifact_type === "image") {
-			newActiveTab =
-				documentCount +
-				artifacts.images.findIndex((a) => a.id === currentArtifact.id);
-		} else if (currentArtifact.artifact_type === "query") {
-			newActiveTab =
-				documentCount +
-				imageCount +
-				artifacts.queries.findIndex((a) => a.id === currentArtifact.id);
-		}
-
-		if (newActiveTab !== -1) {
-			setActiveTab(newActiveTab);
-		}
-	}, [
-		currentArtifact,
-		artifacts.documents,
-		artifacts.images,
-		artifacts.queries,
-	]);
-
-	console.log("Tabs:", tabs);
-	console.log("Active Tab:", activeTab);
-
 	const handleTabChange = (tab: string) => {
-		const index = tabs.findIndex((t) => t === tab);
-		setActiveTab(index);
+		const selectedTab = tabs.find((t) => t.label === tab);
+		if (!selectedTab) return;
 
-		// Determine the type of artifact based on the index
-		const documentCount = artifacts.documents.length;
-		const imageCount = artifacts.images.length;
-
-		if (index < documentCount) {
-			// Document tab
-			setCurrentArtifact(artifacts.documents[index]);
-		} else if (index < documentCount + imageCount) {
-			// Image tab
-			const imageIndex = index - documentCount;
-			setCurrentArtifact(artifacts.images[imageIndex]);
-		} else {
-			// Query tab
-			const queryIndex = index - documentCount - imageCount;
-			setCurrentArtifact(artifacts.queries[queryIndex]);
+		// Find the artifact with the matching ID
+		const allArtifacts = [
+			...artifacts.documents,
+			...artifacts.images,
+			...artifacts.queries,
+		];
+		const artifact = allArtifacts.find((a) => a.id === selectedTab.id);
+		if (artifact) {
+			setCurrentArtifact(artifact);
 		}
 	};
 
@@ -213,9 +162,12 @@ export function Whiteboard() {
 			{tabs.length > 0 && (
 				<div className="flex-none bg-white border-t border-gray-200">
 					<TabGroup
-						tabs={tabs}
-						activeTab={tabs[activeTab]}
-						onTabChange={(tab) => handleTabChange(tab)}
+						tabs={tabs.map((t) => t.label)}
+						activeTab={
+							tabs.find((t) => t.id === currentArtifact?.id)?.label ||
+							tabs[0].label
+						}
+						onTabChange={handleTabChange}
 					/>
 				</div>
 			)}

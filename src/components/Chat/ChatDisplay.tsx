@@ -197,33 +197,35 @@ export const ChatDisplay = memo(function ChatDisplay({
 								}
 								case "write_bi_report": {
 									const report = toolArgs.report;
-									if (report) {
-										console.log(
-											"[ChatDisplay] Updating first document:",
-											report,
-										);
-										const firstDocument = artifacts.documents[0];
-										if (firstDocument) {
-											updateArtifact({
-												...firstDocument,
-												content: report,
-											});
-											artifacts.documents[0] = {
-												...firstDocument,
-												content: report,
-											};
-											newChunk.toolCall.artifactId = firstDocument.id;
-										} else {
-											// Create new document and get its ID
-											const artifactId = await addArtifact("document", report);
-											if (artifactId) {
-												newChunk.toolCall.artifactId = artifactId;
-											}
-										}
-									}
-
 									// Only Show tool when it's complete
 									if (toolChunk.status === "complete") {
+										if (report) {
+											console.log(
+												"[ChatDisplay] Updating first document:",
+												report,
+											);
+											const firstDocument = artifacts.documents[0];
+											if (firstDocument) {
+												updateArtifact({
+													...firstDocument,
+													content: report,
+												});
+												artifacts.documents[0] = {
+													...firstDocument,
+													content: report,
+												};
+												newChunk.toolCall.artifactId = firstDocument.id;
+											} else {
+												// Create new document and get its ID
+												const artifactId = await addArtifact(
+													"document",
+													report,
+												);
+												if (artifactId) {
+													newChunk.toolCall.artifactId = artifactId;
+												}
+											}
+										}
 										const newMessage: MessageBubble = {
 											id: messageId,
 											type: "tool",
@@ -235,17 +237,17 @@ export const ChatDisplay = memo(function ChatDisplay({
 								}
 								case "agent_execute_bigquery": {
 									const query = toolArgs.query;
-
-									if (query) {
-										console.log("[ChatDisplay] Adding query:", query);
-										// Create new query and get its ID
-										const artifactId = await addArtifact("query", query);
-										if (artifactId) {
-											newChunk.toolCall.artifactId = artifactId;
-										}
-									}
 									// Only Show tool when it's complete
 									if (toolChunk.status === "complete") {
+										if (query) {
+											//log query on complete
+											console.log("[ChatDisplay] Adding query:", query);
+											// Create new query and get its ID
+											const artifactId = await addArtifact("query", query);
+											if (artifactId) {
+												newChunk.toolCall.artifactId = artifactId;
+											}
+										}
 										const newMessage: MessageBubble = {
 											id: messageId,
 											type: "tool",
@@ -356,11 +358,15 @@ export const ChatDisplay = memo(function ChatDisplay({
 		const userMessageId = crypto.randomUUID();
 		const assistantMessageId = crypto.randomUUID();
 
+		// Add user message to both local and workspace state
 		const userMessage: MessageBubble = {
 			id: userMessageId,
 			type: "user",
 			chunks: [{ content }],
 		};
+
+		// take away potential responses
+		setPotentialResponses([]);
 
 		// Add user message to both local and workspace state
 		setLocalMessages((prev) => [...prev, userMessage]);
