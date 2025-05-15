@@ -35,7 +35,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 		state: { threads, currentThreadId },
 		switchThread,
 		addArtifact,
-		setView,
 	} = useWorkspace();
 
 	const handleLogoClick = () => {
@@ -44,7 +43,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 
 	const handleThreadClick = (threadId: string) => {
 		switchThread(threadId);
-		setView("DocViewer");
 	};
 
 	const handleSettingsClick = () => {

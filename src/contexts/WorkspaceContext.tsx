@@ -1,4 +1,4 @@
-import type { MessageBubble, ToolExecutionBubble } from "@/types/chat";
+import type { MessageBubble } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
 import { supabase } from "@/utils/SupabaseClient";
 import {
@@ -8,8 +8,6 @@ import {
 	useEffect,
 	useState,
 } from "react";
-
-type WhiteboardView = "DataExecutor" | "DocViewer" | "GraphViewer";
 
 interface Thread {
 	id: string;
@@ -22,6 +20,10 @@ export interface Artifact {
 	content: string;
 	created_at: string;
 	id: string;
+	metadata?: {
+		data_source?: "bigquery" | "shopify";
+		[key: string]: string | number | boolean | null;
+	};
 }
 
 export interface Artifacts {
@@ -34,12 +36,8 @@ interface WorkspaceState {
 	threads: Thread[];
 	currentThreadId: string | null;
 	messages: MessageBubble[];
-	artifacts: Artifacts;
-	currentView: WhiteboardView;
-	selectedTool: ToolExecutionBubble | null;
-	document: Artifact | null;
-	image: Artifact | null;
-	query: Artifact | null;
+	artifacts: Artifacts; // Keeps track of all artifacts in the thread, so they can be selected.
+	currentArtifact: Artifact | null; //Keeps track of the current artifact that the whiteboard is displaying and interacting with
 }
 
 interface WorkspaceContextType {
@@ -53,18 +51,20 @@ interface WorkspaceContextType {
 	addArtifact: (
 		type: "image" | "document" | "query",
 		content: string,
-	) => Promise<void>;
+		metadata?: {
+			data_source?: "bigquery" | "shopify";
+			[key: string]: string | number | boolean | null;
+		},
+	) => Promise<string | null>; // returns the artifact id
 	updateArtifact: (artifact: Artifact) => Promise<void>;
 	// Whiteboard functions
-	setView: (view: WhiteboardView) => void;
-	setSelectedTool: (tool: ToolExecutionBubble | null) => void;
-	setDocument: (document: Artifact | null) => void;
-	setImage: (image: Artifact | null) => void;
-	setQuery: (query: Artifact | null) => void;
+	setCurrentArtifactById: (artifactId: string) => void;
+	setCurrentArtifact: (artifact: Artifact | null) => void;
 	currentThreadId: string;
 	currentThreadName: string;
 	messages: MessageBubble[];
 	// initializeWorkspace: () => Promise<void>;
+	fetchThreadMessages: (threadId: string) => Promise<MessageBubble[]>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
@@ -83,11 +83,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 			documents: [],
 			queries: [],
 		},
-		currentView: "DocViewer",
-		selectedTool: null,
-		document: null,
-		image: null,
-		query: null,
+		currentArtifact: null,
 	});
 	const [messages, setMessages] = useState<MessageBubble[]>([]);
 	const [currentThreadId, setCurrentThreadId] = useState<string>("");
@@ -212,9 +208,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 			setState((prev) => ({
 				...prev,
 				artifacts: processedArtifacts,
-				document: latestDocument,
-				image: latestImage,
-				query: latestQuery,
+				currentArtifact: latestDocument || latestImage || latestQuery,
 			}));
 		} catch (err) {
 			console.error("[WorkspaceContext] Error loading thread content:", err);
@@ -282,9 +276,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 				...prev,
 				messages: messages.map((m) => m.content),
 				artifacts: processedArtifacts,
-				document: latestDocument,
-				image: latestImage,
-				query: latestQuery,
+				currentArtifact: latestDocument || latestImage || latestQuery,
 			}));
 		} catch (err) {
 			console.error("[WorkspaceContext] Error loading thread content:", err);
@@ -442,7 +434,7 @@ Here's a bar chart showing our regional performance:
 						},
 					],
 				},
-				document: {
+				currentArtifact: {
 					id: data.id,
 					artifact_type: "document",
 					content: sampleDocument,
@@ -572,9 +564,9 @@ Here's a bar chart showing our regional performance:
 						);
 						if (index !== -1) {
 							newState.artifacts.documents[index] = artifact;
-							// Also update the current document if it's the same one
-							if (prev.document?.id === artifact.id) {
-								newState.document = artifact;
+							// Also update the current artifact if it's the same one
+							if (prev.currentArtifact?.id === artifact.id) {
+								newState.currentArtifact = artifact;
 							}
 						}
 						break;
@@ -601,60 +593,126 @@ Here's a bar chart showing our regional performance:
 	const addArtifact = async (
 		type: "image" | "document" | "query",
 		content: string,
-	) => {
-		if (!currentThreadId) return;
+		metadata?: {
+			data_source?: "bigquery" | "shopify";
+			[key: string]: string | number | boolean | null;
+		},
+	): Promise<string | null> => {
+		if (!state.currentThreadId) return null;
 
 		try {
-			const { error } = await supabase.from("thread_artifacts").insert([
-				{
-					thread_id: currentThreadId,
-					artifact_type: type,
-					content,
-					created_at: new Date().toISOString(),
-				},
-			]);
+			const { data: newArtifact, error } = await supabase
+				.from("thread_artifacts")
+				.insert([
+					{
+						thread_id: state.currentThreadId,
+						artifact_type: type,
+						content,
+						created_at: new Date().toISOString(),
+						metadata: metadata || {},
+					},
+				])
+				.select()
+				.single();
 
 			if (error) throw error;
 
-			await getArtifacts(currentThreadId);
+			// Update local state
+			setState((prev) => {
+				const newArtifactState = {
+					id: newArtifact.id,
+					artifact_type: type,
+					content,
+					created_at: newArtifact.created_at,
+					metadata: metadata || {},
+				};
+
+				const typeMap = {
+					image: "images",
+					document: "documents",
+					query: "queries",
+				};
+
+				return {
+					...prev,
+					artifacts: {
+						...prev.artifacts,
+						[typeMap[type]]: [
+							newArtifactState,
+							...prev.artifacts[typeMap[type]],
+						],
+					},
+				};
+			});
+
+			return newArtifact.id;
 		} catch (err) {
+			console.error("[WorkspaceContext] Error adding artifact:", err);
 			setError(err instanceof Error ? err.message : "Failed to add artifact");
+			return null;
 		}
 	};
 
-	const setView = (view: WhiteboardView) => {
+	const setCurrentArtifactById = (artifactId: string) => {
+		setState((prev) => {
+			// Search through all artifact types
+			const allArtifacts = [
+				...prev.artifacts.documents,
+				...prev.artifacts.images,
+				...prev.artifacts.queries,
+			];
+
+			const foundArtifact = allArtifacts.find((a) => a.id === artifactId);
+
+			if (foundArtifact) {
+				return {
+					...prev,
+					currentArtifact: foundArtifact,
+				};
+			}
+
+			// If artifact not found, set to first document if available
+			const firstDocument = prev.artifacts.documents[0] || null;
+			return {
+				...prev,
+				currentArtifact: firstDocument,
+			};
+		});
+	};
+
+	const setCurrentArtifact = (artifact: Artifact | null) => {
 		setState((prev) => ({
 			...prev,
-			currentView: view,
+			currentArtifact: artifact,
 		}));
 	};
 
-	const setSelectedTool = (tool: ToolExecutionBubble | null) => {
+	const setLaunchChatMessage = (message: string) => {
 		setState((prev) => ({
 			...prev,
-			selectedTool: tool,
+			launchChatMessage: message,
 		}));
 	};
 
-	const setDocument = (document: Artifact | null) => {
-		setState((prev) => ({
-			...prev,
-			document,
-		}));
-	};
+	const fetchThreadMessages = async (
+		threadId: string,
+	): Promise<MessageBubble[]> => {
+		try {
+			const { data: messages, error } = await supabase
+				.from("thread_messages")
+				.select("content")
+				.eq("thread_id", threadId)
+				.order("created_at", { ascending: true });
 
-	const setImage = (image: Artifact | null) => {
-		setState((prev) => ({
-			...prev,
-			image,
-		}));
-	};
+			if (error) throw error;
 
-	const setQuery = (query: Artifact | null) => {
-		setState((prev) => ({
-			...prev,
-			query,
-		}));
+			console.log("[WorkspaceContext] Fetched messages:", messages?.length);
+			return messages.map((m) => m.content);
+		} catch (err) {
+			console.error("[WorkspaceContext] Error fetching messages:", err);
+			setError(err instanceof Error ? err.message : "Failed to fetch messages");
+			throw err;
+		}
 	};
 
 	return (
@@ -668,15 +726,13 @@ Here's a bar chart showing our regional performance:
 				pushMessages,
 				addArtifact,
 				updateArtifact,
-				setView,
-				setSelectedTool,
-				setDocument,
-				setImage,
-				setQuery,
+				setCurrentArtifactById,
+				setCurrentArtifact,
 				currentThreadId,
 				currentThreadName,
 				messages,
 				// initializeWorkspace,
+				fetchThreadMessages,
 			}}
 		>
 			{children}

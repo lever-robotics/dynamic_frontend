@@ -34,8 +34,9 @@ export const ChatDisplay = memo(function ChatDisplay({
 		state: { artifacts },
 		pushMessages,
 		addArtifact,
-		setSelectedTool,
+		setCurrentArtifactById,
 		updateArtifact,
+		fetchThreadMessages,
 		currentThreadName,
 		messages,
 	} = useWorkspace();
@@ -43,7 +44,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
-		(wsMessage: WebSocketMessage) => {
+		async (wsMessage: WebSocketMessage) => {
 			const { payload, messageId } = wsMessage;
 
 			console.log("[ChatDisplay] Received message:", payload);
@@ -225,6 +226,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 		console.log("[ChatDisplay] Handling new message:", content);
 		const userMessageId = crypto.randomUUID();
 
+		// Add user message to both local and workspace state
 		const userMessage: MessageBubble = {
 			id: userMessageId,
 			type: "user",
@@ -236,6 +238,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 		updatedMessages.push(userMessage);
 		await pushMessages(updatedMessages);
 		setLocalMessages(updatedMessages);
+		setPotentialResponses([]);
 
 		console.log("[ChatDisplay] Sending message to LLM");
 		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
@@ -275,10 +278,12 @@ export const ChatDisplay = memo(function ChatDisplay({
 			<MessageList
 				messages={localMessages}
 				onToolSelect={useCallback(
-					(tool) => {
-						setSelectedTool?.(tool);
+					(tool: ToolExecutionBubble) => {
+						if (tool.artifactId) {
+							setCurrentArtifactById(tool.artifactId);
+						}
 					},
-					[setSelectedTool],
+					[setCurrentArtifactById],
 				)}
 			/>
 

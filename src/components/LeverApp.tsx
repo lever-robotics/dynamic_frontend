@@ -21,16 +21,27 @@ export const LeverApp: React.FC = () => {
 		name: string;
 		url: string;
 	} | null>(null); // info passed in the first time onbaroding between the two components
-	const { switchThread, createThread, setView, currentThreadId } =
-		useWorkspace();
+	const {
+		switchThread,
+		createThread,
+		setCurrentArtifactById,
+		addArtifact,
+		currentThreadId,
+	} = useWorkspace();
 
 	const handleQueryDataClick = async () => {
 		if (currentThreadId === "") {
 			const threadId = await createThread("Query Data");
-			setView("DataExecutor");
-			// Hide the launch chat
+			// Create a blank query artifact
+			const id = await addArtifact("query", "");
+			// Set the current artifact to the first query
+			setCurrentArtifactById(id);
+		} else {
+			// Create a blank query artifact
+			const id = await addArtifact("query", "");
+			// Set the current artifact to the first query
+			setCurrentArtifactById(id);
 		}
-		setView("DataExecutor");
 	};
 
 	return (

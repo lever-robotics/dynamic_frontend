@@ -16,8 +16,6 @@ export const MainContent: React.FC = () => {
 	const {
 		state: { artifacts, messages },
 		createThread,
-		setView,
-		setDocument,
 		// initializeWorkspace,
 		currentThreadId,
 		switchThread,
@@ -59,10 +57,6 @@ export const MainContent: React.FC = () => {
 			// Create a new thread with the message as the title
 			const threadId = await createThread(message);
 			console.log("[SinglePageApp] Created thread with ID:", threadId);
-
-			// Set the view to DocViewer
-			setView("DocViewer");
-			setDocument(artifacts.documents[0]);
 
 			console.log("[SinglePageApp] Analysis started successfully");
 		} catch (error) {

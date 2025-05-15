@@ -8,7 +8,7 @@ import {
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import html2pdf from "html2pdf.js";
 import { Download } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { DataExecutor } from "./DataExecutor";
 import { DocumentEditor } from "./DocumentEditor";
 import { GraphViewer } from "./GraphViewer";
@@ -16,46 +16,37 @@ import { TabGroup } from "./onboarding/TabGroup";
 
 export function Whiteboard() {
 	const {
-		state: { currentView, artifacts },
-		setView,
-		setDocument,
-		setImage,
-		setQuery,
+		state: { currentArtifact, artifacts },
+		setCurrentArtifact,
 	} = useWorkspace();
-	const [activeTab, setActiveTab] = useState(0);
 	const documentRef = useRef<HTMLDivElement>(null);
 
-	// Create tabs from artifacts
+	// Create tabs from artifacts with their IDs
 	const tabs = [
-		...artifacts.documents.map((_, index) => `Document ${index + 1}`),
-		...artifacts.images.map((_, index) => `Image ${index + 1}`),
-		...artifacts.queries.map((_, index) => `Query ${index + 1}`),
+		...artifacts.documents.map((doc) => ({ label: "Document", id: doc.id })),
+		...artifacts.images.map((img, index) => ({
+			label: `Image ${index + 1}`,
+			id: img.id,
+		})),
+		...artifacts.queries.map((query, index) => ({
+			label: `Query ${index + 1}`,
+			id: query.id,
+		})),
 	];
-	console.log("Tabs:", tabs);
-	console.log("Active Tab:", activeTab);
 
 	const handleTabChange = (tab: string) => {
-		const index = tabs.findIndex((t) => t === tab);
-		setActiveTab(index);
+		const selectedTab = tabs.find((t) => t.label === tab);
+		if (!selectedTab) return;
 
-		// Determine the type of artifact based on the index
-		const documentCount = artifacts.documents.length;
-		const imageCount = artifacts.images.length;
-
-		if (index < documentCount) {
-			// Document tab
-			setDocument(artifacts.documents[index]);
-			setView("DocViewer");
-		} else if (index < documentCount + imageCount) {
-			// Image tab
-			const imageIndex = index - documentCount;
-			setImage(artifacts.images[imageIndex]);
-			setView("GraphViewer");
-		} else {
-			// Query tab
-			const queryIndex = index - documentCount - imageCount;
-			setQuery(artifacts.queries[queryIndex]);
-			setView("DataExecutor");
+		// Find the artifact with the matching ID
+		const allArtifacts = [
+			...artifacts.documents,
+			...artifacts.images,
+			...artifacts.queries,
+		];
+		const artifact = allArtifacts.find((a) => a.id === selectedTab.id);
+		if (artifact) {
+			setCurrentArtifact(artifact);
 		}
 	};
 
@@ -119,17 +110,21 @@ export function Whiteboard() {
 	};
 
 	const renderView = () => {
-		switch (currentView) {
-			case "DocViewer":
+		if (!currentArtifact) return null;
+
+		switch (currentArtifact.artifact_type) {
+			case "document":
 				return (
 					<div ref={documentRef} className="w-full h-full">
 						<DocumentEditor />
 					</div>
 				);
-			case "GraphViewer":
+			case "image":
 				return <GraphViewer />;
-			default:
+			case "query":
 				return <DataExecutor />;
+			default:
+				return null;
 		}
 	};
 
@@ -138,7 +133,7 @@ export function Whiteboard() {
 			{/* Content area with download button and scrollable content */}
 			<div className="flex-1 relative min-h-0">
 				{/* Floating download button */}
-				{currentView === "DocViewer" && (
+				{currentArtifact?.artifact_type === "document" && (
 					<div className="absolute top-4 right-8 z-50">
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
@@ -167,9 +162,12 @@ export function Whiteboard() {
 			{tabs.length > 0 && (
 				<div className="flex-none overflow-auto bg-white border-t border-gray-200 p-2">
 					<TabGroup
-						tabs={tabs}
-						activeTab={tabs[activeTab]}
-						onTabChange={(tab) => handleTabChange(tab)}
+						tabs={tabs.map((t) => t.label)}
+						activeTab={
+							tabs.find((t) => t.id === currentArtifact?.id)?.label ||
+							tabs[0].label
+						}
+						onTabChange={handleTabChange}
 					/>
 				</div>
 			)}
