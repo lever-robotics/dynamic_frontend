@@ -62,6 +62,7 @@ interface WorkspaceContextType {
 	setImage: (image: Artifact | null) => void;
 	setQuery: (query: Artifact | null) => void;
 	currentThreadId: string;
+	currentThreadName: string;
 	messages: MessageBubble[];
 	// initializeWorkspace: () => Promise<void>;
 }
@@ -90,6 +91,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 	});
 	const [messages, setMessages] = useState<MessageBubble[]>([]);
 	const [currentThreadId, setCurrentThreadId] = useState<string>("");
+	const [currentThreadName, setCurrentThreadName] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -424,6 +426,8 @@ Here's a bar chart showing our regional performance:
 
 			// Update state with new thread and initial document
 			setCurrentThreadId(data.id);
+			setCurrentThreadName(name);
+			setMessages([]);
 			setState((prev) => ({
 				...prev,
 				threads: [data, ...prev.threads],
@@ -457,6 +461,9 @@ Here's a bar chart showing our regional performance:
 	const switchThread = async (threadId: string) => {
 		await loadThreadContent(threadId);
 		setCurrentThreadId(threadId);
+		setCurrentThreadName(
+			state.threads.find((t) => t.id === threadId)?.name || "",
+		);
 	};
 
 	const pushMessages = async (newMessages: MessageBubble[]) => {
@@ -667,6 +674,7 @@ Here's a bar chart showing our regional performance:
 				setImage,
 				setQuery,
 				currentThreadId,
+				currentThreadName,
 				messages,
 				// initializeWorkspace,
 			}}

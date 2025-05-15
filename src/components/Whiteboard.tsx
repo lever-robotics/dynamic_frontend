@@ -165,7 +165,7 @@ export function Whiteboard() {
 
 			{/* Fixed tab section */}
 			{tabs.length > 0 && (
-				<div className="flex-none bg-white border-t border-gray-200 p-2">
+				<div className="flex-none overflow-auto bg-white border-t border-gray-200 p-2">
 					<TabGroup
 						tabs={tabs}
 						activeTab={tabs[activeTab]}

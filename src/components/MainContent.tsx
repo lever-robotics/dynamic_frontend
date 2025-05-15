@@ -23,7 +23,6 @@ export const MainContent: React.FC = () => {
 		switchThread,
 	} = useWorkspace();
 	const { userConfig } = useUserConfig();
-	const [launchMessage, setLaunchMessage] = useState<string>("");
 
 	// Initialize workspace on mount
 	// useEffect(() => {
@@ -59,7 +58,6 @@ export const MainContent: React.FC = () => {
 		try {
 			// Create a new thread with the message as the title
 			const threadId = await createThread(message);
-			setLaunchMessage(message);
 			console.log("[SinglePageApp] Created thread with ID:", threadId);
 
 			// Set the view to DocViewer
@@ -76,40 +74,33 @@ export const MainContent: React.FC = () => {
 	console.log("[MainContent] currentThreadId:", currentThreadId);
 
 	return (
-		<div className="flex w-screen h-screen overflow-hidden bg-portage-50">
+		<div className="flex h-screen overflow-hidden bg-portage-50">
 			{/* Main Content Area */}
-			<div className="flex-1 h-full">
-				{/* If no thread is selected, show the launch chat */}
-				{currentThreadId === "" && (
-					<div className="flex flex-col items-center justify-center h-full w-full bg-background">
-						<div className="w-full max-w-2xl p-4">
-							<div className="w-full">
-								<ChatInput onSubmit={handleStartAnalysis} isLaunchMode={true} />
-							</div>
+			{/* If no thread is selected, show the launch chat */}
+			{currentThreadId === "" && (
+				<div className="flex flex-col items-center justify-center h-full w-full bg-background">
+					<div className="w-full max-w-2xl p-4">
+						<div className="w-full">
+							<ChatInput onSubmit={handleStartAnalysis} isLaunchMode={true} />
 						</div>
 					</div>
-				)}
+				</div>
+			)}
 
-				{/* If a thread is selected, show the whiteboard and chat */}
-				{currentThreadId !== "" && (
-					<div className="flex h-full">
-						{/* Whiteboard Area - Fixed width */}
-						<div className="w-[calc(100%-500px)] h-full bg-white border-r border-gray-200">
-							<Whiteboard />
-						</div>
-
-						{/* Chat Area - Fixed width */}
-						<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43]">
-							<ChatDisplay
-								key={currentThreadId}
-								sendOnConnect={sendOnConnect}
-								launchMessage={launchMessage}
-								setLaunchMessage={setLaunchMessage}
-							/>
-						</div>
+			{/* If a thread is selected, show the whiteboard and chat */}
+			{currentThreadId !== "" && (
+				<div className="w-full flex h-full">
+					{/* Whiteboard Area - Fixed width */}
+					<div className="w-[calc(100%-500px)] h-full bg-white border-r border-gray-200">
+						<Whiteboard />
 					</div>
-				)}
-			</div>
+
+					{/* Chat Area - Fixed width */}
+					<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43]">
+						<ChatDisplay key={currentThreadId} sendOnConnect={sendOnConnect} />
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

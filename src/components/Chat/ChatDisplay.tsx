@@ -18,15 +18,11 @@ import { MessageList } from "./MessageList";
 interface ChatDisplayProps {
 	onClose?: () => void;
 	sendOnConnect?: () => Payload;
-	launchMessage?: string;
-	setLaunchMessage?: (message: string) => void;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
 	onClose,
 	sendOnConnect,
-	launchMessage,
-	setLaunchMessage,
 }: ChatDisplayProps) {
 	// const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	// const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -40,6 +36,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 		addArtifact,
 		setSelectedTool,
 		updateArtifact,
+		currentThreadName,
 		messages,
 	} = useWorkspace();
 	const [localMessages, setLocalMessages] = useState<MessageBubble[]>(messages);
@@ -197,10 +194,9 @@ export const ChatDisplay = memo(function ChatDisplay({
 		onMessage: handleMessage,
 	});
 
-	console.log("[ChatDisplay] launchMessage: ", launchMessage);
 	// Initialize when all conditions are met
 	useEffect(() => {
-		if (isConnected) {
+		if (isConnected && localMessages.length === 0) {
 			console.log("[ChatDisplay] Conditions met, attempting initialization");
 			try {
 				// Send initial connection message in both modes
@@ -209,11 +205,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 				console.log("[ChatDisplay] Sending initial connection message:", msg);
 				sendMessage(msg.type, msg);
 
-				if (launchMessage !== "") {
-					// In launch mode, start fresh with just this message
-					handleNewMessage(launchMessage);
-					setLaunchMessage?.("");
-				}
+				handleNewMessage(currentThreadName);
 
 				console.log("[ChatDisplay] Initialization complete");
 			} catch (error) {
@@ -222,11 +214,10 @@ export const ChatDisplay = memo(function ChatDisplay({
 		}
 	}, [
 		isConnected,
-		launchMessage,
-		// isInitialized,
 		sendMessage,
 		sendOnConnect,
-		setLaunchMessage,
+		localMessages,
+		currentThreadName,
 	]); //Execute on is connected
 
 	// Handle new user messages

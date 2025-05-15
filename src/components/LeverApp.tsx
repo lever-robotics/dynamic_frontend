@@ -46,7 +46,9 @@ export const LeverApp: React.FC = () => {
 			</div>
 
 			{/* Render Whiteboard and Chat */}
-			<MainContent />
+			<div className="w-[calc(100%-240px)]">
+				<MainContent />
+			</div>
 
 			{/* Settings Display */}
 			{showSettings && (
