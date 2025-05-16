@@ -21,6 +21,12 @@ export const LeverApp: React.FC = () => {
 		url: string;
 	} | null>(null); // info passed in the first time onbaroding between the two components
 
+	const resetOnboarding = () => {
+		setIsFirstTime(true);
+		setBusinessInfo(null);
+		setShowSettings(false);
+	};
+
 	return (
 		<div className="flex flex-row items-center w-screen h-screen overflow-hidden bg-portage-50">
 			<WorkspaceProvider>
@@ -35,6 +41,7 @@ export const LeverApp: React.FC = () => {
 					<SettingsDisplay
 						onClose={() => setShowSettings(false)}
 						showBlueprint={() => setShowBlueprint(true)}
+						resetOnboarding={resetOnboarding}
 					/>
 				)}
 
@@ -46,9 +53,7 @@ export const LeverApp: React.FC = () => {
 					<>
 						<BusinessSetup
 							onClose={() => {
-								userConfig.completed_onboarding = true;
-								upsertUserConfig(userConfig);
-								setIsFirstTime(false);
+								//pass
 							}}
 							setBusinessInfo={setBusinessInfo}
 						/>
@@ -56,6 +61,8 @@ export const LeverApp: React.FC = () => {
 							<AnalyzingBusiness
 								onComplete={() => {
 									setIsFirstTime(false);
+									userConfig.completed_onboarding = true;
+									upsertUserConfig(userConfig);
 									setShowBlueprint(true);
 								}}
 								businessInfo={businessInfo || undefined}
