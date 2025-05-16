@@ -20,10 +20,7 @@ export function MessageBubble({
 	toolNameMapping,
 }: MessageBubbleProps) {
 	const {
-		setView,
-		setDocument,
-		setImage,
-		setQuery,
+		setCurrentArtifact,
 		state: { artifacts },
 	} = useWorkspace();
 
@@ -34,6 +31,8 @@ export function MessageBubble({
 		}
 
 		// Then switch to the appropriate tab based on the tool type
+		console.log("[MessageBubble] Tool selected:", tool);
+		console.log("[MessageBubble] Artifacts:", artifacts);
 		if (tool.artifactId) {
 			switch (tool.tool) {
 				case "write_bi_report": {
@@ -41,8 +40,7 @@ export function MessageBubble({
 						(doc) => doc.id === tool.artifactId,
 					);
 					if (artifact) {
-						setDocument(artifact);
-						setView("DocViewer");
+						setCurrentArtifact(artifact);
 					}
 					break;
 				}
@@ -51,8 +49,7 @@ export function MessageBubble({
 						(img) => img.id === tool.artifactId,
 					);
 					if (artifact) {
-						setImage(artifact);
-						setView("GraphViewer");
+						setCurrentArtifact(artifact);
 					}
 					break;
 				}
@@ -61,9 +58,9 @@ export function MessageBubble({
 					const artifact = artifacts.queries.find(
 						(query) => query.id === tool.artifactId,
 					);
+					console.log("[MessageBubble] Found artifact:", artifact);
 					if (artifact) {
-						setQuery(artifact);
-						setView("DataExecutor");
+						setCurrentArtifact(artifact);
 					}
 					break;
 				}
@@ -91,6 +88,7 @@ export function MessageBubble({
 							: ""
 					}`}
 					onClick={() => {
+						console.log("[MessageBubble] Clicked tool message");
 						if (message.chunks[0]?.toolCall) {
 							handleToolSelect(message.chunks[0].toolCall);
 						}

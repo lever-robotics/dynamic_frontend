@@ -468,16 +468,25 @@ Here's a bar chart showing our regional performance:
 
 		setMessages((prev) => [...prev, ...toUpdate]);
 		try {
-			const { error } = await supabase.from("thread_messages").insert(
-				toUpdate.map((message) => ({
-					thread_id: currentThreadId,
-					message_type: message.type,
-					content: message,
-					order_index: message.orderIndex,
-				})),
-			);
+			const { error } = await supabase
+				.from("thread_messages")
+				.upsert(
+					toUpdate.map((message) => ({
+						id: message.id,
+						thread_id: currentThreadId,
+						message_type: message.type,
+						content: message,
+						order_index: message.orderIndex,
+					})),
+				)
+				.select();
 
-			if (error) throw error;
+			if (error) {
+				console.error("[WorkspaceContext] Error adding messages:", error);
+				setError(
+					error instanceof Error ? error.message : "Failed to add messages",
+				);
+			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to add messages");
 		}
@@ -597,15 +606,17 @@ Here's a bar chart showing our regional performance:
 			data_source?: "bigquery" | "shopify";
 			[key: string]: string | number | boolean | null;
 		},
+		id?: string,
 	): Promise<string | null> => {
-		if (!state.currentThreadId) return null;
+		if (!currentThreadId) return null;
 
 		try {
 			const { data: newArtifact, error } = await supabase
 				.from("thread_artifacts")
 				.insert([
 					{
-						thread_id: state.currentThreadId,
+						thread_id: currentThreadId,
+						id,
 						artifact_type: type,
 						content,
 						created_at: new Date().toISOString(),
@@ -614,13 +625,14 @@ Here's a bar chart showing our regional performance:
 				])
 				.select()
 				.single();
+			console.log("[WorkspaceContext] Added artifact:", newArtifact);
 
 			if (error) throw error;
 
 			// Update local state
 			setState((prev) => {
 				const newArtifactState = {
-					id: newArtifact.id,
+					id: id || newArtifact.id,
 					artifact_type: type,
 					content,
 					created_at: newArtifact.created_at,
@@ -644,7 +656,6 @@ Here's a bar chart showing our regional performance:
 					},
 				};
 			});
-
 			return newArtifact.id;
 		} catch (err) {
 			console.error("[WorkspaceContext] Error adding artifact:", err);

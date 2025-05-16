@@ -39,6 +39,7 @@ export function DataExecutor() {
 	const [TempQuery, setTempQuery] = useState(currentArtifact?.content || "");
 	const [results, setResults] = useState<QueryResult[]>([]);
 	const [columns, setColumns] = useState<string[]>([]);
+	const [isExecuting, setIsExecuting] = useState(false);
 
 	// Update TempQuery when currentArtifact changes
 	useEffect(() => {

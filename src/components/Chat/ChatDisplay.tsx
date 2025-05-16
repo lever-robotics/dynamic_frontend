@@ -55,23 +55,25 @@ export const ChatDisplay = memo(function ChatDisplay({
 						content: (payload as MessageChunk).content,
 					};
 
-					const updatedMessages = [...localMessages];
-					const messageIndex = updatedMessages.length - 1;
+					setLocalMessages((prev) => {
+						const lastMessage = prev[prev.length - 1];
+						if (lastMessage?.type === "assistant") {
+							lastMessage.chunks.push(newChunk);
+							return [...prev];
+						}
 
-					if (updatedMessages[messageIndex]?.type === "assistant") {
-						updatedMessages[messageIndex].chunks.push(newChunk);
-					} else {
-						updatedMessages.push({
-							id: messageId,
-							type: "assistant",
-							chunks: [newChunk],
-							orderIndex: updatedMessages.length,
-						});
-					}
+						return [
+							...prev,
+							{
+								id: messageId,
+								type: "assistant",
+								chunks: [newChunk],
+								orderIndex: prev.length,
+							},
+						];
+					});
 
-					setLocalMessages(updatedMessages);
-
-					break;
+					return;
 				}
 				case "agent": {
 					// Keep agent logic for tracking purposes but don't display
@@ -84,7 +86,10 @@ export const ChatDisplay = memo(function ChatDisplay({
 					if (agentChunk.status === "complete") {
 						console.log("[ChatDisplay] Final message received:", payload);
 
-						pushMessages(localMessages);
+						setLocalMessages((prev) => {
+							pushMessages(prev);
+							return prev;
+						});
 					}
 					break;
 				}
@@ -141,8 +146,13 @@ export const ChatDisplay = memo(function ChatDisplay({
 										...firstDocument,
 										content: report,
 									};
+									newChunk.toolCall.artifactId = firstDocument.id;
 								} else {
-									addArtifact("document", report);
+									// Create new document and get its ID
+									const artifactId = await addArtifact("document", report);
+									if (artifactId) {
+										newChunk.toolCall.artifactId = artifactId;
+									}
 								}
 							}
 							break;
@@ -175,19 +185,21 @@ export const ChatDisplay = memo(function ChatDisplay({
 					}
 
 					if (toolChunk.status === "complete") {
-						const newMessage: MessageBubble = {
-							id: messageId,
-							type: "tool",
-							chunks: [newChunk],
-							orderIndex: localMessages.length,
-						};
-						setLocalMessages((prev) => [...prev, newMessage]);
+						setLocalMessages((prev) => {
+							const newMessage: MessageBubble = {
+								id: messageId,
+								type: "tool",
+								chunks: [newChunk],
+								orderIndex: prev.length,
+							};
+							return [...prev, newMessage];
+						});
 					}
 					break;
 				}
 			}
 		},
-		[addArtifact, updateArtifact, pushMessages, artifacts, localMessages],
+		[addArtifact, updateArtifact, artifacts, pushMessages],
 	);
 
 	// WebSocket connection with message handling

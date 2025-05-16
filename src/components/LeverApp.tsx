@@ -39,6 +39,7 @@ export const LeverApp: React.FC = () => {
 		} else {
 			// Create a blank query artifact
 			const id = await addArtifact("query", "");
+			console.log("[LeverApp] Created query artifact:", id);
 			// Set the current artifact to the first query
 			setCurrentArtifactById(id);
 		}
