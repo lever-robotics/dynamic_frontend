@@ -89,6 +89,7 @@ export const AuthModal: React.FC = () => {
 				await fetchUserConfig();
 			}
 		} catch (err) {
+			console.error(err);
 			setError("Invalid email or password");
 		} finally {
 			setLoading(false);
