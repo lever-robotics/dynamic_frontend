@@ -11,6 +11,7 @@ import type {
 	ToolExecutionBubble,
 	WebSocketMessage,
 } from "@/types/chat";
+import { useUserConfig } from "@/utils/UserConfigProvider";
 import { memo, useCallback, useEffect, useState } from "react";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
@@ -19,17 +20,20 @@ interface ChatDisplayProps {
 	onClose?: () => void;
 	sendOnConnect?: () => Payload;
 	isLaunchMode?: boolean;
+	isLever?: boolean;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
 	onClose,
 	sendOnConnect,
 	isLaunchMode = false,
+	isLever = false,
 }: ChatDisplayProps) {
 	const [localMessages, setLocalMessages] = useState<MessageBubble[]>([]);
 	const [isInitializing, setIsInitializing] = useState(false);
 	const [hasInitialized, setHasInitialized] = useState(false);
 	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
+	const [waitForAiToFinish, setWaitForAiToFinish] = useState(false);
 	const {
 		state: { currentThreadId, launchChatMessage, artifacts },
 		addMessage,
@@ -38,6 +42,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 		updateArtifact,
 		fetchThreadMessages,
 	} = useWorkspace();
+	const { userConfig, upsertUserConfig } = useUserConfig();
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
@@ -186,6 +191,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 											"potential_responses" in toolArgs
 										) {
 											setPotentialResponses(toolArgs.potential_responses);
+											setWaitForAiToFinish(false);
 										}
 									} catch (error) {
 										console.error(
@@ -257,6 +263,44 @@ export const ChatDisplay = memo(function ChatDisplay({
 									}
 									break;
 								}
+
+								case "agent_update_business": {
+									const new_business_plan = result; // The function outputs the new business plan
+									console.log(
+										"[ChatDisplay] New business plan created:",
+										new_business_plan,
+									);
+
+									// Update the business plan in user config
+									if (userConfig) {
+										upsertUserConfig({
+											...userConfig,
+											business_overview: new_business_plan,
+										}).catch((error) => {
+											console.error(
+												"[ChatDisplay] Failed to update business plan:",
+												error,
+											);
+										});
+									}
+
+									// Create a new message to show the update
+									const newMessage: MessageBubble = {
+										id: messageId,
+										type: "tool",
+										chunks: [
+											{
+												toolCall: {
+													tool: "agent_update_business",
+													arguments: {},
+													status: "complete",
+													result: new_business_plan,
+												},
+											},
+										],
+									};
+									return [...prev, newMessage];
+								}
 								default: {
 									console.log(`Unhandled tool type: ${tool}`);
 									break;
@@ -273,7 +317,15 @@ export const ChatDisplay = memo(function ChatDisplay({
 				}
 			}
 		},
-		[localMessages, addMessage, addArtifact, updateArtifact, artifacts],
+		[
+			localMessages,
+			addMessage,
+			addArtifact,
+			updateArtifact,
+			artifacts,
+			userConfig,
+			upsertUserConfig,
+		],
 	);
 
 	// WebSocket connection with message handling
@@ -311,6 +363,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 				// In launch mode, start fresh with just this message
 				setLocalMessages([userMessage]);
+				setWaitForAiToFinish(true);
 				// await addMessage(userMessage); Actually save the user message after the assistnat has repsponsed
 
 				// Send message to LLM
@@ -319,9 +372,14 @@ export const ChatDisplay = memo(function ChatDisplay({
 					text: launchChatMessage,
 				} as ToLLMMessage);
 			} else if (currentThreadId) {
-				// Normal mode: fetch messages using the workspace context function
-				const messages = await fetchThreadMessages(currentThreadId);
-				setLocalMessages(messages);
+				// Only fetch messages if this is a Lever instance
+				if (isLever) {
+					const messages = await fetchThreadMessages(currentThreadId);
+					setLocalMessages(messages);
+				} else {
+					// For non-Lever instances, start with empty messages
+					setLocalMessages([]);
+				}
 			}
 
 			// Mark as initialized
@@ -342,6 +400,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 		sendOnConnect,
 		sendMessage,
 		fetchThreadMessages,
+		isLever,
 	]);
 
 	// Initialize when all conditions are met
@@ -365,8 +424,9 @@ export const ChatDisplay = memo(function ChatDisplay({
 			chunks: [{ content }],
 		};
 
-		// take away potential responses
+		// take away potential responses and set waiting state
 		setPotentialResponses([]);
+		setWaitForAiToFinish(true);
 
 		// Add user message to both local and workspace state
 		setLocalMessages((prev) => [...prev, userMessage]);
@@ -426,7 +486,6 @@ export const ChatDisplay = memo(function ChatDisplay({
 							type="button"
 							onClick={() => {
 								handleNewMessage(response);
-								setPotentialResponses([]);
 							}}
 							className="px-4 py-2 text-sm text-primary border border-primary/20 rounded-full hover:bg-primary/10 transition-colors"
 						>
@@ -442,6 +501,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 				onSubmit={handleNewMessage}
 				error={error}
 				isLaunchMode={isLaunchMode}
+				disabled={waitForAiToFinish}
 			/>
 		</div>
 	);

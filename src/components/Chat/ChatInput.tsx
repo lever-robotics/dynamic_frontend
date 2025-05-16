@@ -6,6 +6,7 @@ interface ChatInputProps {
 	onSubmit: (message: string) => void;
 	error?: string | null;
 	isLaunchMode?: boolean;
+	disabled?: boolean;
 }
 
 export function ChatInput({
@@ -13,6 +14,7 @@ export function ChatInput({
 	onSubmit,
 	error,
 	isLaunchMode = false,
+	disabled = false,
 }: ChatInputProps) {
 	const [inputValue, setInputValue] = useState("");
 
@@ -39,7 +41,7 @@ export function ChatInput({
 							? "placeholder:text-transparent placeholder:bg-clip-text placeholder:bg-gradient-to-r placeholder:from-primary-400 placeholder:to-secondary-200"
 							: "placeholder:text-muted-foreground"
 					}`}
-					disabled={!isLaunchMode && !isConnected}
+					disabled={disabled || (!isLaunchMode && !isConnected)}
 					rows={1}
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.shiftKey) {
@@ -50,7 +52,9 @@ export function ChatInput({
 				/>
 				<button
 					type="submit"
-					disabled={!inputValue.trim() || (!isLaunchMode && !isConnected)}
+					disabled={
+						disabled || !inputValue.trim() || (!isLaunchMode && !isConnected)
+					}
 					className="absolute right-2 flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent transition-colors hover:bg-accent/20 disabled:pointer-events-none disabled:opacity-50"
 					aria-label="Send message"
 				>

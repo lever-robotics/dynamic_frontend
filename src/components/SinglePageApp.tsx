@@ -43,6 +43,7 @@ function ChatWrapper({ isLaunchMode = false }: { isLaunchMode?: boolean }) {
 			key={currentThreadId}
 			sendOnConnect={sendOnConnect}
 			isLaunchMode={isLaunchMode}
+			isLever={true}
 		/>
 	);
 }
