@@ -12,7 +12,7 @@ export function RightPanel({ sendOnConnect }: RightPanelProps) {
 
 	return (
 		<div className="w-[600px] border-l border-gray-200">
-			<ChatDisplay sendOnConnect={sendOnConnect} />
+			<ChatDisplay sendOnConnect={sendOnConnect} isLever={false} />
 		</div>
 	);
 }

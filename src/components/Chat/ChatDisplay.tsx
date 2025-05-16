@@ -11,6 +11,7 @@ import type {
 	ToolExecutionBubble,
 	WebSocketMessage,
 } from "@/types/chat";
+import { useUserConfig } from "@/utils/UserConfigProvider";
 import { memo, useCallback, useEffect, useState } from "react";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
@@ -40,6 +41,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 		currentThreadName,
 		messages,
 	} = useWorkspace();
+	const { userConfig, upsertUserConfig } = useUserConfig();
 	const [localMessages, setLocalMessages] = useState<MessageBubble[]>(messages);
 
 	// Handle incoming WebSocket messages
@@ -178,6 +180,28 @@ export const ChatDisplay = memo(function ChatDisplay({
 							}
 							break;
 						}
+
+						case "agent_update_business": {
+							const new_business_plan = result; // The function outputs the new business plan
+							console.log(
+								"[ChatDisplay] New business plan created:",
+								new_business_plan,
+							);
+
+							// Update the business plan in user config
+							if (userConfig) {
+								upsertUserConfig({
+									...userConfig,
+									business_overview: new_business_plan,
+								}).catch((error) => {
+									console.error(
+										"[ChatDisplay] Failed to update business plan:",
+										error,
+									);
+								});
+							}
+							break;
+						}
 						default: {
 							console.log(`Unhandled tool type: ${tool}`);
 							break;
@@ -199,7 +223,14 @@ export const ChatDisplay = memo(function ChatDisplay({
 				}
 			}
 		},
-		[addArtifact, updateArtifact, artifacts, pushMessages],
+		[
+			addArtifact,
+			updateArtifact,
+			artifacts,
+			pushMessages,
+			upsertUserConfig,
+			userConfig,
+		],
 	);
 
 	// WebSocket connection with message handling
@@ -308,7 +339,6 @@ export const ChatDisplay = memo(function ChatDisplay({
 							type="button"
 							onClick={() => {
 								handleNewMessage(response);
-								setPotentialResponses([]);
 							}}
 							className="px-4 py-2 text-sm text-primary border border-primary/20 rounded-full hover:bg-primary/10 transition-colors"
 						>

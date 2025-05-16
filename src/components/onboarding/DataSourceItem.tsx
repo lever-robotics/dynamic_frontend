@@ -59,7 +59,7 @@ export const DataSourceItem: React.FC<DataSourceItemProps> = ({
 									: "text-stone-600 hover:bg-stone-50"
 							}`}
 						>
-							{entity.displayName}
+							{entity.name}
 						</div>
 					</div>
 				))}

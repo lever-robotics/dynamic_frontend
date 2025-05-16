@@ -77,7 +77,7 @@ export const EntityDetails: React.FC<EntityDetailsProps> = ({
 					</div>
 				) : (
 					<section className="flex flex-col -mt-2 leading-relaxed">
-						<h1 className="self-start text-2xl">{entity.displayName}</h1>
+						<h1 className="self-start text-2xl">{entity.name}</h1>
 
 						<div className="flex flex-col pl-3.5 mt-8 w-full text-sm">
 							<TextareaField
@@ -98,7 +98,7 @@ export const EntityDetails: React.FC<EntityDetailsProps> = ({
 							{entity.fields.map((field) => (
 								<TextareaField
 									key={field.name}
-									label={field.displayName}
+									label={field.name}
 									value={field.description}
 									state={field.description ? "user" : "blank"}
 									onUpdate={(newValue) =>
