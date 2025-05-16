@@ -46,9 +46,7 @@ export const LeverApp: React.FC = () => {
 					<>
 						<BusinessSetup
 							onClose={() => {
-								userConfig.completed_onboarding = true;
-								upsertUserConfig(userConfig);
-								setIsFirstTime(false);
+								//pass
 							}}
 							setBusinessInfo={setBusinessInfo}
 						/>
@@ -56,6 +54,8 @@ export const LeverApp: React.FC = () => {
 							<AnalyzingBusiness
 								onComplete={() => {
 									setIsFirstTime(false);
+									userConfig.completed_onboarding = true;
+									upsertUserConfig(userConfig);
 									setShowBlueprint(true);
 								}}
 								businessInfo={businessInfo || undefined}
