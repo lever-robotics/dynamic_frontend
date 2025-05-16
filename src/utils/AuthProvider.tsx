@@ -96,6 +96,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		return data;
 	}
 
+	/**
+	 * Signs up a user with email & password (PKCE flow).
+	 */
+	async function signUp({ email, password }: Credentials) {
+		const { data, error } = await supabase.auth.signUp({
+			email,
+			password,
+		});
+
+		if (error) throw error;
+		setUserId(data.user?.id);
+		return data;
+	}
+
 	return (
 		<AuthContext.Provider
 			value={{
@@ -118,17 +132,4 @@ export function useAuth() {
 		throw new Error("useAuth must be used within an AuthProvider");
 	}
 	return context;
-}
-
-/**
- * Signs up a user with email & password (PKCE flow).
- */
-async function signUp({ email, password }: Credentials) {
-	const { data, error } = await supabase.auth.signUp({
-		email,
-		password,
-	});
-
-	if (error) throw error;
-	return data;
 }
