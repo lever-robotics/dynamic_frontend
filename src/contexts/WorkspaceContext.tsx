@@ -470,9 +470,8 @@ Here's a bar chart showing our regional performance:
 		try {
 			const { error } = await supabase
 				.from("thread_messages")
-				.upsert(
+				.insert(
 					toUpdate.map((message) => ({
-						id: message.id,
 						thread_id: currentThreadId,
 						message_type: message.type,
 						content: message,

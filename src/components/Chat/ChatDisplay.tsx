@@ -240,7 +240,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 	// Initialize when all conditions are met
 	useEffect(() => {
-		if (isConnected && localMessages.length === 0) {
+		if (isConnected) {
 			console.log("[ChatDisplay] Conditions met, attempting initialization");
 			try {
 				// Send initial connection message in both modes
@@ -249,7 +249,9 @@ export const ChatDisplay = memo(function ChatDisplay({
 				console.log("[ChatDisplay] Sending initial connection message:", msg);
 				sendMessage(msg.type, msg);
 
-				handleNewMessage(currentThreadName);
+				if (localMessages.length === 0) {
+					handleNewMessage(currentThreadName);
+				}
 
 				console.log("[ChatDisplay] Initialization complete");
 			} catch (error) {
