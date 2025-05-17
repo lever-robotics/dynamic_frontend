@@ -69,8 +69,9 @@ export const AuthModal: React.FC = () => {
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [isSignUp, setIsSignUp] = useState(false);
 
-	const { signIn } = useAuth();
+	const { signIn, signUp } = useAuth();
 	const { fetchUserConfig } = useUserConfig();
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -78,14 +79,17 @@ export const AuthModal: React.FC = () => {
 		setError(null);
 		setLoading(true);
 		try {
-			const authResponse = await signIn({ email, password });
+			const authResponse = isSignUp
+				? await signUp({ email, password })
+				: await signIn({ email, password });
 			// console.log(authResponse)
 
 			// Fetch user config after successful sign in
-			if (authResponse?.user?.id) {
+			if (authResponse.user?.id) {
 				await fetchUserConfig();
 			}
 		} catch (err) {
+			console.error(err);
 			setError("Invalid email or password");
 		} finally {
 			setLoading(false);
@@ -107,6 +111,11 @@ export const AuthModal: React.FC = () => {
 							onSubmit={handleSubmit}
 							className="flex flex-col px-20 py-9 w-full bg-white rounded-3xl shadow-[0px_4px_24px_rgba(0,0,0,0.1)]"
 						>
+							{isSignUp ? (
+								<h2 className="text-2xl font-semibold">Sign Up</h2>
+							) : (
+								<h2 className="text-2xl font-semibold">Sign In</h2>
+							)}
 							<img
 								src={leverLogo}
 								alt="Logo"
@@ -144,7 +153,13 @@ export const AuthModal: React.FC = () => {
 								disabled={loading}
 								className="px-16 py-3.5 mt-8 text-white bg-sky-400 rounded-xl shadow-[0px_4px_10px_rgba(233,68,75,0.25)] font-heading"
 							>
-								{loading ? "Signing in..." : "Sign in"}
+								{loading
+									? isSignUp
+										? "Signing up..."
+										: "Signing in..."
+									: isSignUp
+										? "Sign up"
+										: "Sign in"}
 							</button>
 
 							<div className="mt-6">
@@ -170,8 +185,12 @@ export const AuthModal: React.FC = () => {
 
 							<p className="self-center mt-4 text-xs tracking-wide font-body">
 								<span className="text-[#595959]">Don't have an account?</span>{" "}
-								<button type="button" className="text-[#3CCADD]">
-									Sign up for free!
+								<button
+									type="button"
+									className="text-[#3CCADD]"
+									onClick={() => setIsSignUp(!isSignUp)}
+								>
+									{isSignUp ? "Already have an account?" : "Sign up for free!"}
 								</button>
 							</p>
 						</form>

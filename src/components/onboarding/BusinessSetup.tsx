@@ -18,8 +18,10 @@ export function BusinessSetup({
 	onClose,
 	setBusinessInfo,
 }: BusinessSetupProps) {
-	const [businessName, setBusinessName] = useState("My Business");
-	const [businessUrl, setBusinessUrl] = useState("https://mybusiness.com");
+	const [businessName, setBusinessName] = useState("HydroJug");
+	const [businessUrl, setBusinessUrl] = useState(
+		"https://www.thehydrojug.com/",
+	);
 	const [logoUrl, setLogoUrl] = useState(defaultLogo);
 	const { connections } = useUserConfig();
 	console.log("setup BusinessInfo");

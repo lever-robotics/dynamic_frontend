@@ -1,6 +1,19 @@
 "use client";
-import { Fragment, useEffect, useState } from "react";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import type {
+	AgentChunk,
+	FlagChunk,
+	ToolChunk,
+	WebSocketMessage,
+} from "@/types/chat";
+import { useUserConfig } from "@/utils/UserConfigProvider";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Modal } from "../common/Modal";
+
+// Progress calculation constants
+const TOOL_PROGRESS_INCREMENT = 2; // Each tool adds 5%
+const AGENT_PROGRESS_INCREMENT = 10; // Each completed agent adds 10%
+const TOTAL_PROGRESS = 100; // Total progress to reach
 
 interface AnalyzingBusinessProps {
 	onComplete: () => void;
@@ -38,61 +51,162 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
 };
 
 interface StatusTextProps {
-	messages: string[];
+	messages: Array<{
+		id: number;
+		text: string;
+		timestamp: number;
+	}>;
 }
 
 const StatusText: React.FC<StatusTextProps> = ({ messages }) => {
+	// Only show the last 3 messages
+	const visibleMessages = messages.slice(-3);
+
 	return (
-		<p className="text-xs leading-4 text-center text-slate-600 text-opacity-60">
-			{messages.map((message) => (
-				<Fragment key={message}>
-					{message}
-					<br />
-				</Fragment>
+		<div className="flex flex-col gap-1">
+			{visibleMessages.map((message) => (
+				<p
+					key={message.id}
+					className="text-xs leading-4 text-center text-slate-600 text-opacity-60"
+				>
+					{message.text}
+				</p>
 			))}
-		</p>
+		</div>
 	);
 };
 
-export function AnalyzingBusiness({ onComplete }: AnalyzingBusinessProps) {
+export function AnalyzingBusiness({
+	onComplete,
+	businessInfo,
+}: AnalyzingBusinessProps) {
 	const [progress, setProgress] = useState(0);
-	const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+	const [statusMessages, setStatusMessages] = useState<
+		Array<{ id: number; text: string; timestamp: number }>
+	>([]);
+	const [runningAgents, setRunningAgents] = useState<string[]>([]);
+	const [messageCounter, setMessageCounter] = useState(1);
+	const { userConfig, upsertUserConfig } = useUserConfig();
 
-	const messages = [
-		"Reading website content",
-		"Analyzing business structure",
-		"Processing integrations",
-		"Generating recommendations",
-		"Finalizing analysis",
-	];
+	// Handle incoming WebSocket messages
+	const handleMessage = useCallback(
+		async (wsMessage: WebSocketMessage) => {
+			const { payload } = wsMessage;
 
+			switch (payload.type) {
+				case "tool": {
+					const toolChunk = payload as ToolChunk;
+					console.log("[AnalyzingBusiness] Tool execution:", toolChunk);
+
+					// Update progress based on tool execution
+					setProgress((prev) =>
+						Math.min(prev + TOOL_PROGRESS_INCREMENT, TOTAL_PROGRESS),
+					);
+
+					const addStatusMessage = (text: string) => {
+						setStatusMessages((prev) => {
+							// Check if the last message is the same to prevent duplicates
+							if (prev.length > 0 && prev[prev.length - 1].text === text) {
+								return prev;
+							}
+							setMessageCounter((counter) => counter + 1);
+							return [
+								...prev,
+								{
+									id: messageCounter,
+									text,
+									timestamp: Date.now(),
+								},
+							];
+						});
+					};
+
+					switch (toolChunk.tool) {
+						case "agent_scrape_website":
+							addStatusMessage("Reading Website Content");
+							break;
+						case "agent_update_business_json":
+						case "agent_update_business": {
+							if (toolChunk.status === "complete" && toolChunk.result) {
+								console.log(
+									"[AnalyzingBusiness] Updating business overview:",
+									toolChunk.result,
+								);
+								if (userConfig) {
+									await upsertUserConfig({
+										...userConfig,
+										business_overview: toolChunk.result,
+									});
+								}
+								addStatusMessage("Updating Business Memory");
+							}
+							break;
+						}
+						default: {
+							if (toolChunk.status === "complete") {
+								addStatusMessage(`${toolChunk.tool} completed`);
+							}
+							break;
+						}
+					}
+					break;
+				}
+				case "agent": {
+					const agentChunk = payload as AgentChunk;
+					console.log("[AnalyzingBusiness] Agent status:", agentChunk);
+
+					if (agentChunk.status === "running") {
+						setRunningAgents((prev) => [
+							agentChunk.name,
+							...prev.filter((name) => name !== agentChunk.name),
+						]);
+					} else if (agentChunk.status === "complete") {
+						setProgress((prev) =>
+							Math.min(prev + AGENT_PROGRESS_INCREMENT, TOTAL_PROGRESS),
+						);
+						if (agentChunk.name === "Data Gathering Agent") {
+							setProgress(TOTAL_PROGRESS);
+							setMessageCounter((counter) => counter + 1);
+							setStatusMessages((prev) => [
+								...prev,
+								{
+									id: messageCounter,
+									text: "Finalizing analysis",
+									timestamp: Date.now(),
+								},
+							]);
+							setTimeout(() => onComplete(), 1000);
+						}
+					}
+					break;
+				}
+			}
+		},
+		[userConfig, upsertUserConfig, onComplete, messageCounter],
+	);
+
+	// WebSocket connection with message handling
+	const { isConnected, error, sendMessage } = useWebSocket({
+		onMessage: handleMessage,
+	});
+
+	// Initialize analysis when connected
 	useEffect(() => {
-		const progressTimer = setInterval(() => {
-			setProgress((prevProgress) => {
-				if (prevProgress >= 100) {
-					clearInterval(progressTimer);
-					setTimeout(() => onComplete(), 500);
-					return 100;
-				}
-				return prevProgress + 20;
-			});
-		}, 100);
-
-		const messageTimer = setInterval(() => {
-			setCurrentMessageIndex((prev) => {
-				if (prev >= messages.length - 1) {
-					clearInterval(messageTimer);
-					return prev;
-				}
-				return prev + 1;
-			});
-		}, 2000);
-
-		return () => {
-			clearInterval(progressTimer);
-			clearInterval(messageTimer);
-		};
-	}, [onComplete]);
+		if (isConnected) {
+			console.log("[AnalyzingBusiness] Starting analysis");
+			// Send initial flag message with business info
+			sendMessage("flag", {
+				type: "flag",
+				flag: "onboarding",
+				context: {
+					data_connectors: userConfig?.data_connectors || [],
+					business_name: businessInfo.name,
+					business_url: businessInfo.url,
+					business_overview: userConfig?.business_overview || "",
+				},
+			} as unknown as FlagChunk);
+		}
+	}, [isConnected, businessInfo, userConfig, sendMessage]);
 
 	return (
 		<Modal
@@ -104,13 +218,12 @@ export function AnalyzingBusiness({ onComplete }: AnalyzingBusinessProps) {
 			<div className="flex justify-center items-center w-full h-[90vh]">
 				<section className="flex flex-col justify-center items-center h-[738px] w-[1400px]">
 					<h1 className="mb-24 text-5xl leading-5">
-						<span className="text-black">Analyzing</span>
-						<span className="text-primary-400"> Website</span>
+						<span className="text-black">{runningAgents[0]}</span>
 					</h1>
 
 					<ProgressBar progress={progress} width={414} className="mb-20" />
 
-					<StatusText messages={messages.slice(0, currentMessageIndex + 1)} />
+					<StatusText messages={statusMessages} />
 				</section>
 			</div>
 		</Modal>
