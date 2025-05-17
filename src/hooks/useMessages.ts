@@ -26,7 +26,7 @@ export function useMessages(sendOnConnect?: () => Payload) {
 	const {
 		currentThreadId,
 		currentThreadName,
-		state: { artifacts },
+		artifacts,
 		updateArtifact,
 		addArtifact,
 	} = useWorkspace();
@@ -42,8 +42,9 @@ export function useMessages(sendOnConnect?: () => Payload) {
 			const messagesToSave = updatedMessages.slice(lastUserMessageIndex);
 			const { error } = await supabase
 				.from("thread_messages")
-				.insert(
+				.upsert(
 					messagesToSave.map((message) => ({
+						id: message.id,
 						thread_id: currentThreadId,
 						message_type: message.type,
 						content: message,
@@ -83,7 +84,7 @@ export function useMessages(sendOnConnect?: () => Payload) {
 					return [
 						...prev,
 						{
-							id: messageId,
+							id: crypto.randomUUID(),
 							type: "assistant",
 							chunks: [newChunk],
 							orderIndex: prev.length,
@@ -117,6 +118,8 @@ export function useMessages(sendOnConnect?: () => Payload) {
 						? JSON.parse(toolChunk.arguments)
 						: toolChunk.arguments;
 
+				const id = crypto.randomUUID();
+
 				const newChunk: MessageChunkBubble = {
 					toolCall: {
 						tool,
@@ -124,7 +127,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 						status: toolChunk.status,
 						result,
 						error: toolChunk.error,
-						artifactId: artifacts.documents[0]?.id,
 					},
 				};
 
@@ -156,17 +158,10 @@ export function useMessages(sendOnConnect?: () => Payload) {
 									...firstDocument,
 									content: report,
 								});
-								artifacts.documents[0] = {
-									...firstDocument,
-									content: report,
-								};
 								newChunk.toolCall.artifactId = firstDocument.id;
 							} else {
 								// Create new document and get its ID
-								const artifactId = await addArtifact("document", report);
-								if (artifactId) {
-									newChunk.toolCall.artifactId = artifactId;
-								}
+								const artifact = await addArtifact("document", report, id);
 							}
 						}
 						break;
@@ -174,21 +169,21 @@ export function useMessages(sendOnConnect?: () => Payload) {
 					case "agent_execute_python_code": {
 						if (image) {
 							console.log("[ChatDisplay] Adding image:", image);
-							addArtifact?.("image", image);
+							addArtifact("image", image, id);
 						}
 						break;
 					}
 					case "agent_execute_sql_query": {
 						if (result) {
 							console.log("[ChatDisplay] Adding query:", result);
-							addArtifact?.("query", result);
+							addArtifact("query", result, id);
 						}
 						break;
 					}
 					case "agent_execute_bigquery": {
 						if (result) {
 							console.log("[ChatDisplay] Adding query:", result);
-							addArtifact?.("query", result);
+							addArtifact("query", result, id);
 						}
 						break;
 					}
@@ -223,7 +218,7 @@ export function useMessages(sendOnConnect?: () => Payload) {
 				if (toolChunk.status === "complete") {
 					setMessages((prev) => {
 						const newMessage: MessageBubble = {
-							id: messageId,
+							id: id,
 							type: "tool",
 							chunks: [newChunk],
 							orderIndex: prev.length,

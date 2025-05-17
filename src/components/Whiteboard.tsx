@@ -15,10 +15,7 @@ import { GraphViewer } from "./GraphViewer";
 import { TabGroup } from "./onboarding/TabGroup";
 
 export function Whiteboard() {
-	const {
-		state: { currentArtifact, artifacts },
-		setCurrentArtifact,
-	} = useWorkspace();
+	const { currentArtifact, artifacts, setCurrentArtifactById } = useWorkspace();
 	const documentRef = useRef<HTMLDivElement>(null);
 
 	// Create tabs from artifacts with their IDs
@@ -46,7 +43,7 @@ export function Whiteboard() {
 		];
 		const artifact = allArtifacts.find((a) => a.id === selectedTab.id);
 		if (artifact) {
-			setCurrentArtifact(artifact);
+			setCurrentArtifactById(artifact.id);
 		}
 	};
 

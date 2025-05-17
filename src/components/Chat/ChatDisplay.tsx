@@ -13,7 +13,7 @@ import type {
 	WebSocketMessage,
 } from "@/types/chat";
 import { useUserConfig } from "@/utils/UserConfigProvider";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useEffect } from "react";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
 
@@ -29,6 +29,8 @@ export const ChatDisplay = memo(function ChatDisplay({
 	const { setCurrentArtifactById } = useWorkspace();
 	const { messages, isConnected, potentialResponses, handleNewMessage } =
 		useMessages(sendOnConnect);
+
+	console.log("[ChatDisplay] messages:", messages);
 
 	return (
 		<div className="flex flex-col h-full bg-[#F4F5F7]">
@@ -61,14 +63,12 @@ export const ChatDisplay = memo(function ChatDisplay({
 			{/* Messages */}
 			<MessageList
 				messages={messages}
-				onToolSelect={useCallback(
-					(tool: ToolExecutionBubble) => {
-						if (tool.artifactId) {
-							setCurrentArtifactById(tool.artifactId);
-						}
-					},
-					[setCurrentArtifactById],
-				)}
+				onToolSelect={(tool: ToolExecutionBubble) => {
+					console.log("[ChatDisplay] Tool selected:", tool);
+					if (tool.artifactId) {
+						setCurrentArtifactById(tool.artifactId);
+					}
+				}}
 			/>
 
 			{/* Potential Responses */}

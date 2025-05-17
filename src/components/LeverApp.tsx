@@ -25,6 +25,7 @@ export const LeverApp: React.FC = () => {
 		switchThread,
 		createThread,
 		setCurrentArtifactById,
+		setCurrentArtifact,
 		addArtifact,
 		currentThreadId,
 	} = useWorkspace();
@@ -33,15 +34,14 @@ export const LeverApp: React.FC = () => {
 		if (currentThreadId === "") {
 			const threadId = await createThread("Query Data");
 			// Create a blank query artifact
-			const id = await addArtifact("query", "");
+			const artifact = await addArtifact("query", "", crypto.randomUUID());
 			// Set the current artifact to the first query
-			setCurrentArtifactById(id);
+			setCurrentArtifact(artifact);
 		} else {
 			// Create a blank query artifact
-			const id = await addArtifact("query", "");
-			console.log("[LeverApp] Created query artifact:", id);
+			const artifact = await addArtifact("query", "", crypto.randomUUID());
 			// Set the current artifact to the first query
-			setCurrentArtifactById(id);
+			setCurrentArtifact(artifact);
 		}
 	};
 

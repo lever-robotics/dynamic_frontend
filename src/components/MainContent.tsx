@@ -13,20 +13,8 @@ import { Whiteboard } from "./Whiteboard";
 
 export const MainContent: React.FC = () => {
 	console.log("[SinglePageApp] Rendering");
-	const {
-		state: { artifacts, messages },
-		createThread,
-		// initializeWorkspace,
-		currentThreadId,
-		switchThread,
-	} = useWorkspace();
+	const { artifacts, createThread, messages, currentThreadId } = useWorkspace();
 	const { userConfig } = useUserConfig();
-
-	// Initialize workspace on mount
-	// useEffect(() => {
-	// 	console.log("[SinglePageApp] Initializing workspace");
-	// 	initializeWorkspace();
-	// }, [initializeWorkspace]);
 
 	const sendOnConnect = useCallback(() => {
 		console.log("[ChatWrapper] Creating initial connection message");

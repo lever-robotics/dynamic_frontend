@@ -19,10 +19,7 @@ export function MessageBubble({
 	onToolSelect,
 	toolNameMapping,
 }: MessageBubbleProps) {
-	const {
-		setCurrentArtifact,
-		state: { artifacts },
-	} = useWorkspace();
+	const { setCurrentArtifactById, artifacts } = useWorkspace();
 
 	const handleToolSelect = (tool: ToolExecutionBubble) => {
 		// First call the original onToolSelect if it exists
@@ -31,41 +28,41 @@ export function MessageBubble({
 		}
 
 		// Then switch to the appropriate tab based on the tool type
-		console.log("[MessageBubble] Tool selected:", tool);
-		console.log("[MessageBubble] Artifacts:", artifacts);
-		if (tool.artifactId) {
-			switch (tool.tool) {
-				case "write_bi_report": {
-					const artifact = artifacts.documents.find(
-						(doc) => doc.id === tool.artifactId,
-					);
-					if (artifact) {
-						setCurrentArtifact(artifact);
-					}
-					break;
-				}
-				case "agent_execute_python_code": {
-					const artifact = artifacts.images.find(
-						(img) => img.id === tool.artifactId,
-					);
-					if (artifact) {
-						setCurrentArtifact(artifact);
-					}
-					break;
-				}
-				case "agent_execute_sql_query":
-				case "agent_execute_bigquery": {
-					const artifact = artifacts.queries.find(
-						(query) => query.id === tool.artifactId,
-					);
-					console.log("[MessageBubble] Found artifact:", artifact);
-					if (artifact) {
-						setCurrentArtifact(artifact);
-					}
-					break;
-				}
-			}
-		}
+		// console.log("[MessageBubble] Tool selected:", tool);
+		// console.log("[MessageBubble] Artifacts:", artifacts);
+		// if (tool.artifactId) {
+		// 	switch (tool.tool) {
+		// 		case "write_bi_report": {
+		// 			const artifact = artifacts.documents.find(
+		// 				(doc) => doc.id === tool.artifactId,
+		// 			);
+		// 			if (artifact) {
+		// 				setCurrentArtifactById(artifact.id);
+		// 			}
+		// 			break;
+		// 		}
+		// 		case "agent_execute_python_code": {
+		// 			const artifact = artifacts.images.find(
+		// 				(img) => img.id === tool.artifactId,
+		// 			);
+		// 			if (artifact) {
+		// 				setCurrentArtifactById(artifact.id);
+		// 			}
+		// 			break;
+		// 		}
+		// 		case "agent_execute_sql_query":
+		// 		case "agent_execute_bigquery": {
+		// 			const artifact = artifacts.queries.find(
+		// 				(query) => query.id === tool.artifactId,
+		// 			);
+		// 			console.log("[MessageBubble] Found artifact:", artifact);
+		// 			if (artifact) {
+		// 				setCurrentArtifactById(artifact.id);
+		// 			}
+		// 			break;
+		// 		}
+		// 	}
+		// }
 	};
 
 	if (message.type === "user") {
@@ -90,7 +87,7 @@ export function MessageBubble({
 					onClick={() => {
 						console.log("[MessageBubble] Clicked tool message");
 						if (message.chunks[0]?.toolCall) {
-							handleToolSelect(message.chunks[0].toolCall);
+							setCurrentArtifactById(message.id);
 						}
 					}}
 					onKeyDown={(e) => {
@@ -98,7 +95,7 @@ export function MessageBubble({
 							(e.key === "Enter" || e.key === " ") &&
 							message.chunks[0]?.toolCall
 						) {
-							handleToolSelect(message.chunks[0].toolCall);
+							setCurrentArtifactById(message.id);
 						}
 					}}
 					tabIndex={onToolSelect ? 0 : -1}

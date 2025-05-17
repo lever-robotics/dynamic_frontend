@@ -31,11 +31,8 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	setShowBlueprint,
 	handleQueryDataClick,
 }) => {
-	const {
-		state: { threads, currentThreadId },
-		switchThread,
-		addArtifact,
-	} = useWorkspace();
+	const { threads, currentThreadId, switchThread, addArtifact } =
+		useWorkspace();
 
 	const handleLogoClick = () => {
 		// TODO: Add home page

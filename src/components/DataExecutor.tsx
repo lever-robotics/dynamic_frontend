@@ -31,10 +31,7 @@ interface QueryResult {
 }
 
 export function DataExecutor() {
-	const {
-		state: { currentArtifact },
-		updateArtifact,
-	} = useWorkspace();
+	const { currentArtifact, updateArtifact } = useWorkspace();
 
 	const [TempQuery, setTempQuery] = useState(currentArtifact?.content || "");
 	const [results, setResults] = useState<QueryResult[]>([]);

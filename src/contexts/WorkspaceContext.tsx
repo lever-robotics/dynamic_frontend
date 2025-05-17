@@ -41,30 +41,30 @@ interface WorkspaceState {
 }
 
 interface WorkspaceContextType {
-	state: WorkspaceState;
 	isLoading: boolean;
 	error: string | null;
 	// Thread management functions
 	createThread: (name: string) => Promise<string>;
 	switchThread: (threadId: string) => Promise<void>;
-	pushMessages: (messages: MessageBubble[]) => Promise<void>;
 	addArtifact: (
 		type: "image" | "document" | "query",
 		content: string,
+		id: string,
 		metadata?: {
 			data_source?: "bigquery" | "shopify";
 			[key: string]: string | number | boolean | null;
 		},
-	) => Promise<string | null>; // returns the artifact id
+	) => Promise<Artifact | null>; // returns the artifact id
 	updateArtifact: (artifact: Artifact) => Promise<void>;
 	// Whiteboard functions
 	setCurrentArtifactById: (artifactId: string) => void;
 	setCurrentArtifact: (artifact: Artifact | null) => void;
 	currentThreadId: string;
 	currentThreadName: string;
+	artifacts: Artifacts;
+	currentArtifact: Artifact | null;
 	messages: MessageBubble[];
-	// initializeWorkspace: () => Promise<void>;
-	fetchThreadMessages: (threadId: string) => Promise<MessageBubble[]>;
+	threads: Thread[];
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
@@ -74,24 +74,18 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 	console.log("[WorkspaceContext] Initializing the Workspace Provider");
 	const { userId } = useAuth();
-	const [state, setState] = useState<WorkspaceState>({
-		threads: [],
-		currentThreadId: "",
-		messages: [],
-		artifacts: {
-			images: [],
-			documents: [],
-			queries: [],
-		},
-		currentArtifact: null,
+	const [artifacts, setArtifacts] = useState<Artifacts>({
+		images: [],
+		documents: [],
+		queries: [],
 	});
-	const [messages, setMessages] = useState<MessageBubble[]>([]);
+	const [currentArtifact, setCurrentArtifact] = useState<Artifact | null>(null);
+	const [threads, setThreads] = useState<Thread[]>([]);
 	const [currentThreadId, setCurrentThreadId] = useState<string>("");
 	const [currentThreadName, setCurrentThreadName] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	console.log("[WorkspaceContext] messages:", messages);
+	const [messages, setMessages] = useState<MessageBubble[]>([]);
 
 	useEffect(() => {
 		(async () => {
@@ -107,10 +101,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 				if (threadsError) throw threadsError;
 
 				console.log("[WorkspaceContext] Found threads:", threads?.length);
-				setState((prev) => ({
-					...prev,
-					threads: threads || [],
-				}));
+				setThreads(threads || []);
 			} catch (err) {
 				console.error("[WorkspaceContext] Initialization error:", err);
 				setError(
@@ -122,46 +113,23 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 		})();
 	}, [userId]);
 
-	// const initializeWorkspace = useCallback(async () => {
-	// 	console.log("[WorkspaceContext] Changed ThreadId, or re-rendered");
-	// 	if (!userId) {
-	// 		console.log("[WorkspaceContext] No user ID, skipping initialization");
-	// 		return;
-	// 	}
+	const getMessages = async (threadId: string) => {
+		try {
+			const { data: messages, error: messagesError } = await supabase
+				.from("thread_messages")
+				.select("*")
+				.eq("thread_id", threadId)
+				.order("created_at", { ascending: false });
 
-	// 	setIsLoading(true);
-	// 	try {
-	// 		console.log("[WorkspaceContext] Fetching threads");
-	// 		const { data: threads, error: threadsError } = await supabase
-	// 			.from("threads")
-	// 			.select("id, name, created_at")
-	// 			.eq("user_id", userId)
-	// 			.order("created_at", { ascending: false });
+			if (messagesError) throw messagesError;
 
-	// 		if (threadsError) throw threadsError;
-
-	// 		console.log("[WorkspaceContext] Found threads:", threads?.length);
-	// 		setState((prev) => ({
-	// 			...prev,
-	// 			threads: threads || [],
-	// 		}));
-
-	// 		if (state.currentThreadId) {
-	// 			console.log(
-	// 				"[WorkspaceContext] Loading content for thread:",
-	// 				state.currentThreadId,
-	// 			);
-	// 			await loadThreadContent(state.currentThreadId);
-	// 		}
-	// 	} catch (err) {
-	// 		console.error("[WorkspaceContext] Initialization error:", err);
-	// 		setError(
-	// 			err instanceof Error ? err.message : "Failed to initialize workspace",
-	// 		);
-	// 	} finally {
-	// 		setIsLoading(false);
-	// 	}
-	// }, [userId, state.currentThreadId]);
+			console.log("[WorkspaceContext] Loaded messages:", messages?.length);
+			setMessages(messages || []);
+		} catch (err) {
+			console.error("[WorkspaceContext] Error loading messages:", err);
+			setError(err instanceof Error ? err.message : "Failed to load messages");
+		}
+	};
 
 	const getArtifacts = async (threadId: string) => {
 		try {
@@ -199,17 +167,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 					),
 			};
 
-			// Get latest of each type
-			const latestDocument = processedArtifacts.documents[0] || null;
-			const latestImage = processedArtifacts.images[0] || null;
-			const latestQuery: Artifact | null =
-				processedArtifacts.queries[0] || null;
-
-			setState((prev) => ({
-				...prev,
-				artifacts: processedArtifacts,
-				currentArtifact: latestDocument || latestImage || latestQuery,
-			}));
+			setArtifacts(processedArtifacts);
+			return processedArtifacts;
 		} catch (err) {
 			console.error("[WorkspaceContext] Error loading thread content:", err);
 			setError(
@@ -221,63 +180,24 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 	const loadThreadContent = async (threadId: string) => {
 		if (threadId === "") return;
 		try {
-			const { data: messages, error: messagesError } = await supabase
-				.from("thread_messages")
-				.select("content")
-				.eq("thread_id", threadId)
-				.order("order_index", { ascending: true });
-
-			if (messagesError) throw messagesError;
-
-			const { data: artifacts, error: artifactsError } = await supabase
-				.from("thread_artifacts")
-				.select("artifact_type, content, created_at, id")
-				.eq("thread_id", threadId);
-
-			if (artifactsError) throw artifactsError;
-
-			console.log("[WorkspaceContext] Loaded messages:", messages?.length);
-			console.log("[WorkspaceContext] Loaded artifacts:", artifacts?.length);
-
-			// Process artifacts
-			const processedArtifacts: Artifacts = {
-				images: artifacts
-					.filter((a) => a.artifact_type === "image")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-				documents: artifacts
-					.filter((a) => a.artifact_type === "document")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-				queries: artifacts
-					.filter((a) => a.artifact_type === "query")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-			};
-
-			// Get latest of each type
-			const latestDocument = processedArtifacts.documents[0] || null;
-			const latestImage = processedArtifacts.images[0] || null;
-			const latestQuery: Artifact | null =
-				processedArtifacts.queries[0] || null;
-
-			setMessages(messages.map((m) => m.content));
-
-			setState((prev) => ({
-				...prev,
-				messages: messages.map((m) => m.content),
-				artifacts: processedArtifacts,
-				currentArtifact: latestDocument || latestImage || latestQuery,
-			}));
+			const artifacts = await getArtifacts(threadId);
+			await getMessages(threadId);
+			console.log("[WorkspaceContext] Loaded artifacts:", artifacts);
+			console.log(
+				"[WorkspaceContext] Setting current artifact:",
+				artifacts.documents[0]?.id,
+			);
+			const allArtifacts = [
+				...artifacts.documents,
+				...artifacts.images,
+				...artifacts.queries,
+			];
+			const foundArtifact = allArtifacts.find(
+				(a) => a.id === artifacts.documents[0]?.id,
+			);
+			if (foundArtifact) {
+				setCurrentArtifact(foundArtifact);
+			}
 		} catch (err) {
 			console.error("[WorkspaceContext] Error loading thread content:", err);
 			setError(
@@ -419,28 +339,7 @@ Here's a bar chart showing our regional performance:
 			// Update state with new thread and initial document
 			setCurrentThreadId(data.id);
 			setCurrentThreadName(name);
-			setMessages([]);
-			setState((prev) => ({
-				...prev,
-				threads: [data, ...prev.threads],
-				artifacts: {
-					...prev.artifacts,
-					documents: [
-						{
-							id: data.id,
-							artifact_type: "document",
-							content: sampleDocument,
-							created_at: new Date().toISOString(),
-						},
-					],
-				},
-				currentArtifact: {
-					id: data.id,
-					artifact_type: "document",
-					content: sampleDocument,
-					created_at: new Date().toISOString(),
-				},
-			}));
+			await loadThreadContent(data.id);
 
 			return data.id;
 		} catch (err) {
@@ -453,92 +352,8 @@ Here's a bar chart showing our regional performance:
 	const switchThread = async (threadId: string) => {
 		await loadThreadContent(threadId);
 		setCurrentThreadId(threadId);
-		setCurrentThreadName(
-			state.threads.find((t) => t.id === threadId)?.name || "",
-		);
+		setCurrentThreadName(threads.find((t) => t.id === threadId)?.name || "");
 	};
-
-	const pushMessages = async (newMessages: MessageBubble[]) => {
-		if (!currentThreadId) return;
-
-		const currentIndex = messages.length;
-
-		const toUpdate = newMessages.slice(currentIndex);
-		console.log("[WorkspaceContext] Pushing messages:", toUpdate);
-
-		setMessages((prev) => [...prev, ...toUpdate]);
-		try {
-			const { error } = await supabase
-				.from("thread_messages")
-				.insert(
-					toUpdate.map((message) => ({
-						thread_id: currentThreadId,
-						message_type: message.type,
-						content: message,
-						order_index: message.orderIndex,
-					})),
-				)
-				.select();
-
-			if (error) {
-				console.error("[WorkspaceContext] Error adding messages:", error);
-				setError(
-					error instanceof Error ? error.message : "Failed to add messages",
-				);
-			}
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to add messages");
-		}
-	};
-
-	// const addMessage = async (message: MessageBubble) => {
-	// 	if (!currentThreadId) return;
-	// 	console.log("[WorkspaceContext] Adding message:", message)
-
-	// 	message.orderIndex = messages.length;
-
-	// 	setMessages((prev) => [...prev, message]);
-	// 	try {
-	// 		const { error } = await supabase.from("thread_messages").insert([
-	// 			{
-	// 				thread_id: currentThreadId,
-	// 				message_type: message.type,
-	// 				content: message,
-	// 				order_index: message.orderIndex,
-	// 			},
-	// 		]);
-
-	// 		if (error) throw error;
-
-	// 	} catch (err) {
-	// 		setError(err instanceof Error ? err.message : "Failed to add message");
-	// 	}
-	// };
-
-	// const addMessages = async (messages: MessageBubble[]) => {
-	// 	if (!currentThreadId) return;
-
-	// 	let tempIndex = messages.length;
-	// 	for (const message of messages) {
-	// 		message.orderIndex = tempIndex;
-	// 		tempIndex++;
-	// 	}
-	// 	setMessages((prev) => [...prev, ...messages]);
-	// 	try {
-	// 		const { error } = await supabase.from("thread_messages").insert(
-	// 			messages.map((message) => ({
-	// 				thread_id: currentThreadId,
-	// 				message_type: message.type,
-	// 				content: message,
-	// 				order_index: message.orderIndex,
-	// 			})),
-	// 		);
-
-	// 		if (error) throw error;
-	// 	} catch (err) {
-	// 		setError(err instanceof Error ? err.message : "Failed to add messages");
-	// 	}
-	// };
 
 	const updateArtifact = async (artifact: Artifact) => {
 		if (!currentThreadId) return;
@@ -554,43 +369,7 @@ Here's a bar chart showing our regional performance:
 
 			if (error) throw error;
 
-			setState((prev) => {
-				const newState = { ...prev };
-				switch (artifact.artifact_type) {
-					case "image": {
-						const index = newState.artifacts.images.findIndex(
-							(a) => a.id === artifact.id,
-						);
-						if (index !== -1) {
-							newState.artifacts.images[index] = artifact;
-						}
-						break;
-					}
-					case "document": {
-						const index = newState.artifacts.documents.findIndex(
-							(a) => a.id === artifact.id,
-						);
-						if (index !== -1) {
-							newState.artifacts.documents[index] = artifact;
-							// Also update the current artifact if it's the same one
-							if (prev.currentArtifact?.id === artifact.id) {
-								newState.currentArtifact = artifact;
-							}
-						}
-						break;
-					}
-					case "query": {
-						const index = newState.artifacts.queries.findIndex(
-							(a) => a.id === artifact.id,
-						);
-						if (index !== -1) {
-							newState.artifacts.queries[index] = artifact;
-						}
-						break;
-					}
-				}
-				return newState;
-			});
+			await getArtifacts(currentThreadId);
 		} catch (err) {
 			setError(
 				err instanceof Error ? err.message : "Failed to update artifact",
@@ -601,12 +380,12 @@ Here's a bar chart showing our regional performance:
 	const addArtifact = async (
 		type: "image" | "document" | "query",
 		content: string,
+		id: string,
 		metadata?: {
 			data_source?: "bigquery" | "shopify";
 			[key: string]: string | number | boolean | null;
 		},
-		id?: string,
-	): Promise<string | null> => {
+	): Promise<Artifact | null> => {
 		if (!currentThreadId) return null;
 
 		try {
@@ -628,16 +407,16 @@ Here's a bar chart showing our regional performance:
 
 			if (error) throw error;
 
-			// Update local state
-			setState((prev) => {
-				const newArtifactState = {
-					id: id || newArtifact.id,
-					artifact_type: type,
-					content,
-					created_at: newArtifact.created_at,
-					metadata: metadata || {},
-				};
+			const newArtifactState = {
+				id,
+				artifact_type: type,
+				content,
+				created_at: newArtifact.created_at,
+				metadata: metadata || {},
+			};
 
+			// Update local state
+			setArtifacts((prev) => {
 				const typeMap = {
 					image: "images",
 					document: "documents",
@@ -646,16 +425,10 @@ Here's a bar chart showing our regional performance:
 
 				return {
 					...prev,
-					artifacts: {
-						...prev.artifacts,
-						[typeMap[type]]: [
-							newArtifactState,
-							...prev.artifacts[typeMap[type]],
-						],
-					},
+					[typeMap[type]]: [newArtifactState, ...prev[typeMap[type]]],
 				};
 			});
-			return newArtifact.id;
+			return newArtifactState;
 		} catch (err) {
 			console.error("[WorkspaceContext] Error adding artifact:", err);
 			setError(err instanceof Error ? err.message : "Failed to add artifact");
@@ -664,85 +437,36 @@ Here's a bar chart showing our regional performance:
 	};
 
 	const setCurrentArtifactById = (artifactId: string) => {
-		setState((prev) => {
-			// Search through all artifact types
-			const allArtifacts = [
-				...prev.artifacts.documents,
-				...prev.artifacts.images,
-				...prev.artifacts.queries,
-			];
-
-			const foundArtifact = allArtifacts.find((a) => a.id === artifactId);
-
-			if (foundArtifact) {
-				return {
-					...prev,
-					currentArtifact: foundArtifact,
-				};
-			}
-
-			// If artifact not found, set to first document if available
-			const firstDocument = prev.artifacts.documents[0] || null;
-			return {
-				...prev,
-				currentArtifact: firstDocument,
-			};
-		});
-	};
-
-	const setCurrentArtifact = (artifact: Artifact | null) => {
-		setState((prev) => ({
-			...prev,
-			currentArtifact: artifact,
-		}));
-	};
-
-	const setLaunchChatMessage = (message: string) => {
-		setState((prev) => ({
-			...prev,
-			launchChatMessage: message,
-		}));
-	};
-
-	const fetchThreadMessages = async (
-		threadId: string,
-	): Promise<MessageBubble[]> => {
-		try {
-			const { data: messages, error } = await supabase
-				.from("thread_messages")
-				.select("content")
-				.eq("thread_id", threadId)
-				.order("created_at", { ascending: true });
-
-			if (error) throw error;
-
-			console.log("[WorkspaceContext] Fetched messages:", messages?.length);
-			return messages.map((m) => m.content);
-		} catch (err) {
-			console.error("[WorkspaceContext] Error fetching messages:", err);
-			setError(err instanceof Error ? err.message : "Failed to fetch messages");
-			throw err;
+		console.log("[WorkspaceContext] Setting current artifact:", artifactId);
+		console.log("[WorkspaceContext] Artifacts:", artifacts);
+		const allArtifacts = [
+			...artifacts.documents,
+			...artifacts.images,
+			...artifacts.queries,
+		];
+		const foundArtifact = allArtifacts.find((a) => a.id === artifactId);
+		if (foundArtifact) {
+			setCurrentArtifact(foundArtifact);
 		}
 	};
 
 	return (
 		<WorkspaceContext.Provider
 			value={{
-				state,
 				isLoading,
 				error,
 				createThread,
 				switchThread,
-				pushMessages,
 				addArtifact,
 				updateArtifact,
 				setCurrentArtifactById,
 				setCurrentArtifact,
 				currentThreadId,
 				currentThreadName,
+				artifacts,
+				currentArtifact,
 				messages,
-				// initializeWorkspace,
-				fetchThreadMessages,
+				threads,
 			}}
 		>
 			{children}
