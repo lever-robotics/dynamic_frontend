@@ -30,7 +30,8 @@ export function useMessages(sendOnConnect?: () => Payload) {
 		updateArtifact,
 		addArtifact,
 	} = useWorkspace();
-	const { userConfig, upsertUserConfig } = useUserConfig();
+	const { userConfig, upsertUserConfig, updateConnectionMeta } =
+		useUserConfig();
 	const [messages, setMessages] = useState<MessageBubble[]>([]);
 	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
 
@@ -206,6 +207,22 @@ export function useMessages(sendOnConnect?: () => Payload) {
 									error,
 								);
 							});
+						}
+						break;
+					}
+
+					case "agent_write_meta_file": {
+						const meta_file_json = toolArgs.meta_file_json;
+						const connection_id = toolArgs.connection_id;
+						console.log("[ChatDisplay] Meta file json:", meta_file_json);
+						console.log("[ChatDisplay] Connection id:", connection_id);
+						const meta_data = JSON.parse(meta_file_json);
+						// Set the meta file in the specific connector
+						const connector = userConfig.data_connectors.find(
+							(connector) => connector.id === connection_id,
+						);
+						if (connector) {
+							await updateConnectionMeta(connection_id, meta_data);
 						}
 						break;
 					}
