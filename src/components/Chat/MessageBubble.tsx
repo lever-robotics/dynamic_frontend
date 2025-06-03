@@ -19,13 +19,7 @@ export function MessageBubble({
 	onToolSelect,
 	toolNameMapping,
 }: MessageBubbleProps) {
-	const {
-		setView,
-		setDocument,
-		setImage,
-		setQuery,
-		state: { artifacts },
-	} = useWorkspace();
+	const { setCurrentArtifactById, artifacts } = useWorkspace();
 
 	const handleToolSelect = (tool: ToolExecutionBubble) => {
 		// First call the original onToolSelect if it exists
@@ -34,41 +28,41 @@ export function MessageBubble({
 		}
 
 		// Then switch to the appropriate tab based on the tool type
-		if (tool.artifactId) {
-			switch (tool.tool) {
-				case "write_bi_report": {
-					const artifact = artifacts.documents.find(
-						(doc) => doc.id === tool.artifactId,
-					);
-					if (artifact) {
-						setDocument(artifact);
-						setView("DocViewer");
-					}
-					break;
-				}
-				case "agent_execute_python_code": {
-					const artifact = artifacts.images.find(
-						(img) => img.id === tool.artifactId,
-					);
-					if (artifact) {
-						setImage(artifact);
-						setView("GraphViewer");
-					}
-					break;
-				}
-				case "agent_execute_sql_query":
-				case "agent_execute_bigquery": {
-					const artifact = artifacts.queries.find(
-						(query) => query.id === tool.artifactId,
-					);
-					if (artifact) {
-						setQuery(artifact);
-						setView("DataExecutor");
-					}
-					break;
-				}
-			}
-		}
+		// console.log("[MessageBubble] Tool selected:", tool);
+		// console.log("[MessageBubble] Artifacts:", artifacts);
+		// if (tool.artifactId) {
+		// 	switch (tool.tool) {
+		// 		case "write_bi_report": {
+		// 			const artifact = artifacts.documents.find(
+		// 				(doc) => doc.id === tool.artifactId,
+		// 			);
+		// 			if (artifact) {
+		// 				setCurrentArtifactById(artifact.id);
+		// 			}
+		// 			break;
+		// 		}
+		// 		case "agent_execute_python_code": {
+		// 			const artifact = artifacts.images.find(
+		// 				(img) => img.id === tool.artifactId,
+		// 			);
+		// 			if (artifact) {
+		// 				setCurrentArtifactById(artifact.id);
+		// 			}
+		// 			break;
+		// 		}
+		// 		case "agent_execute_sql_query":
+		// 		case "agent_execute_bigquery": {
+		// 			const artifact = artifacts.queries.find(
+		// 				(query) => query.id === tool.artifactId,
+		// 			);
+		// 			console.log("[MessageBubble] Found artifact:", artifact);
+		// 			if (artifact) {
+		// 				setCurrentArtifactById(artifact.id);
+		// 			}
+		// 			break;
+		// 		}
+		// 	}
+		// }
 	};
 
 	if (message.type === "user") {
@@ -91,8 +85,9 @@ export function MessageBubble({
 							: ""
 					}`}
 					onClick={() => {
+						console.log("[MessageBubble] Clicked tool message");
 						if (message.chunks[0]?.toolCall) {
-							handleToolSelect(message.chunks[0].toolCall);
+							setCurrentArtifactById(message.id);
 						}
 					}}
 					onKeyDown={(e) => {
@@ -100,7 +95,7 @@ export function MessageBubble({
 							(e.key === "Enter" || e.key === " ") &&
 							message.chunks[0]?.toolCall
 						) {
-							handleToolSelect(message.chunks[0].toolCall);
+							setCurrentArtifactById(message.id);
 						}
 					}}
 					tabIndex={onToolSelect ? 0 : -1}
@@ -129,15 +124,12 @@ export function MessageBubble({
 	}
 
 	// Assistant message
+	const bubble = message.chunks.map((chunk) => chunk.content).join("");
 	return (
 		<div className="flex justify-start">
 			<article className="flex overflow-hidden flex-col px-3 py-3 mt-3.5 w-full bg-white rounded-2xl max-w-[324px] border border-gray-200">
 				<div className="flex flex-col w-full text-xs leading-4 text-slate-600">
-					{message.chunks.map((chunk, index) => (
-						<div key={`${message.id}-chunk-${index}`}>
-							{chunk.content && <MarkdownContent content={chunk.content} />}
-						</div>
-					))}
+					{bubble && <MarkdownContent content={bubble} />}
 				</div>
 			</article>
 		</div>

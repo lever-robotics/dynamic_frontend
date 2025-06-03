@@ -20,9 +20,8 @@ import {
 
 interface SidebarProps {
 	setShowSettings: (show: boolean) => void;
-	setShowLaunchChat: (show: boolean) => void;
+	setShowLaunchChat: () => void;
 	setShowBlueprint: (show: boolean) => void;
-	setIsLaunchMode: (isLaunchMode: boolean) => void;
 	handleQueryDataClick: () => Promise<void>;
 }
 
@@ -30,15 +29,10 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	setShowSettings,
 	setShowLaunchChat,
 	setShowBlueprint,
-	setIsLaunchMode,
 	handleQueryDataClick,
 }) => {
-	const {
-		state: { threads, currentThreadId },
-		switchThread,
-		addArtifact,
-		setView,
-	} = useWorkspace();
+	const { threads, currentThreadId, switchThread, addArtifact } =
+		useWorkspace();
 
 	const handleLogoClick = () => {
 		// TODO: Add home page
@@ -46,9 +40,6 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 
 	const handleThreadClick = (threadId: string) => {
 		switchThread(threadId);
-		setShowLaunchChat(false);
-		setView("DocViewer");
-		setIsLaunchMode(false);
 	};
 
 	const handleSettingsClick = () => {
@@ -56,8 +47,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	};
 
 	const handleNewAnalysisClick = () => {
-		switchThread("");
-		setShowLaunchChat(true);
+		setShowLaunchChat();
 	};
 
 	const handleBlueprintClick = () => {

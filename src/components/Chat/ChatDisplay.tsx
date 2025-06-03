@@ -1,4 +1,5 @@
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useMessages } from "@/hooks/useMessages";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import type {
 	AgentChunk,
@@ -12,446 +13,24 @@ import type {
 	WebSocketMessage,
 } from "@/types/chat";
 import { useUserConfig } from "@/utils/UserConfigProvider";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useEffect } from "react";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
 
 interface ChatDisplayProps {
 	onClose?: () => void;
 	sendOnConnect?: () => Payload;
-	isLaunchMode?: boolean;
-	isLever?: boolean;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
 	onClose,
 	sendOnConnect,
-	isLaunchMode = false,
-	isLever = false,
 }: ChatDisplayProps) {
-	const [localMessages, setLocalMessages] = useState<MessageBubble[]>([]);
-	const [isInitializing, setIsInitializing] = useState(false);
-	const [hasInitialized, setHasInitialized] = useState(false);
-	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
-	const [waitForAiToFinish, setWaitForAiToFinish] = useState(false);
-	const {
-		state: { currentThreadId, launchChatMessage, artifacts },
-		addMessage,
-		addArtifact,
-		setCurrentArtifactById,
-		updateArtifact,
-		fetchThreadMessages,
-	} = useWorkspace();
-	const { userConfig, upsertUserConfig, updateConnectionMeta } =
-		useUserConfig();
+	const { setCurrentArtifactById } = useWorkspace();
+	const { messages, isConnected, potentialResponses, handleNewMessage } =
+		useMessages(sendOnConnect);
 
-	// Handle incoming WebSocket messages
-	const handleMessage = useCallback(
-		async (wsMessage: WebSocketMessage) => {
-			const { payload, messageId } = wsMessage;
-
-			// Check if this is the final message and if so then save Agent output to the database.
-			if (
-				payload.type === "agent" &&
-				(payload as AgentChunk).status === "complete"
-			) {
-				console.log("[ChatDisplay] Final message received:", payload);
-
-				// Use a timeout to ensure all messages are processed
-				setTimeout(() => {
-					// Find the index of the last user message
-					const lastUserMessageIndex =
-						localMessages.length -
-						1 -
-						[...localMessages]
-							.reverse()
-							.findIndex((msg) => msg.type === "user");
-
-					if (lastUserMessageIndex !== -1) {
-						// Get all messages from the last user message
-						const messagesToSave = localMessages.slice(lastUserMessageIndex);
-
-						console.log("[ChatDisplay] Saving messages:", messagesToSave);
-
-						// Track which messages we've already saved
-						const savedMessageIds = new Set<string>();
-
-						// Save messages in chronological order (oldest to newest)
-						for (let i = 0; i < messagesToSave.length; i++) {
-							const message = messagesToSave[i];
-							// Only save if we haven't saved this message before
-							if (!savedMessageIds.has(message.id)) {
-								addMessage(message);
-								savedMessageIds.add(message.id);
-							}
-						}
-					}
-				}, 1000); // Wait 1 second to ensure all messages are processed
-			}
-
-			console.log("[ChatDisplay] Received message:", payload);
-
-			switch (payload.type) {
-				case "text": {
-					setLocalMessages((prev) => {
-						const messageIndex = prev.length - 1;
-						const newChunk: MessageChunkBubble = {
-							content: (payload as MessageChunk).content,
-						};
-
-						// Append new text chunk to current message
-						if (prev[messageIndex]?.type === "assistant") {
-							const lastChunkIndex = prev[messageIndex].chunks.length - 1;
-
-							// Merge with the last chunk if it exists
-							if (lastChunkIndex >= 0) {
-								const updatedChunks = [...prev[messageIndex].chunks];
-								updatedChunks[lastChunkIndex] = {
-									...updatedChunks[lastChunkIndex],
-									content:
-										updatedChunks[lastChunkIndex].content + newChunk.content,
-								};
-
-								const updatedMessage = {
-									...prev[messageIndex],
-									chunks: updatedChunks,
-								};
-								return [
-									...prev.slice(0, messageIndex),
-									updatedMessage,
-									...prev.slice(messageIndex + 1),
-								];
-							}
-
-							// If no chunks exist, add the new chunk
-							const updatedMessage = {
-								...prev[messageIndex],
-								chunks: [...prev[messageIndex].chunks, newChunk],
-							};
-							return [
-								...prev.slice(0, messageIndex),
-								updatedMessage,
-								...prev.slice(messageIndex + 1),
-							];
-						}
-
-						// Create new message
-						const newMessage: MessageBubble = {
-							id: messageId,
-							type: "assistant",
-							chunks: [newChunk],
-						};
-						return [...prev, newMessage];
-					});
-					break;
-				}
-				case "agent": {
-					// Keep agent logic for tracking purposes but don't display
-					const agentChunk = payload as AgentChunk;
-					console.log(
-						"[ChatDisplay] Agent status update:",
-						agentChunk.name,
-						agentChunk.status,
-					);
-					break;
-				}
-				case "tool": {
-					setLocalMessages((prev) => {
-						const toolChunk = payload as ToolChunk;
-						const newChunk: MessageChunkBubble = {
-							toolCall: {
-								tool: toolChunk.tool,
-								arguments:
-									typeof toolChunk.arguments === "string"
-										? JSON.parse(toolChunk.arguments)
-										: toolChunk.arguments,
-								status: toolChunk.status,
-								result: toolChunk.result,
-								error: toolChunk.error,
-							},
-						};
-
-						// Handle different types of tool results
-						const tool = toolChunk.tool;
-						const result = toolChunk.result;
-						const image = toolChunk.image;
-						const toolArgs =
-							typeof toolChunk.arguments === "string"
-								? JSON.parse(toolChunk.arguments)
-								: toolChunk.arguments;
-						console.log("[ChatDisplay] Tool result:", toolChunk);
-
-						// Create an async function to handle the tool processing
-						const processTool = async () => {
-							switch (tool) {
-								case "agent_user_potential_responses": {
-									try {
-										if (
-											toolArgs &&
-											typeof toolArgs === "object" &&
-											"potential_responses" in toolArgs
-										) {
-											setPotentialResponses(toolArgs.potential_responses);
-											setWaitForAiToFinish(false);
-										}
-									} catch (error) {
-										console.error(
-											"[ChatDisplay] Error handling potential responses:",
-											error,
-										);
-									}
-									break;
-								}
-								case "write_bi_report": {
-									const report = toolArgs.report;
-									// Only Show tool when it's complete
-									if (toolChunk.status === "complete") {
-										if (report) {
-											console.log(
-												"[ChatDisplay] Updating first document:",
-												report,
-											);
-											const firstDocument = artifacts.documents[0];
-											if (firstDocument) {
-												updateArtifact({
-													...firstDocument,
-													content: report,
-												});
-												artifacts.documents[0] = {
-													...firstDocument,
-													content: report,
-												};
-												newChunk.toolCall.artifactId = firstDocument.id;
-											} else {
-												// Create new document and get its ID
-												const artifactId = await addArtifact(
-													"document",
-													report,
-												);
-												if (artifactId) {
-													newChunk.toolCall.artifactId = artifactId;
-												}
-											}
-										}
-										const newMessage: MessageBubble = {
-											id: messageId,
-											type: "tool",
-											chunks: [newChunk],
-										};
-										return [...prev, newMessage];
-									}
-									break;
-								}
-								case "agent_execute_bigquery": {
-									const query = toolArgs.query;
-									// Only Show tool when it's complete
-									if (toolChunk.status === "complete") {
-										if (query) {
-											//log query on complete
-											console.log("[ChatDisplay] Adding query:", query);
-											// Create new query and get its ID
-											const artifactId = await addArtifact("query", query);
-											if (artifactId) {
-												newChunk.toolCall.artifactId = artifactId;
-											}
-										}
-										const newMessage: MessageBubble = {
-											id: messageId,
-											type: "tool",
-											chunks: [newChunk],
-										};
-										return [...prev, newMessage];
-									}
-									break;
-								}
-
-								case "agent_update_business": {
-									const new_business_plan = result; // The function outputs the new business plan
-									console.log(
-										"[ChatDisplay] New business plan created:",
-										new_business_plan,
-									);
-
-									// Update the business plan in user config
-									if (userConfig) {
-										upsertUserConfig({
-											...userConfig,
-											business_overview: new_business_plan,
-										}).catch((error) => {
-											console.error(
-												"[ChatDisplay] Failed to update business plan:",
-												error,
-											);
-										});
-									}
-
-									// Create a new message to show the update
-									const newMessage: MessageBubble = {
-										id: messageId,
-										type: "tool",
-										chunks: [
-											{
-												toolCall: {
-													tool: "agent_update_business",
-													arguments: {},
-													status: "complete",
-													result: new_business_plan,
-												},
-											},
-										],
-									};
-									return [...prev, newMessage];
-								}
-								case "agent_write_meta_file": {
-									const meta_file_json = toolArgs.meta_file_json;
-									const connection_id = toolArgs.connection_id;
-									console.log("[ChatDisplay] Meta file json:", meta_file_json);
-									console.log("[ChatDisplay] Connection id:", connection_id);
-									const meta_data = JSON.parse(meta_file_json);
-									// Set the meta file in the specific connector
-									const connector = userConfig.data_connectors.find(
-										(connector) => connector.id === connection_id,
-									);
-									if (connector) {
-										await updateConnectionMeta(connection_id, meta_data);
-									}
-									break;
-								}
-								default: {
-									console.log(`Unhandled tool type: ${tool}`);
-									break;
-								}
-							}
-							return prev;
-						};
-
-						// Execute the async function
-						processTool().catch(console.error);
-						return prev;
-					});
-					break;
-				}
-			}
-		},
-		[
-			localMessages,
-			addMessage,
-			addArtifact,
-			updateArtifact,
-			artifacts,
-			userConfig,
-			upsertUserConfig,
-			updateConnectionMeta,
-		],
-	);
-
-	// WebSocket connection with message handling
-	const { isConnected, error, sendMessage } = useWebSocket({
-		onMessage: handleMessage,
-	});
-
-	// Initialize launch mode setup
-	const initializeChat = useCallback(async () => {
-		// Prevent multiple initializations
-		if (hasInitialized || isInitializing) {
-			console.log(
-				"[ChatDisplay] Already initialized or initializing, skipping",
-			);
-			return;
-		}
-
-		console.log("[ChatDisplay] Starting initialization");
-		setIsInitializing(true);
-
-		try {
-			// Send initial connection message in both modes
-			const msg = sendOnConnect();
-			console.log("[ChatDisplay] Sending initial connection message:", msg);
-			await sendMessage(msg.type, msg);
-
-			if (isLaunchMode) {
-				// Create and send the launch message
-				const userMessageId = crypto.randomUUID();
-				const userMessage: MessageBubble = {
-					id: userMessageId,
-					type: "user",
-					chunks: [{ content: launchChatMessage }],
-				};
-
-				// In launch mode, start fresh with just this message
-				setLocalMessages([userMessage]);
-				setWaitForAiToFinish(true);
-				// await addMessage(userMessage); Actually save the user message after the assistnat has repsponsed
-
-				// Send message to LLM
-				await sendMessage("toLLM", {
-					type: "toLLM",
-					text: launchChatMessage,
-				} as ToLLMMessage);
-			} else if (currentThreadId) {
-				// Only fetch messages if this is a Lever instance
-				if (isLever) {
-					const messages = await fetchThreadMessages(currentThreadId);
-					setLocalMessages(messages);
-				} else {
-					// For non-Lever instances, start with empty messages
-					setLocalMessages([]);
-				}
-			}
-
-			// Mark as initialized
-			setHasInitialized(true);
-			console.log("[ChatDisplay] Initialization complete");
-		} catch (error) {
-			console.error("[ChatDisplay] Error during initialization:", error);
-			setHasInitialized(false); // Allow retry on error
-		} finally {
-			setIsInitializing(false);
-		}
-	}, [
-		currentThreadId,
-		isLaunchMode,
-		launchChatMessage,
-		isInitializing,
-		hasInitialized,
-		sendOnConnect,
-		sendMessage,
-		fetchThreadMessages,
-		isLever,
-	]);
-
-	// Initialize when all conditions are met
-	useEffect(() => {
-		if (isConnected) {
-			console.log("[ChatDisplay] Conditions met, attempting initialization");
-			initializeChat();
-		}
-	}, [isConnected, initializeChat]); //Execute on is connected
-
-	// Handle new user messages
-	const handleNewMessage = async (content: string) => {
-		console.log("[ChatDisplay] Handling new message:", content);
-		const userMessageId = crypto.randomUUID();
-		const assistantMessageId = crypto.randomUUID();
-
-		// Add user message to both local and workspace state
-		const userMessage: MessageBubble = {
-			id: userMessageId,
-			type: "user",
-			chunks: [{ content }],
-		};
-
-		// take away potential responses and set waiting state
-		setPotentialResponses([]);
-		setWaitForAiToFinish(true);
-
-		// Add user message to both local and workspace state
-		setLocalMessages((prev) => [...prev, userMessage]);
-		// addMessage(userMessage); Add the user message when its rendered in the begingn
-
-		console.log("[ChatDisplay] Sending message to LLM");
-		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
-	};
+	console.log("[ChatDisplay] messages:", messages);
 
 	return (
 		<div className="flex flex-col h-full bg-[#F4F5F7]">
@@ -483,15 +62,13 @@ export const ChatDisplay = memo(function ChatDisplay({
 
 			{/* Messages */}
 			<MessageList
-				messages={localMessages}
-				onToolSelect={useCallback(
-					(tool: ToolExecutionBubble) => {
-						if (tool.artifactId) {
-							setCurrentArtifactById(tool.artifactId);
-						}
-					},
-					[setCurrentArtifactById],
-				)}
+				messages={messages}
+				onToolSelect={(tool: ToolExecutionBubble) => {
+					console.log("[ChatDisplay] Tool selected:", tool);
+					if (tool.artifactId) {
+						setCurrentArtifactById(tool.artifactId);
+					}
+				}}
 			/>
 
 			{/* Potential Responses */}
@@ -516,9 +93,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 			<ChatInput
 				isConnected={isConnected}
 				onSubmit={handleNewMessage}
-				error={error}
-				isLaunchMode={isLaunchMode}
-				disabled={waitForAiToFinish}
+				error={null}
 			/>
 		</div>
 	);

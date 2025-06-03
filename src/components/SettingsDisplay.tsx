@@ -56,13 +56,17 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 	const testFunction = async () => {
 		const token = await getValidToken();
 		const response = await fetch(
-			`${API_BASE_URL}/v0/connectors/shopify/introspect`,
+			`${API_BASE_URL}/v0/connectors/bigquery/query`,
 			{
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${token}`,
 					"Content-Type": "application/json",
 				},
+				body: JSON.stringify({
+					query:
+						"SELECT * FROM `bigquery-public-data.thelook_ecommerce.products` LIMIT 10",
+				}),
 			},
 		);
 		const data = await response.json();

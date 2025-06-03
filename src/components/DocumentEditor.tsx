@@ -3,9 +3,7 @@ import { cn } from "@/lib/utils";
 import { MarkdownContent } from "./Chat/MarkdownContent";
 
 export function DocumentEditor() {
-	const {
-		state: { artifacts },
-	} = useWorkspace();
+	const { artifacts } = useWorkspace();
 
 	const document = artifacts.documents[0]?.content;
 

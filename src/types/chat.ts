@@ -4,6 +4,7 @@ export interface MessageBubble {
 	type: "user" | "assistant" | "tool";
 	chunks: MessageChunkBubble[];
 	timestamp?: string; // Optional, for display purposes
+	orderIndex?: number;
 }
 
 export interface MessageChunkBubble {
