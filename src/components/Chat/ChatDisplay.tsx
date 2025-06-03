@@ -42,7 +42,8 @@ export const ChatDisplay = memo(function ChatDisplay({
 		updateArtifact,
 		fetchThreadMessages,
 	} = useWorkspace();
-	const { userConfig, upsertUserConfig } = useUserConfig();
+	const { userConfig, upsertUserConfig, updateConnectionMeta } =
+		useUserConfig();
 
 	// Handle incoming WebSocket messages
 	const handleMessage = useCallback(
@@ -301,6 +302,21 @@ export const ChatDisplay = memo(function ChatDisplay({
 									};
 									return [...prev, newMessage];
 								}
+								case "agent_write_meta_file": {
+									const meta_file_json = toolArgs.meta_file_json;
+									const connection_id = toolArgs.connection_id;
+									console.log("[ChatDisplay] Meta file json:", meta_file_json);
+									console.log("[ChatDisplay] Connection id:", connection_id);
+									const meta_data = JSON.parse(meta_file_json);
+									// Set the meta file in the specific connector
+									const connector = userConfig.data_connectors.find(
+										(connector) => connector.id === connection_id,
+									);
+									if (connector) {
+										await updateConnectionMeta(connection_id, meta_data);
+									}
+									break;
+								}
 								default: {
 									console.log(`Unhandled tool type: ${tool}`);
 									break;
@@ -325,6 +341,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 			artifacts,
 			userConfig,
 			upsertUserConfig,
+			updateConnectionMeta,
 		],
 	);
 
