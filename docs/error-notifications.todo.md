@@ -30,54 +30,98 @@ interface ErrorNotification {
 }
 ```
 
-3. **Error Handler Design**
-   - Singleton pattern for centralized error management
-   - Error categorization by source and type
-   - Standardized error formatting
-   - Built-in retry mechanisms for recoverable errors
-   - Error logging and tracking capabilities
+## Error & Toast Notification System — Status and Next Steps
 
-4. **Toast Management System**
-   - Queue-based notification system
-   - Priority-based display order
-   - Configurable auto-dismiss timeouts
-   - Manual dismiss option
-   - Screen reader integration
-   - Stacking behavior for multiple notifications
+---
 
-5. **Integration Points**
-   - API error interceptors
-   - AI service error handlers
-   - React error boundaries
-   - Global error event listeners
+### Current Architecture
 
-6. **Styling**
-   - Tailwind CSS for consistent theming
-   - Responsive design with mobile considerations
-   - Animation using tailwindcss-animate
-   - Accessible color schemes
+- **ToastProvider**:
+  - Uses Radix UI for accessible, animated notifications.
+  - Provides a React Context + `useToast` hook for all toast actions (`showToast`, `showErrorToast`, `showSuccessToast`, etc.).
+  - Manages toast queue, stacking, auto-dismiss, manual dismiss, and responsive positioning.
+  - No global singletons or registration; all toast logic is React-idiomatic.
+  - Fully type-safe and accessible (ARIA, keyboard, screen reader support).
+  - Styled with Tailwind CSS and supports dark mode.
 
-### Development Phases
+- **Toast Usage**:
+  - Call `const { showErrorToast, showSuccessToast, ... } = useToast()` in any component under the provider.
+  - Retry actions and custom actions are supported via the toast API.
 
-1. Phase 1: Foundation ✓
-   - Set up ToastProvider with Radix UI ✓
-   - Create ErrorNotification type system ✓
-   - Implement basic ToastComponent with Tailwind styling ✓
-   - Add screen reader support and basic animations ✓
+- **Error Handling**:
+  - Errors are handled locally in components, not via a global ErrorHandler singleton.
+  - Retry logic is implemented at the component level, passed as callbacks to toasts.
+  - No bridge or context between error and toast systems; toast helpers are called directly where errors occur.
 
-2. Phase 2: Error Management
-   - Implement ErrorHandler utility
-   - Create error formatting and categorization logic
-   - Add error queue management
-   - Implement retry mechanisms for recoverable errors
+---
 
-3. Phase 3: Integration
-   - Add API error interceptors
-   - Implement AI service error handlers
-   - Set up React error boundaries
-   - Add global error event listeners
+### Removed/Obsolete
 
-4. Phase 4: Polish & Optimization
+- **ErrorHandler singleton**: No longer used.
+- **Global toast helpers (`showToast`, `registerToastFn`, etc.)**: Removed in favor of context/hook pattern.
+- **ErrorToastBridge**: No longer necessary.
+
+---
+
+### Features Implemented
+
+- [x] ToastProvider with Radix UI, Tailwind, and full accessibility
+- [x] Type-safe toast and error notification types
+- [x] Context + hook API for all toast actions
+- [x] Retry actions and custom actions on toasts
+- [x] Responsive, animated, and accessible UI
+- [x] No global state or singleton dependencies
+
+---
+
+### Outstanding/Next Steps
+
+1. **Integration Enhancements**
+   - [ ] Add API error interceptors to automatically show toasts for backend errors.
+   - [ ] Integrate with React error boundaries for uncaught UI errors.
+   - [ ] Optionally add global error event listeners for fatal errors (e.g., window.onerror).
+
+2. **Advanced Features**
+   - [ ] Priority-based toast queue (e.g., error toasts always appear on top).
+   - [ ] Configurable max visible toasts and stacking behavior.
+   - [ ] Optional: Toast categories (e.g., persistent vs. transient).
+   - [ ] Optional: Toast logging/tracking for analytics or debugging.
+
+3. **Polish & Documentation**
+   - [ ] Add more usage examples in documentation.
+   - [ ] Ensure all toast actions are covered by tests.
+   - [ ] Review accessibility with screen readers and keyboard navigation.
+
+---
+
+### How to Use
+
+```tsx
+import { useToast } from "@/components/ui/Toast/ToastProvider";
+
+const { showErrorToast, showSuccessToast } = useToast();
+
+showErrorToast(new Error("Something went wrong!"), {
+  retryFn: () => { /* retry logic */ }
+});
+
+showSuccessToast("Operation completed!");
+```
+
+---
+
+**Summary:**  
+The toast and error notification system is now React-idiomatic, fully accessible, and easy to use. All global and singleton patterns have been removed. Next, focus on deeper integration (API, error boundaries), advanced queueing, and polish.
+
+---
+
+**Next Steps (Recommended):**
+
+1. Implement API error interceptors to automatically show error toasts for failed requests.
+2. Add a React error boundary at the app root to catch and display unexpected errors.
+3. Add more documentation and examples for developers.
+4. Review and test accessibility with real assistive technology.
+
    - Enhance animations and transitions
    - Add priority-based notification ordering
    - Implement action buttons for recoverable errors
@@ -125,15 +169,22 @@ interface ErrorNotification {
 
 ### Current Status
 
-Phase 1 complete - Basic toast notification system implemented with:
-- Radix UI Toast component integration
-- TypeScript interfaces for error notifications
-- Tailwind styling and animations
-- Screen reader support
-- Example component for testing
+Phase 1 complete ✓
+- Radix UI Toast component integration ✓
+- TypeScript interfaces for error notifications ✓
+- Tailwind styling and animations ✓
+- Screen reader support ✓
+- Real implementation in MainContent for testing ✓
+
+Starting Phase 2: Error Management
+- Implementing ErrorHandler utility
+- Creating error formatting and categorization logic
+- Adding error queue management
+- Implementing retry mechanisms
 
 ### Next Steps
 
-1. Research and select toast library
-2. Implement basic toast container
-3. Create error handling utilities
+1. Create ErrorHandler utility class
+2. Implement error formatting and categorization
+3. Add queue management system
+4. Add retry mechanisms for recoverable errors

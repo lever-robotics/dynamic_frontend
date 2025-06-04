@@ -1,16 +1,17 @@
+import type { BaseToast, Toast, ToastPosition } from "@/types/notifications";
+import { cn } from "@/utils/styles";
 import * as ToastPrimitive from "@radix-ui/react-toast";
 import * as React from "react";
-import type {
-	ErrorNotification,
-	ToastPosition,
-} from "../../../types/notifications";
-import { cn } from "../../../utils/styles";
 
 interface ToastContextType {
-	showToast: (
-		notification: Omit<ErrorNotification, "id" | "timestamp">,
+	showToast: (toast: BaseToast) => void;
+	showErrorToast: (
+		error: Error | string,
+		options?: { retryFn?: () => void; title?: string },
 	) => void;
-	clearToasts: () => void;
+	showSuccessToast: (message: string, title?: string) => void;
+	showLoadingToast: (message: string, title?: string) => void;
+	showInfoToast: (message: string, title?: string) => void;
 }
 
 const ToastContext = React.createContext<ToastContextType | undefined>(
@@ -28,33 +29,73 @@ export function ToastProvider({
 	position = "bottom-right",
 	duration = 5000,
 }: ToastProviderProps) {
-	const [toasts, setToasts] = React.useState<ErrorNotification[]>([]);
+	const [toasts, setToasts] = React.useState<Toast[]>([]);
 
-	const showToast = React.useCallback(
-		(notification: Omit<ErrorNotification, "id" | "timestamp">) => {
-			const id = Math.random().toString(36).slice(2);
-			const timestamp = Date.now();
+	// Toast helpers
+	const showToast = React.useCallback((toast: BaseToast) => {
+		const id = crypto.randomUUID();
+		const timestamp = Date.now();
+		setToasts((prev) => [...prev, { ...toast, id, timestamp }]);
+	}, []);
 
-			setToasts((prev) => [...prev, { ...notification, id, timestamp }]);
+	const showErrorToast = React.useCallback(
+		(
+			error: Error | string,
+			options?: { retryFn?: () => void; title?: string },
+		) => {
+			const message = error instanceof Error ? error.message : error;
+			const toast: BaseToast = {
+				type: "error",
+				title: options?.title ?? "Error",
+				message,
+			};
+			if (options?.retryFn) {
+				toast.action = {
+					label: "Try Again",
+					onClick: options.retryFn,
+				};
+			}
+			showToast(toast);
 		},
-		[],
+		[showToast],
 	);
 
-	const clearToasts = React.useCallback(() => {
-		setToasts([]);
-	}, []);
+	const showSuccessToast = React.useCallback(
+		(message: string, title = "Success") => {
+			showToast({
+				type: "success",
+				title,
+				message,
+			});
+		},
+		[showToast],
+	);
+
+	const showLoadingToast = React.useCallback(
+		(message: string, title = "Loading") => {
+			showToast({
+				type: "loading",
+				title,
+				message,
+			});
+		},
+		[showToast],
+	);
+
+	const showInfoToast = React.useCallback(
+		(message: string, title = "Info") => {
+			showToast({
+				type: "info",
+				title,
+				message,
+			});
+		},
+		[showToast],
+	);
 
 	const removeToast = React.useCallback((id: string) => {
 		setToasts((prev) => prev.filter((toast) => toast.id !== id));
 	}, []);
-
-	const contextValue = React.useMemo(
-		() => ({
-			showToast,
-			clearToasts,
-		}),
-		[showToast, clearToasts],
-	);
 
 	const getPositionStyles = (position: ToastPosition): string => {
 		switch (position) {
@@ -71,10 +112,27 @@ export function ToastProvider({
 		}
 	};
 
+	const contextValue = React.useMemo(
+		() => ({
+			showToast,
+			showErrorToast,
+			showSuccessToast,
+			showLoadingToast,
+			showInfoToast,
+		}),
+		[
+			showToast,
+			showErrorToast,
+			showSuccessToast,
+			showLoadingToast,
+			showInfoToast,
+		],
+	);
+
 	return (
 		<ToastContext.Provider value={contextValue}>
-			{children}
 			<ToastPrimitive.Provider>
+				{children}
 				<div
 					className={cn(
 						"fixed flex flex-col gap-2 p-4 w-full sm:max-w-sm z-50",
@@ -85,7 +143,7 @@ export function ToastProvider({
 					{toasts.map((toast) => (
 						<ToastPrimitive.Root
 							key={toast.id}
-							duration={duration}
+							duration={toast.duration ?? duration}
 							className={cn(
 								"bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4",
 								"border border-gray-200 dark:border-gray-700",
@@ -152,9 +210,7 @@ export function ToastProvider({
 }
 
 export function useToast() {
-	const context = React.useContext(ToastContext);
-	if (!context) {
-		throw new Error("useToast must be used within a ToastProvider");
-	}
-	return context;
+	const ctx = React.useContext(ToastContext);
+	if (!ctx) throw new Error("useToast must be used within a ToastProvider");
+	return ctx;
 }

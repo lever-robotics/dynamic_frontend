@@ -15,7 +15,7 @@ export const MainContent: React.FC = () => {
 	console.log("[SinglePageApp] Rendering");
 	const { artifacts, createThread, messages, currentThreadId } = useWorkspace();
 	const { userConfig } = useUserConfig();
-	const { showToast } = useToast();
+	const { showErrorToast, showSuccessToast } = useToast();
 
 	const sendOnConnect = useCallback(() => {
 		console.log("[ChatWrapper] Creating initial connection message");
@@ -51,41 +51,24 @@ export const MainContent: React.FC = () => {
 			}
 
 			// Show loading toast
-			showToast({
-				type: "info",
-				title: "Starting Analysis",
-				message: "Initializing your analysis request...",
-				source: "client",
-			});
+			showSuccessToast("Operation completed successfully");
 
 			// Create a new thread with the message as the title
 			const threadId = await createThread(message);
 			console.log("[SinglePageApp] Created thread with ID:", threadId);
 
 			// Show success toast
-			showToast({
-				type: "info",
-				title: "Analysis Started",
-				message: "Your analysis request is being processed",
-				source: "client",
-			});
+			showSuccessToast("Analysis started successfully");
 
 			console.log("[SinglePageApp] Analysis started successfully");
 		} catch (error) {
 			console.error("[SinglePageApp] Failed to start analysis:", error);
 
 			// Show error toast with retry option
-			showToast({
-				type: "error",
+			showErrorToast(error, {
 				title: "Error Starting Analysis",
-				message:
-					error instanceof Error
-						? error.message
-						: "An unexpected error occurred",
-				source: "client",
-				action: {
-					label: "Try Again",
-					onClick: () => handleStartAnalysis(message),
+				retryFn: () => {
+					handleStartAnalysis(message);
 				},
 			});
 		}

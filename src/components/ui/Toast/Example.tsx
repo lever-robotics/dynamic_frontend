@@ -2,19 +2,12 @@ import * as React from "react";
 import { useToast } from "./ToastProvider";
 
 export function ToastExample() {
-	const { showToast } = useToast();
-
+	const { showToast, showErrorToast, showInfoToast } = useToast();
 	const handleShowError = () => {
-		showToast({
-			type: "error",
-			title: "Error",
-			message: "Something went wrong!",
-			source: "client",
-			action: {
-				label: "Retry",
-				onClick: () => {
-					console.log("Retrying...");
-				},
+		showErrorToast(new Error("Something went wrong!"), {
+			title: "Operation Failed",
+			retryFn: () => {
+				console.log("Retrying...");
 			},
 		});
 	};
@@ -24,41 +17,35 @@ export function ToastExample() {
 			type: "warning",
 			title: "Warning",
 			message: "This action might have consequences",
-			source: "client",
 		});
 	};
 
 	const handleShowInfo = () => {
-		showToast({
-			type: "info",
-			title: "Info",
-			message: "Your request is being processed",
-			source: "client",
-		});
+		showInfoToast("Here's some information");
 	};
 
 	return (
-		<div className="flex gap-4">
+		<div className="flex flex-col gap-4">
 			<button
 				type="button"
+				className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
 				onClick={handleShowError}
-				className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
 			>
-				Show Error
+				Show Error Toast
 			</button>
 			<button
 				type="button"
+				className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
 				onClick={handleShowWarning}
-				className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
 			>
-				Show Warning
+				Show Warning Toast
 			</button>
 			<button
 				type="button"
+				className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
 				onClick={handleShowInfo}
-				className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
 			>
-				Show Info
+				Show Info Toast
 			</button>
 		</div>
 	);
