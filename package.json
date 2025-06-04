@@ -58,7 +58,7 @@
 		"reactflow": "^11.11.4",
 		"remark-gfm": "^4.0.1",
 		"sql-formatter": "^15.5.2",
-		"tailwind-merge": "^3.0.1",
+		"tailwind-merge": "^3.3.0",
 		"tailwindcss-animate": "^1.0.7",
 		"xlsx": "^0.18.5",
 		"zod": "^3.24.2"
