@@ -5,9 +5,9 @@ import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { ChatDisplay } from "./Chat/ChatDisplay";
 import { ChatInput } from "./Chat/ChatInput";
-import { LaunchChat } from "./LaunchChat";
 import { SidebarComp } from "./Sidebar";
 import { Whiteboard } from "./Whiteboard";
+import { useToast } from "./ui/Toast/ToastProvider";
 
 // interface MainContentProps {}
 
@@ -15,6 +15,7 @@ export const MainContent: React.FC = () => {
 	console.log("[SinglePageApp] Rendering");
 	const { artifacts, createThread, messages, currentThreadId } = useWorkspace();
 	const { userConfig } = useUserConfig();
+	const { showToast } = useToast();
 
 	const sendOnConnect = useCallback(() => {
 		console.log("[ChatWrapper] Creating initial connection message");
@@ -34,22 +35,59 @@ export const MainContent: React.FC = () => {
 		} as unknown as FlagChunk;
 	}, [userConfig, messages, artifacts]);
 
-	// this function is called when on the launchchat compoent when the user clicks to start a new analysis, this gives it time to incilize the workspace, create the thread
+	// this function is called when on the launchchat component when the user clicks to start a new analysis
 	const handleStartAnalysis = async (message: string) => {
 		console.log(
-			"[SinglePageApp] Create Thread, set currentThread, added to threads turn off launch chat displaty:",
+			"[SinglePageApp] Create Thread, set currentThread, added to threads turn off launch chat display:",
 			message,
 		);
 
 		try {
+			// Validate message length
+			if (message.length < 10) {
+				throw new Error(
+					"Please provide a more detailed message (at least 10 characters)",
+				);
+			}
+
+			// Show loading toast
+			showToast({
+				type: "info",
+				title: "Starting Analysis",
+				message: "Initializing your analysis request...",
+				source: "client",
+			});
+
 			// Create a new thread with the message as the title
 			const threadId = await createThread(message);
 			console.log("[SinglePageApp] Created thread with ID:", threadId);
 
+			// Show success toast
+			showToast({
+				type: "info",
+				title: "Analysis Started",
+				message: "Your analysis request is being processed",
+				source: "client",
+			});
+
 			console.log("[SinglePageApp] Analysis started successfully");
 		} catch (error) {
 			console.error("[SinglePageApp] Failed to start analysis:", error);
-			// Handle error appropriately
+
+			// Show error toast with retry option
+			showToast({
+				type: "error",
+				title: "Error Starting Analysis",
+				message:
+					error instanceof Error
+						? error.message
+						: "An unexpected error occurred",
+				source: "client",
+				action: {
+					label: "Try Again",
+					onClick: () => handleStartAnalysis(message),
+				},
+			});
 		}
 	};
 

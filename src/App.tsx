@@ -4,6 +4,7 @@ import AuthModal from "./components/AuthModal";
 // import { client } from './config/apollo-client';
 
 import { LeverApp } from "./components/LeverApp";
+import { ToastProvider } from "./components/ui/Toast/ToastProvider";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import { useAuth } from "./utils/AuthProvider";
 import { useUserConfig } from "./utils/UserConfigProvider";
@@ -23,11 +24,13 @@ export const App = () => {
 	}
 
 	return (
-		<SidebarProvider defaultOpen={true}>
-			<WorkspaceProvider>
-				<LeverApp />
-			</WorkspaceProvider>
-		</SidebarProvider>
+		<ToastProvider>
+			<SidebarProvider defaultOpen={true}>
+				<WorkspaceProvider>
+					<LeverApp />
+				</WorkspaceProvider>
+			</SidebarProvider>
+		</ToastProvider>
 	);
 };
 
