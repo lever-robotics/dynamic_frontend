@@ -8,12 +8,19 @@ import {
 	useState,
 } from "react";
 import { useAuth } from "./AuthProvider";
+import { supabase } from "./SupabaseClient";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface UserConfig {
 	completed_onboarding: boolean;
 	business_overview: string;
 	data_connectors: DataConnector[];
+}
+
+interface Thread {
+	id: string;
+	name: string;
+	created_at: string;
 }
 
 interface UserConfigContextType {
@@ -31,6 +38,9 @@ interface UserConfigContextType {
 		keys: Record<string, string>,
 	) => Promise<void>;
 	connections: DataConnector[];
+	createThread: (name: string) => Promise<string>;
+	fetchThreads: () => Promise<void>;
+	threads: Thread[];
 }
 
 const UserConfigContext = createContext<UserConfigContextType | undefined>(
@@ -44,6 +54,7 @@ export const UserConfigProvider = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const { userId, getValidToken } = useAuth();
+	const [threads, setThreads] = useState<Thread[]>([]);
 
 	const fetchUserConfig = useCallback(async () => {
 		if (!userId) return;
@@ -102,6 +113,66 @@ export const UserConfigProvider = ({
 			setIsLoading(false);
 		}
 	}, [userId, getValidToken]);
+
+	const fetchThreads = useCallback(async () => {
+		if (!userId) return;
+
+		setIsLoading(true);
+		setError(null);
+
+		const token = await getValidToken();
+		if (!token) {
+			setError("Failed to get valid token");
+			return;
+		}
+
+		try {
+			const { data: threads, error: threadsError } = await supabase
+				.from("threads")
+				.select("id, name, created_at")
+				.eq("user_id", userId)
+				.order("created_at", { ascending: false });
+
+			if (threadsError) throw threadsError;
+
+			setThreads(threads || []);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to fetch threads");
+			console.error("Error fetching threads:", err);
+		} finally {
+			setIsLoading(false);
+		}
+	}, [userId, getValidToken]);
+
+	useEffect(() => {
+		if (!userId) return;
+		fetchUserConfig();
+		fetchThreads();
+	}, [userId, fetchUserConfig, fetchThreads]);
+
+	const createThread = async (name: string): Promise<string> => {
+		try {
+			const { data, error } = await supabase
+				.from("threads")
+				.insert([{ user_id: userId, name }])
+				.select()
+				.single();
+
+			if (error) {
+				setError(error.message);
+				return "";
+			}
+
+			// Update state with new thread and initial document
+			setThreads((prevThreads) => [...prevThreads, data]);
+
+			return data.id;
+		} catch (err) {
+			console.error("[UserConfigProvider] Error creating thread:", err);
+			setError(err instanceof Error ? err.message : "Failed to create thread");
+			return "";
+		}
+	};
 
 	const upsertUserConfig = useCallback(
 		async (userConfig: UserConfig) => {
@@ -238,13 +309,6 @@ export const UserConfigProvider = ({
 		return userConfig?.data_connectors || [];
 	}, [userConfig]);
 
-	// Fetch user config when userId changes
-	useEffect(() => {
-		if (userId) {
-			fetchUserConfig();
-		}
-	}, [userId, fetchUserConfig]);
-
 	return (
 		<UserConfigContext.Provider
 			value={{
@@ -256,6 +320,9 @@ export const UserConfigProvider = ({
 				updateConnectionMeta,
 				createConnection,
 				connections,
+				fetchThreads,
+				threads,
+				createThread,
 			}}
 		>
 			{children}

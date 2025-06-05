@@ -1,13 +1,18 @@
 "use client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import type {
 	AgentChunk,
 	FlagChunk,
+	MessageBubble,
 	ToolChunk,
+	ToolExecutionBubble,
 	WebSocketMessage,
 } from "@/types/chat";
+import { useAuth } from "@/utils/AuthProvider";
 import { useUserConfig } from "@/utils/UserConfigProvider";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { WebSocketConversation } from "@/utils/WebSocket";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "../common/Modal";
 
 // Progress calculation constants
@@ -87,17 +92,24 @@ export function AnalyzingBusiness({
 	const [runningAgents, setRunningAgents] = useState<string[]>([]);
 	const [messageCounter, setMessageCounter] = useState(1);
 	const { userConfig, upsertUserConfig } = useUserConfig();
+	const [isConnected, setIsConnected] = useState(false);
+	const [messages, setMessages] = useState<MessageBubble[]>([]);
+	const { ws } = useWorkspace();
 
-	// Handle incoming WebSocket messages
-	const handleMessage = useCallback(
-		async (wsMessage: WebSocketMessage) => {
-			const { payload } = wsMessage;
-
-			switch (payload.type) {
-				case "tool": {
-					const toolChunk = payload as ToolChunk;
-
-					// Update progress based on tool execution
+	useEffect(() => {
+		if (ws) {
+			const initWebSocket = () => {
+				ws.subscribe("open", () => {
+					console.log("WebSocket connected");
+					setIsConnected(true);
+				});
+				ws.subscribe("message", (message) => {
+					setMessages((prevMessages) => [...prevMessages, message]);
+				});
+				ws.subscribe("error", (error) => {
+					console.log("WebSocket error", error);
+				});
+				ws.subscribe("tool", async (toolCall: ToolExecutionBubble) => {
 					setProgress((prev) =>
 						Math.min(prev + TOOL_PROGRESS_INCREMENT, TOTAL_PROGRESS),
 					);
@@ -120,17 +132,17 @@ export function AnalyzingBusiness({
 						});
 					};
 
-					switch (toolChunk.tool) {
+					switch (toolCall.tool) {
 						case "agent_scrape_website":
 							addStatusMessage("Reading Website Content");
 							break;
 						case "agent_update_business_json":
 						case "agent_update_business": {
-							if (toolChunk.status === "complete" && toolChunk.result) {
+							if (toolCall.status === "complete" && toolCall.result) {
 								if (userConfig) {
 									await upsertUserConfig({
 										...userConfig,
-										business_overview: toolChunk.result,
+										business_overview: toolCall.result,
 									});
 								}
 								addStatusMessage("Updating Business Memory");
@@ -138,17 +150,14 @@ export function AnalyzingBusiness({
 							break;
 						}
 						default: {
-							if (toolChunk.status === "complete") {
-								addStatusMessage(`${toolChunk.tool} completed`);
+							if (toolCall.status === "complete") {
+								addStatusMessage(`${toolCall.tool} completed`);
 							}
 							break;
 						}
 					}
-					break;
-				}
-				case "agent": {
-					const agentChunk = payload as AgentChunk;
-
+				});
+				ws.subscribe("agent", (agentChunk: AgentChunk) => {
 					if (agentChunk.status === "running") {
 						setRunningAgents((prev) => [
 							agentChunk.name,
@@ -172,34 +181,26 @@ export function AnalyzingBusiness({
 							setTimeout(() => onComplete(), 1000);
 						}
 					}
-					break;
-				}
-			}
-		},
-		[userConfig, upsertUserConfig, onComplete, messageCounter],
-	);
-
-	// WebSocket connection with message handling
-	const { isConnected, error, sendMessage } = useWebSocket({
-		onMessage: handleMessage,
-	});
-
-	// Initialize analysis when connected
-	useEffect(() => {
-		if (isConnected) {
-			// Send initial flag message with business info
-			sendMessage("flag", {
-				type: "flag",
-				flag: "onboarding",
-				context: {
-					data_connectors: userConfig?.data_connectors || [],
+				});
+				ws.subscribe("close", () => {
+					console.log("WebSocket closed");
+					setIsConnected(false);
+				});
+				ws.connect("onboarding", {
 					business_name: businessInfo.name,
 					business_url: businessInfo.url,
-					business_overview: userConfig?.business_overview || "",
-				},
-			} as unknown as FlagChunk);
+				});
+			};
+			initWebSocket();
 		}
-	}, [isConnected, businessInfo, userConfig, sendMessage]);
+	}, [
+		upsertUserConfig,
+		onComplete,
+		userConfig,
+		messageCounter,
+		ws,
+		businessInfo,
+	]);
 
 	return (
 		<Modal

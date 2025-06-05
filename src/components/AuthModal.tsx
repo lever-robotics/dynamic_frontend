@@ -72,7 +72,7 @@ export const AuthModal: React.FC = () => {
 	const [isSignUp, setIsSignUp] = useState(false);
 
 	const { signIn, signUp } = useAuth();
-	const { fetchUserConfig } = useUserConfig();
+	// const { fetchUserConfig, fetchThreads } = useUserConfig();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -84,9 +84,10 @@ export const AuthModal: React.FC = () => {
 				: await signIn({ email, password });
 
 			// Fetch user config after successful sign in
-			if (authResponse.user?.id) {
-				await fetchUserConfig();
-			}
+			// if (authResponse.user?.id) {
+			// 	await fetchUserConfig();
+			// 	await fetchThreads();
+			// }
 		} catch (err) {
 			console.error(err);
 			setError("Invalid email or password");

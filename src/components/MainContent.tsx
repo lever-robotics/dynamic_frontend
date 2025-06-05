@@ -1,74 +1,117 @@
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import type { FlagChunk } from "@/types/chat";
+import type { Artifacts } from "@/contexts/WorkspaceContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import type {
+	FlagChunk,
+	MessageBubble,
+	MessageChunk,
+	ToolChunk,
+	ToolExecutionBubble,
+} from "@/types/chat";
+import { useAuth } from "@/utils/AuthProvider";
+import { supabase } from "@/utils/SupabaseClient";
 import { useUserConfig } from "@/utils/UserConfigProvider";
+import { WebSocketConversation } from "@/utils/WebSocket";
 import type React from "react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatDisplay } from "./Chat/ChatDisplay";
 import { ChatInput } from "./Chat/ChatInput";
+import { MessageList } from "./Chat/MessageList";
 import { Whiteboard } from "./Whiteboard";
 
-// interface MainContentProps {}
+interface MainContentProps {
+	threadId: string;
+	queryData: boolean;
+}
+// Bring ChatDisplay into this component
+// Need an addMessage function that will update the messages state and also send the message to the db.
+// Maybe instead of an addMessage there is an addTool and addAssitant
+export const MainContent: React.FC<MainContentProps> = ({
+	threadId,
+	queryData,
+}) => {
+	const { ws } = useWorkspace();
+	const [isConnected, setIsConnected] = useState(false);
+	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
+	const [messages, setMessages] = useState<MessageBubble[]>([]);
 
-export const MainContent: React.FC = () => {
-	const { artifacts, createThread, messages, currentThreadId } = useWorkspace();
-	const { userConfig } = useUserConfig();
+	useEffect(() => {
+		if (ws) {
+			ws.subscribe("open", () => {
+				console.log("WebSocket connected");
+				setIsConnected(true);
+			});
+			ws.subscribe("message", (message) => {
+				setMessages((prevMessages) => [...prevMessages, message]);
+			});
+			ws.subscribe("error", (error) => {
+				console.log("WebSocket error", error);
+			});
+			ws.subscribe("tool", (toolCall: ToolExecutionBubble) => {
+				if (toolCall.tool === "agent_user_potential_responses") {
+					setPotentialResponses(ws.potentialResponses);
+				}
+			});
+			ws.subscribe("close", () => {
+				console.log("WebSocket closed");
+				setIsConnected(false);
+			});
+			console.log("Connecting to WebSocket");
+			ws.connect("query", {});
+		}
+		return () => {
+			if (ws) {
+				ws.disconnect();
+			}
+		};
+	}, [ws]);
 
-	const sendOnConnect = useCallback(() => {
-		return {
-			type: "flag",
-			flag: "query",
-			context: {
-				business_overview: userConfig.business_overview || "",
-				data_connectors: userConfig.data_connectors || [],
-				messages: messages || [],
-				artifacts: {
-					images: artifacts.images || [],
-					documents: artifacts.documents || [],
-					queries: artifacts.queries || [],
-				},
-			},
-		} as unknown as FlagChunk;
-	}, [userConfig, messages, artifacts]);
-
-	// this function is called when on the launchchat compoent when the user clicks to start a new analysis, this gives it time to incilize the workspace, create the thread
-	const handleStartAnalysis = async (message: string) => {
-		try {
-			// Create a new thread with the message as the title
-			const threadId = await createThread(message);
-		} catch (error) {
-			console.error("[SinglePageApp] Failed to start analysis:", error);
-			// Handle error appropriately
+	const handleNewMessage = (content: string) => {
+		if (ws) {
+			ws.sendUserMessage(content);
 		}
 	};
 
 	return (
 		<div className="flex h-screen overflow-hidden bg-portage-50">
 			{/* Main Content Area */}
-			{/* If no thread is selected, show the launch chat */}
-			{currentThreadId === "" && (
-				<div className="flex flex-col items-center justify-center h-full w-full bg-background">
-					<div className="w-full max-w-2xl p-4">
-						<div className="w-full">
-							<ChatInput onSubmit={handleStartAnalysis} isLaunchMode={true} />
-						</div>
+			<div className="w-full flex h-full">
+				{/* Whiteboard Area - Fixed width */}
+				<div className="w-[calc(100%-500px)] h-full bg-white border-r border-gray-200">
+					<Whiteboard />
+				</div>
+
+				{/* Chat Area - Fixed width */}
+				<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43]">
+					<div className="flex flex-col h-full bg-[#F4F5F7]">
+						{/* Messages */}
+						<MessageList messages={messages} />
+
+						{/* Potential Responses */}
+						{potentialResponses.length > 0 && (
+							<div className="flex flex-wrap gap-2 p-4">
+								{potentialResponses.map((response) => (
+									<button
+										key={response}
+										type="button"
+										onClick={() => handleNewMessage(response)}
+										className="px-4 py-2 text-sm text-primary border border-primary/20 rounded-full hover:bg-primary/10 transition-colors"
+									>
+										{response}
+									</button>
+								))}
+							</div>
+						)}
+
+						{/* Chat Input */}
+						<ChatInput
+							isConnected={isConnected}
+							onSubmit={handleNewMessage}
+							error={null}
+						/>
 					</div>
 				</div>
-			)}
-
-			{/* If a thread is selected, show the whiteboard and chat */}
-			{currentThreadId !== "" && (
-				<div className="w-full flex h-full">
-					{/* Whiteboard Area - Fixed width */}
-					<div className="w-[calc(100%-500px)] h-full bg-white border-r border-gray-200">
-						<Whiteboard />
-					</div>
-
-					{/* Chat Area - Fixed width */}
-					<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43]">
-						<ChatDisplay key={currentThreadId} sendOnConnect={sendOnConnect} />
-					</div>
-				</div>
-			)}
+			</div>
 		</div>
 	);
 };

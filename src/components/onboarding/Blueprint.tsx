@@ -53,17 +53,15 @@ export function Blueprint({ onClose }: BlueprintProps) {
 	};
 
 	return (
-		<ToolProvider>
-			<Modal isOpen={true} onClose={handleClose} size="xl">
-				<div className="relative h-[93vh] w-full">
-					{!showConnectionStore && !showConnectionDetail && (
-						<div className="flex h-full">
-							<LeftPanel />
-							<RightPanel sendOnConnect={sendOnConnect} />
-						</div>
-					)}
-				</div>
-			</Modal>
-		</ToolProvider>
+		<Modal isOpen={true} onClose={handleClose} size="xl">
+			<div className="relative h-[93vh] w-full">
+				{!showConnectionStore && !showConnectionDetail && (
+					<div className="flex h-full">
+						<LeftPanel />
+						<RightPanel />
+					</div>
+				)}
+			</div>
+		</Modal>
 	);
 }

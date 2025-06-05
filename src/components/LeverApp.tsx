@@ -1,7 +1,8 @@
-import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import type React from "react";
 import { useState } from "react";
+import { ChatInput } from "./Chat/ChatInput";
 import { MainContent } from "./MainContent";
 import { SettingsDisplay } from "./SettingsDisplay";
 import SidebarComp from "./Sidebar";
@@ -11,7 +12,7 @@ import { BusinessSetup } from "./onboarding/BusinessSetup";
 
 // LeverApp component with new flow implementation
 export const LeverApp: React.FC = () => {
-	const { userConfig, upsertUserConfig } = useUserConfig(); // universal configurations for the user
+	const { userConfig, upsertUserConfig, createThread } = useUserConfig(); // universal configurations for the user
 	const [isFirstTime, setIsFirstTime] = useState(
 		!userConfig?.completed_onboarding,
 	);
@@ -21,28 +22,33 @@ export const LeverApp: React.FC = () => {
 		name: string;
 		url: string;
 	} | null>(null); // info passed in the first time onbaroding between the two components
-	const {
-		switchThread,
-		createThread,
-		setCurrentArtifactById,
-		setCurrentArtifact,
-		addArtifact,
-		currentThreadId,
-	} = useWorkspace();
+	const [currentThreadId, setCurrentThreadId] = useState<string>("");
+	const [isQueryData, setIsQueryData] = useState(false);
 
 	const handleQueryDataClick = async () => {
 		if (currentThreadId === "") {
 			const threadId = await createThread("Query Data");
-			// Create a blank query artifact
-			const artifact = await addArtifact("query", "", crypto.randomUUID());
-			// Set the current artifact to the first query
-			setCurrentArtifact(artifact);
-		} else {
-			// Create a blank query artifact
-			const artifact = await addArtifact("query", "", crypto.randomUUID());
-			// Set the current artifact to the first query
-			setCurrentArtifact(artifact);
+			setCurrentThreadId(threadId);
 		}
+		setIsQueryData(true);
+		setTimeout(() => {
+			setIsQueryData(false);
+		}, 1000);
+	};
+
+	const handleStartThread = async (message: string) => {
+		try {
+			// Create a new thread with the message as the title
+			const threadId = await createThread(message);
+			setCurrentThreadId(threadId);
+		} catch (error) {
+			console.error("[LeverApp] Failed to start thread:", error);
+			// Handle error appropriately
+		}
+	};
+
+	const switchThread = (threadId: string) => {
+		setCurrentThreadId(threadId);
 	};
 
 	const resetOnboarding = () => {
@@ -58,14 +64,30 @@ export const LeverApp: React.FC = () => {
 				<SidebarComp
 					setShowSettings={setShowSettings}
 					setShowBlueprint={setShowBlueprint}
-					setShowLaunchChat={() => switchThread("")}
 					handleQueryDataClick={handleQueryDataClick}
+					switchThread={switchThread}
+					currentThreadId={currentThreadId}
 				/>
 			</div>
 
 			{/* Render Whiteboard and Chat */}
-			<div className="w-[calc(100%-240px)]">
-				<MainContent />
+			<div className="w-[calc(100%-240px)] flex h-screen overflow-hidden bg-portage-50">
+				{currentThreadId === "" ? (
+					<div className="flex flex-col items-center justify-center h-full w-full bg-background">
+						<div className="w-full max-w-2xl p-4">
+							<div className="w-full">
+								<ChatInput isConnected={false} onSubmit={handleStartThread} />
+							</div>
+						</div>
+					</div>
+				) : (
+					<WorkspaceProvider
+						threadId={currentThreadId}
+						isQueryData={isQueryData}
+					>
+						<MainContent threadId={currentThreadId} queryData={isQueryData} />
+					</WorkspaceProvider>
+				)}
 			</div>
 
 			{/* Settings Display */}
@@ -78,7 +100,11 @@ export const LeverApp: React.FC = () => {
 			)}
 
 			{/* Blueprint Modal */}
-			{showBlueprint && <Blueprint onClose={() => setShowBlueprint(false)} />}
+			{showBlueprint && (
+				<WorkspaceProvider threadId={null} isQueryData={false}>
+					<Blueprint onClose={() => setShowBlueprint(false)} />
+				</WorkspaceProvider>
+			)}
 
 			{/* First-time user flow */}
 			{isFirstTime && (
@@ -90,15 +116,17 @@ export const LeverApp: React.FC = () => {
 						setBusinessInfo={setBusinessInfo}
 					/>
 					{businessInfo && (
-						<AnalyzingBusiness
-							onComplete={() => {
-								setIsFirstTime(false);
-								userConfig.completed_onboarding = true;
-								upsertUserConfig(userConfig);
-								setShowBlueprint(true);
-							}}
-							businessInfo={businessInfo || undefined}
-						/>
+						<WorkspaceProvider threadId={null} isQueryData={false}>
+							<AnalyzingBusiness
+								onComplete={() => {
+									setIsFirstTime(false);
+									userConfig.completed_onboarding = true;
+									upsertUserConfig(userConfig);
+									setShowBlueprint(true);
+								}}
+								businessInfo={businessInfo || undefined}
+							/>
+						</WorkspaceProvider>
 					)}
 				</>
 			)}

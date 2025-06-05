@@ -1,3 +1,6 @@
+import type { Artifacts } from "@/contexts/WorkspaceContext";
+import type { DataConnector } from "./connectors";
+
 // Core Message Types
 export interface MessageBubble {
 	id: string;
@@ -69,10 +72,20 @@ export interface ErrorChunk extends Payload {
 	error: string;
 }
 
+export type FlagType = "query" | "blueprint" | "onboarding";
+export interface FlagContext {
+	business_overview: string;
+	data_connectors: DataConnector[];
+	messages?: MessageBubble[];
+	artifacts?: Artifacts;
+	business_name?: string;
+	business_url?: string;
+}
+
 export interface FlagChunk extends Payload {
 	type: "flag";
-	flag: string;
-	context: string;
+	flag: FlagType;
+	context: FlagContext;
 }
 
 export interface ToLLMMessage extends Payload {

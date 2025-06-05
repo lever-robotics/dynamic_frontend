@@ -31,7 +31,7 @@ interface QueryResult {
 }
 
 export function DataExecutor() {
-	const { currentArtifact, updateArtifact } = useWorkspace();
+	const { currentArtifact, ws } = useWorkspace();
 
 	const [TempQuery, setTempQuery] = useState(currentArtifact?.content || "");
 	const [results, setResults] = useState<QueryResult[]>([]);
@@ -118,7 +118,7 @@ export function DataExecutor() {
 
 				// Update the artifact with the new query and preserve metadata
 				if (currentArtifact) {
-					await updateArtifact({
+					ws.updateArtifact({
 						...currentArtifact,
 						content: TempQuery,
 					});

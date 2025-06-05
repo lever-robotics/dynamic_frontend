@@ -1,3 +1,4 @@
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type {
 	MessageBubble as MessageBubbleType,
 	ToolExecutionBubble,
@@ -17,16 +18,15 @@ const toolNameMapping: Record<string, string> = {
 interface MessageListProps {
 	messages: MessageBubbleType[];
 	className?: string;
-	onToolSelect?: (tool: ToolExecutionBubble) => void;
 }
 
-export function MessageList({
-	messages,
-	className = "",
-	onToolSelect,
-}: MessageListProps) {
+export function MessageList({ messages, className = "" }: MessageListProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const { setCurrentArtifactById } = useWorkspace();
+	const onSelect = (messageId: string) => {
+		setCurrentArtifactById(messageId);
+	};
 
 	// Check scroll position on every render
 	const shouldScroll =
@@ -49,7 +49,7 @@ export function MessageList({
 				<MessageBubble
 					key={message.id}
 					message={message}
-					onToolSelect={onToolSelect}
+					onSelect={onSelect}
 					toolNameMapping={toolNameMapping}
 				/>
 			))}

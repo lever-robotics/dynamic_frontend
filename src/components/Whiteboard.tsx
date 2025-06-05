@@ -5,7 +5,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { type Artifacts, useWorkspace } from "@/contexts/WorkspaceContext";
 import html2pdf from "html2pdf.js";
 import { Download } from "lucide-react";
 import { useRef } from "react";
@@ -14,9 +14,11 @@ import { DocumentEditor } from "./DocumentEditor";
 import { GraphViewer } from "./GraphViewer";
 import { TabGroup } from "./onboarding/TabGroup";
 
+// interface WhiteboardProps {}
+
 export function Whiteboard() {
-	const { currentArtifact, artifacts, setCurrentArtifactById } = useWorkspace();
 	const documentRef = useRef<HTMLDivElement>(null);
+	const { artifacts, currentArtifact, setCurrentArtifactById } = useWorkspace();
 
 	// Create tabs from artifacts with their IDs
 	const tabs = [

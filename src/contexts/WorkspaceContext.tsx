@@ -1,19 +1,16 @@
-import type { MessageBubble } from "@/types/chat";
+import type { MessageBubble, ToolExecutionBubble } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
 import { supabase } from "@/utils/SupabaseClient";
+import { useUserConfig } from "@/utils/UserConfigProvider";
+import { WebSocketConversation } from "@/utils/WebSocket";
 import {
 	createContext,
 	useCallback,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
-
-interface Thread {
-	id: string;
-	name: string;
-	created_at: string;
-}
 
 export interface Artifact {
 	artifact_type: "image" | "document" | "query";
@@ -32,394 +29,104 @@ export interface Artifacts {
 	queries: Artifact[];
 }
 
-interface WorkspaceState {
-	threads: Thread[];
-	currentThreadId: string | null;
-	messages: MessageBubble[];
-	artifacts: Artifacts; // Keeps track of all artifacts in the thread, so they can be selected.
-	currentArtifact: Artifact | null; //Keeps track of the current artifact that the whiteboard is displaying and interacting with
-}
-
 interface WorkspaceContextType {
-	isLoading: boolean;
-	error: string | null;
-	// Thread management functions
-	createThread: (name: string) => Promise<string>;
-	switchThread: (threadId: string) => Promise<void>;
-	addArtifact: (
-		type: "image" | "document" | "query",
-		content: string,
-		id: string,
-		metadata?: {
-			data_source?: "bigquery" | "shopify";
-			[key: string]: string | number | boolean | null;
-		},
-	) => Promise<Artifact | null>; // returns the artifact id
-	updateArtifact: (artifact: Artifact) => Promise<void>;
+	ws: WebSocketConversation | null;
 	// Whiteboard functions
 	setCurrentArtifactById: (artifactId: string) => void;
 	setCurrentArtifact: (artifact: Artifact | null) => void;
-	currentThreadId: string;
-	currentThreadName: string;
 	artifacts: Artifacts;
 	currentArtifact: Artifact | null;
-	messages: MessageBubble[];
-	threads: Thread[];
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
 	undefined,
 );
 
-export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
-	const { userId } = useAuth();
+export function WorkspaceProvider({
+	threadId,
+	isQueryData,
+	children,
+}: {
+	threadId: string;
+	isQueryData: boolean;
+	children: React.ReactNode;
+}) {
+	const { userId, getValidToken } = useAuth();
+	const { userConfig, upsertUserConfig, updateConnectionMeta } =
+		useUserConfig();
 	const [artifacts, setArtifacts] = useState<Artifacts>({
 		images: [],
 		documents: [],
 		queries: [],
 	});
 	const [currentArtifact, setCurrentArtifact] = useState<Artifact | null>(null);
-	const [threads, setThreads] = useState<Thread[]>([]);
-	const [currentThreadId, setCurrentThreadId] = useState<string>("");
-	const [currentThreadName, setCurrentThreadName] = useState<string>("");
-	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const [messages, setMessages] = useState<MessageBubble[]>([]);
+	const [ws, setWs] = useState<WebSocketConversation | null>(null);
 
 	useEffect(() => {
-		(async () => {
-			try {
-				setIsLoading(true);
-				const { data: threads, error: threadsError } = await supabase
-					.from("threads")
-					.select("id, name, created_at")
-					.eq("user_id", userId)
-					.order("created_at", { ascending: false });
-
-				if (threadsError) throw threadsError;
-
-				setThreads(threads || []);
-			} catch (err) {
-				console.error("[WorkspaceContext] Initialization error:", err);
-				setError(
-					err instanceof Error ? err.message : "Failed to initialize workspace",
-				);
-			} finally {
-				setIsLoading(false);
-			}
-		})();
-	}, [userId]);
-
-	const getMessages = async (threadId: string) => {
-		try {
-			const { data: messages, error: messagesError } = await supabase
-				.from("thread_messages")
-				.select("*")
-				.eq("thread_id", threadId)
-				.order("created_at", { ascending: false });
-
-			if (messagesError) throw messagesError;
-
-			setMessages(messages || []);
-		} catch (err) {
-			console.error("[WorkspaceContext] Error loading messages:", err);
-			setError(err instanceof Error ? err.message : "Failed to load messages");
-		}
-	};
-
-	const getArtifacts = async (threadId: string) => {
-		try {
-			const { data: artifacts, error: artifactsError } = await supabase
-				.from("thread_artifacts")
-				.select("artifact_type, content, created_at, id")
-				.eq("thread_id", threadId);
-
-			if (artifactsError) throw artifactsError;
-
-			// Process artifacts
-			const processedArtifacts: Artifacts = {
-				images: artifacts
-					.filter((a) => a.artifact_type === "image")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-				documents: artifacts
-					.filter((a) => a.artifact_type === "document")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-				queries: artifacts
-					.filter((a) => a.artifact_type === "query")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-			};
-
-			setArtifacts(processedArtifacts);
-			return processedArtifacts;
-		} catch (err) {
-			console.error("[WorkspaceContext] Error loading thread content:", err);
-			setError(
-				err instanceof Error ? err.message : "Failed to load thread content",
+		const initWebSocket = async () => {
+			const token = await getValidToken();
+			const wsConvo = new WebSocketConversation(
+				token,
+				userId,
+				{
+					business_overview: userConfig.business_overview || "",
+					data_connectors: userConfig.data_connectors || [],
+				},
+				threadId,
 			);
-		}
-	};
-
-	const loadThreadContent = async (threadId: string) => {
-		if (threadId === "") return;
-		try {
-			const artifacts = await getArtifacts(threadId);
-			await getMessages(threadId);
-			const allArtifacts = [
-				...artifacts.documents,
-				...artifacts.images,
-				...artifacts.queries,
-			];
-			const foundArtifact = allArtifacts.find(
-				(a) => a.id === artifacts.documents[0]?.id,
-			);
-			if (foundArtifact) {
-				setCurrentArtifact(foundArtifact);
-			}
-		} catch (err) {
-			console.error("[WorkspaceContext] Error loading thread content:", err);
-			setError(
-				err instanceof Error ? err.message : "Failed to load thread content",
-			);
-		}
-	};
-
-	const createThread = async (name: string): Promise<string> => {
-		if (!userId) {
-			console.error("[WorkspaceContext] No user ID for thread creation");
-			throw new Error("User not authenticated");
-		}
-
-		try {
-			const { data, error } = await supabase
-				.from("threads")
-				.insert([{ user_id: userId, name }])
-				.select()
-				.single();
-
-			if (error) throw error;
-
-			// Create initial document artifact
-			const sampleDocument = `# Data Analysis Report
-
-## Monthly Sales Overview
-
-Here's a line chart showing our monthly sales performance:
-
-\`\`\`chart
-{
-  "type": "line",
-  "data": {
-    "labels": ["January", "February", "March", "April", "May", "June"],
-    "datasets": [
-      {
-        "label": "Sales",
-        "data": [65, 59, 80, 81, 56, 55],
-        "borderColor": "rgb(75, 192, 192)",
-        "tension": 0.1
-      }
-    ]
-  },
-  "options": {
-    "responsive": true,
-    "plugins": {
-      "title": {
-        "display": true,
-        "text": "Monthly Sales Data"
-      }
-    }
-  }
-}
-\`\`\`
-
-## Product Distribution
-
-Here's a pie chart showing our product distribution:
-
-\`\`\`chart
-{
-  "type": "pie",
-  "data": {
-    "labels": ["Product A", "Product B", "Product C"],
-    "datasets": [
-      {
-        "label": "Sales Distribution",
-        "data": [300, 50, 100],
-        "backgroundColor": [
-          "rgb(255, 99, 132)",
-          "rgb(54, 162, 235)",
-          "rgb(255, 205, 86)"
-        ]
-      }
-    ]
-  }
-}
-\`\`\`
-
-## Regional Performance
-
-Here's a bar chart showing our regional performance:
-
-\`\`\`chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["North", "South", "East", "West", "Central"],
-    "datasets": [
-      {
-        "label": "Revenue",
-        "data": [12, 19, 3, 5, 2],
-        "backgroundColor": [
-          "rgba(255, 99, 132, 0.2)",
-          "rgba(54, 162, 235, 0.2)",
-          "rgba(255, 206, 86, 0.2)",
-          "rgba(75, 192, 192, 0.2)",
-          "rgba(153, 102, 255, 0.2)"
-        ],
-        "borderColor": [
-          "rgba(255, 99, 132, 1)",
-          "rgba(54, 162, 235, 1)",
-          "rgba(255, 206, 86, 1)",
-          "rgba(75, 192, 192, 1)",
-          "rgba(153, 102, 255, 1)"
-        ],
-        "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "scales": {
-      "y": {
-        "beginAtZero": true
-      }
-    }
-  }
-}
-\`\`\``;
-
-			// Create the initial document artifact
-			const { error: artifactError } = await supabase
-				.from("thread_artifacts")
-				.insert([
-					{
-						thread_id: data.id,
-						artifact_type: "document",
-						content: sampleDocument,
-						created_at: new Date().toISOString(),
-					},
-				]);
-
-			if (artifactError) throw artifactError;
-
-			// Update state with new thread and initial document
-			setCurrentThreadId(data.id);
-			setCurrentThreadName(name);
-			await loadThreadContent(data.id);
-
-			return data.id;
-		} catch (err) {
-			console.error("[WorkspaceContext] Error creating thread:", err);
-			setError(err instanceof Error ? err.message : "Failed to create thread");
-			throw err;
-		}
-	};
-
-	const switchThread = async (threadId: string) => {
-		await loadThreadContent(threadId);
-		setCurrentThreadId(threadId);
-		setCurrentThreadName(threads.find((t) => t.id === threadId)?.name || "");
-	};
-
-	const updateArtifact = async (artifact: Artifact) => {
-		if (!currentThreadId) return;
-
-		try {
-			const { error } = await supabase
-				.from("thread_artifacts")
-				.update({
-					content: artifact.content,
-				})
-				.eq("id", artifact.id)
-				.eq("thread_id", currentThreadId);
-
-			if (error) throw error;
-
-			await getArtifacts(currentThreadId);
-		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to update artifact",
-			);
-		}
-	};
-
-	const addArtifact = async (
-		type: "image" | "document" | "query",
-		content: string,
-		id: string,
-		metadata?: {
-			data_source?: "bigquery" | "shopify";
-			[key: string]: string | number | boolean | null;
-		},
-	): Promise<Artifact | null> => {
-		if (!currentThreadId) return null;
-
-		try {
-			const { data: newArtifact, error } = await supabase
-				.from("thread_artifacts")
-				.insert([
-					{
-						thread_id: currentThreadId,
-						id,
-						artifact_type: type,
-						content,
-						created_at: new Date().toISOString(),
-						metadata: metadata || {},
-					},
-				])
-				.select()
-				.single();
-
-			if (error) throw error;
-
-			const newArtifactState = {
-				id,
-				artifact_type: type,
-				content,
-				created_at: newArtifact.created_at,
-				metadata: metadata || {},
-			};
-
-			// Update local state
-			setArtifacts((prev) => {
-				const typeMap = {
-					image: "images",
-					document: "documents",
-					query: "queries",
-				};
-
-				return {
-					...prev,
-					[typeMap[type]]: [newArtifactState, ...prev[typeMap[type]]],
-				};
+			wsConvo.subscribe("tool", (toolCall: ToolExecutionBubble) => {
+				if (toolCall.tool === "agent_update_business") {
+					upsertUserConfig({
+						...userConfig,
+						business_overview: toolCall.result,
+					});
+				}
+				if (toolCall.tool === "agent_write_meta_file") {
+					const connection_id = toolCall.arguments.connection_id;
+					const meta_file_json = toolCall.arguments.meta_file_json;
+					const meta_data = JSON.parse(meta_file_json);
+					// Set the meta file in the specific connector
+					const connector = userConfig.data_connectors.find(
+						(connector) => connector.id === connection_id,
+					);
+					if (connector) {
+						updateConnectionMeta(connection_id, meta_data);
+					}
+				}
+				if (
+					toolCall.tool === "write_bi_report" ||
+					toolCall.tool === "agent_execute_python_code" ||
+					toolCall.tool === "agent_execute_bigquery"
+				) {
+					setArtifacts({ ...ws.artifacts });
+				}
+				if (toolCall.tool === "agent_execute_sql_query") {
+					const queryId = toolCall.arguments.query_id;
+					setCurrentArtifactById(queryId);
+				}
 			});
-			return newArtifactState;
-		} catch (err) {
-			console.error("[WorkspaceContext] Error adding artifact:", err);
-			setError(err instanceof Error ? err.message : "Failed to add artifact");
-			return null;
+			setWs(wsConvo);
+		};
+		if (ws === null) {
+			initWebSocket();
+		} else if (threadId !== ws.threadId) {
+			ws.disconnect();
+			initWebSocket();
 		}
-	};
+
+		if (isQueryData) {
+			ws.queryData();
+		}
+	}, [
+		threadId,
+		isQueryData,
+		getValidToken,
+		userId,
+		updateConnectionMeta,
+		upsertUserConfig,
+		userConfig,
+		ws,
+	]);
 
 	const setCurrentArtifactById = (artifactId: string) => {
 		const allArtifacts = [
@@ -436,20 +143,11 @@ Here's a bar chart showing our regional performance:
 	return (
 		<WorkspaceContext.Provider
 			value={{
-				isLoading,
-				error,
-				createThread,
-				switchThread,
-				addArtifact,
-				updateArtifact,
 				setCurrentArtifactById,
 				setCurrentArtifact,
-				currentThreadId,
-				currentThreadName,
 				artifacts,
 				currentArtifact,
-				messages,
-				threads,
+				ws,
 			}}
 		>
 			{children}

@@ -1,18 +1,16 @@
 import { useToolContext } from "@/contexts/ToolContext";
-import type { Payload } from "@/types/chat";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { ChatDisplay } from "../Chat/ChatDisplay";
 
-interface RightPanelProps {
-	sendOnConnect: () => Payload | null;
-}
-
-export function RightPanel({ sendOnConnect }: RightPanelProps) {
+export function RightPanel() {
 	// This Chat display will no actually set image or document or select a tool.
 	const { setSelectedTool } = useToolContext();
 
 	return (
 		<div className="w-[600px] border-l border-gray-200">
-			<ChatDisplay sendOnConnect={sendOnConnect} isLever={false} />
+			<WorkspaceProvider threadId="" isQueryData={false}>
+				<ChatDisplay />
+			</WorkspaceProvider>
 		</div>
 	);
 }

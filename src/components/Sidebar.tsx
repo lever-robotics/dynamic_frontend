@@ -5,6 +5,7 @@ import logoImg from "@/assets/lever-nobg.png";
 import { Button } from "@/components/ui/button";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
+import { useUserConfig } from "@/utils/UserConfigProvider";
 import { Database, LayoutTemplate, PlusCircle, Settings } from "lucide-react";
 import { AspectRatio } from "radix-ui";
 import type React from "react";
@@ -20,19 +21,20 @@ import {
 
 interface SidebarProps {
 	setShowSettings: (show: boolean) => void;
-	setShowLaunchChat: () => void;
 	setShowBlueprint: (show: boolean) => void;
 	handleQueryDataClick: () => Promise<void>;
+	switchThread: (threadId: string) => void;
+	currentThreadId: string;
 }
 
 export const SidebarComp: React.FC<SidebarProps> = ({
 	setShowSettings,
-	setShowLaunchChat,
 	setShowBlueprint,
 	handleQueryDataClick,
+	switchThread,
+	currentThreadId,
 }) => {
-	const { threads, currentThreadId, switchThread, addArtifact } =
-		useWorkspace();
+	const { threads } = useUserConfig();
 
 	const handleLogoClick = () => {
 		// TODO: Add home page
@@ -47,7 +49,7 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	};
 
 	const handleNewAnalysisClick = () => {
-		setShowLaunchChat();
+		switchThread("");
 	};
 
 	const handleBlueprintClick = () => {

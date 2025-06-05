@@ -19,7 +19,10 @@ interface UseWebSocketOptions {
 	onError?: (error: string) => void;
 }
 
-export function useWebSocket(options: UseWebSocketOptions = {}) {
+export function useWebSocket(
+	isLoaded: boolean,
+	options: UseWebSocketOptions = {},
+) {
 	const [isConnected, setIsConnected] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
@@ -144,12 +147,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
 	// Set up initial connection and cleanup
 	useEffect(() => {
+		if (!isLoaded) return;
 		connect();
 
 		return () => {
 			disconnect();
 		};
-	}, [connect, disconnect]);
+	}, [connect, disconnect, isLoaded]);
 
 	return {
 		isConnected,

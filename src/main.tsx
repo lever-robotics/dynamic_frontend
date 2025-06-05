@@ -8,9 +8,7 @@ import { UserConfigProvider } from "./utils/UserConfigProvider.tsx";
 createRoot(document.getElementById("root")!).render(
 	// <StrictMode>
 	<AuthProvider>
-		<UserConfigProvider>
-			<App />
-		</UserConfigProvider>
+		<App />
 	</AuthProvider>,
 	// </StrictMode>,
 );

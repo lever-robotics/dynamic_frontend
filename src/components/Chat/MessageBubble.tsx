@@ -9,61 +9,15 @@ import { ToolExecution } from "./ToolExecution";
 
 interface MessageBubbleProps {
 	message: MessageBubbleType;
-	onToolSelect?: (tool: ToolExecutionBubble) => void;
+	onSelect: (messageId: string) => void;
 	toolNameMapping: Record<string, string>;
 }
 
 export function MessageBubble({
 	message,
-	onToolSelect,
+	onSelect,
 	toolNameMapping,
 }: MessageBubbleProps) {
-	const { setCurrentArtifactById, artifacts } = useWorkspace();
-
-	const handleToolSelect = (tool: ToolExecutionBubble) => {
-		// First call the original onToolSelect if it exists
-		if (onToolSelect) {
-			onToolSelect(tool);
-		}
-
-		// Then switch to the appropriate tab based on the tool type
-		// console.log("[MessageBubble] Tool selected:", tool);
-		// console.log("[MessageBubble] Artifacts:", artifacts);
-		// if (tool.artifactId) {
-		// 	switch (tool.tool) {
-		// 		case "write_bi_report": {
-		// 			const artifact = artifacts.documents.find(
-		// 				(doc) => doc.id === tool.artifactId,
-		// 			);
-		// 			if (artifact) {
-		// 				setCurrentArtifactById(artifact.id);
-		// 			}
-		// 			break;
-		// 		}
-		// 		case "agent_execute_python_code": {
-		// 			const artifact = artifacts.images.find(
-		// 				(img) => img.id === tool.artifactId,
-		// 			);
-		// 			if (artifact) {
-		// 				setCurrentArtifactById(artifact.id);
-		// 			}
-		// 			break;
-		// 		}
-		// 		case "agent_execute_sql_query":
-		// 		case "agent_execute_bigquery": {
-		// 			const artifact = artifacts.queries.find(
-		// 				(query) => query.id === tool.artifactId,
-		// 			);
-		// 			console.log("[MessageBubble] Found artifact:", artifact);
-		// 			if (artifact) {
-		// 				setCurrentArtifactById(artifact.id);
-		// 			}
-		// 			break;
-		// 		}
-		// 	}
-		// }
-	};
-
 	if (message.type === "user") {
 		return (
 			<div className="flex justify-end">
@@ -78,14 +32,12 @@ export function MessageBubble({
 		return (
 			<div className="flex justify-start">
 				<article
-					className={`flex overflow-hidden flex-col px-3 py-3 mt-3.5 w-full bg-secondary-300 bg-opacity-30 rounded-2xl max-w-[324px] border border-gray-200 transition-colors duration-200 ${
-						onToolSelect
-							? "hover:bg-secondary-300 hover:bg-opacity-50 cursor-pointer"
-							: ""
-					}`}
+					className={
+						"flex overflow-hidden flex-col px-3 py-3 mt-3.5 w-full bg-secondary-300 bg-opacity-30 rounded-2xl max-w-[324px] border border-gray-200 transition-colors duration-200 hover:bg-secondary-300 hover:bg-opacity-50 cursor-pointer"
+					}
 					onClick={() => {
 						if (message.chunks[0]?.toolCall) {
-							setCurrentArtifactById(message.id);
+							onSelect(message.id);
 						}
 					}}
 					onKeyDown={(e) => {
@@ -93,11 +45,9 @@ export function MessageBubble({
 							(e.key === "Enter" || e.key === " ") &&
 							message.chunks[0]?.toolCall
 						) {
-							setCurrentArtifactById(message.id);
+							onSelect(message.id);
 						}
 					}}
-					tabIndex={onToolSelect ? 0 : -1}
-					role={onToolSelect ? "button" : undefined}
 				>
 					<div className="flex flex-col w-full text-xs leading-4 text-slate-600">
 						{message.chunks.map((chunk, index) => (
