@@ -72,7 +72,6 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
 );
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
-	console.log("[WorkspaceContext] Initializing the Workspace Provider");
 	const { userId } = useAuth();
 	const [artifacts, setArtifacts] = useState<Artifacts>({
 		images: [],
@@ -91,7 +90,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 		(async () => {
 			try {
 				setIsLoading(true);
-				console.log("[WorkspaceContext] Fetching threads");
 				const { data: threads, error: threadsError } = await supabase
 					.from("threads")
 					.select("id, name, created_at")
@@ -100,7 +98,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
 				if (threadsError) throw threadsError;
 
-				console.log("[WorkspaceContext] Found threads:", threads?.length);
 				setThreads(threads || []);
 			} catch (err) {
 				console.error("[WorkspaceContext] Initialization error:", err);
@@ -123,7 +120,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
 			if (messagesError) throw messagesError;
 
-			console.log("[WorkspaceContext] Loaded messages:", messages?.length);
 			setMessages(messages || []);
 		} catch (err) {
 			console.error("[WorkspaceContext] Error loading messages:", err);
@@ -139,8 +135,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 				.eq("thread_id", threadId);
 
 			if (artifactsError) throw artifactsError;
-
-			console.log("[WorkspaceContext] Loaded artifacts:", artifacts?.length);
 
 			// Process artifacts
 			const processedArtifacts: Artifacts = {
@@ -182,11 +176,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 		try {
 			const artifacts = await getArtifacts(threadId);
 			await getMessages(threadId);
-			console.log("[WorkspaceContext] Loaded artifacts:", artifacts);
-			console.log(
-				"[WorkspaceContext] Setting current artifact:",
-				artifacts.documents[0]?.id,
-			);
 			const allArtifacts = [
 				...artifacts.documents,
 				...artifacts.images,
@@ -207,7 +196,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	const createThread = async (name: string): Promise<string> => {
-		console.log("[WorkspaceContext] Creating new thread:", name);
 		if (!userId) {
 			console.error("[WorkspaceContext] No user ID for thread creation");
 			throw new Error("User not authenticated");
@@ -221,8 +209,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 				.single();
 
 			if (error) throw error;
-
-			console.log("[WorkspaceContext] Thread created successfully:", data.id);
 
 			// Create initial document artifact
 			const sampleDocument = `# Data Analysis Report
@@ -403,7 +389,6 @@ Here's a bar chart showing our regional performance:
 				])
 				.select()
 				.single();
-			console.log("[WorkspaceContext] Added artifact:", newArtifact);
 
 			if (error) throw error;
 
@@ -437,8 +422,6 @@ Here's a bar chart showing our regional performance:
 	};
 
 	const setCurrentArtifactById = (artifactId: string) => {
-		console.log("[WorkspaceContext] Setting current artifact:", artifactId);
-		console.log("[WorkspaceContext] Artifacts:", artifacts);
 		const allArtifacts = [
 			...artifacts.documents,
 			...artifacts.images,

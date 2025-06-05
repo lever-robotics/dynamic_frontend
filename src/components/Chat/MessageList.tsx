@@ -28,11 +28,6 @@ export function MessageList({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
-	// Log messages whenever they change
-	useEffect(() => {
-		console.log("Messages list:", messages);
-	}, [messages]);
-
 	// Check scroll position on every render
 	const shouldScroll =
 		containerRef.current &&

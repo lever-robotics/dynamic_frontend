@@ -30,8 +30,6 @@ export const ChatDisplay = memo(function ChatDisplay({
 	const { messages, isConnected, potentialResponses, handleNewMessage } =
 		useMessages(sendOnConnect);
 
-	console.log("[ChatDisplay] messages:", messages);
-
 	return (
 		<div className="flex flex-col h-full bg-[#F4F5F7]">
 			{/* Header */}
@@ -64,7 +62,6 @@ export const ChatDisplay = memo(function ChatDisplay({
 			<MessageList
 				messages={messages}
 				onToolSelect={(tool: ToolExecutionBubble) => {
-					console.log("[ChatDisplay] Tool selected:", tool);
 					if (tool.artifactId) {
 						setCurrentArtifactById(tool.artifactId);
 					}

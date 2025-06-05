@@ -57,7 +57,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 			if (error) {
 				console.error("[useMessages] Error adding messages:", error);
 			}
-			console.log("[useMessages] Messages added successfully");
 		} catch (err) {
 			console.error("[useMessages] Error adding messages:", err);
 		}
@@ -66,8 +65,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 	// Handle incoming WebSocket messages
 	const handleMessage = async (wsMessage: WebSocketMessage) => {
 		const { payload, messageId } = wsMessage;
-
-		console.log("[useMessages] Received message:", payload);
 
 		switch (payload.type) {
 			case "text": {
@@ -98,13 +95,7 @@ export function useMessages(sendOnConnect?: () => Payload) {
 			case "agent": {
 				// Keep agent logic for tracking purposes but don't display
 				const agentChunk = payload as AgentChunk;
-				console.log(
-					"[useMessages] Agent status update:",
-					agentChunk.name,
-					agentChunk.status,
-				);
 				if (agentChunk.status === "complete") {
-					console.log("[useMessages] Final message received:", payload);
 					pushMessages(messages);
 				}
 				break;
@@ -152,7 +143,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 					case "write_bi_report": {
 						const report = toolArgs.report;
 						if (report) {
-							console.log("[ChatDisplay] Updating first document:", report);
 							const firstDocument = artifacts.documents[0];
 							if (firstDocument) {
 								updateArtifact({
@@ -169,21 +159,18 @@ export function useMessages(sendOnConnect?: () => Payload) {
 					}
 					case "agent_execute_python_code": {
 						if (image) {
-							console.log("[ChatDisplay] Adding image:", image);
 							addArtifact("image", image, id);
 						}
 						break;
 					}
 					case "agent_execute_sql_query": {
 						if (result) {
-							console.log("[ChatDisplay] Adding query:", result);
 							addArtifact("query", result, id);
 						}
 						break;
 					}
 					case "agent_execute_bigquery": {
 						if (result) {
-							console.log("[ChatDisplay] Adding query:", result);
 							addArtifact("query", result, id);
 						}
 						break;
@@ -191,10 +178,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 
 					case "agent_update_business": {
 						const new_business_plan = result; // The function outputs the new business plan
-						console.log(
-							"[ChatDisplay] New business plan created:",
-							new_business_plan,
-						);
 
 						// Update the business plan in user config
 						if (userConfig) {
@@ -214,8 +197,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 					case "agent_write_meta_file": {
 						const meta_file_json = toolArgs.meta_file_json;
 						const connection_id = toolArgs.connection_id;
-						console.log("[ChatDisplay] Meta file json:", meta_file_json);
-						console.log("[ChatDisplay] Connection id:", connection_id);
 						const meta_data = JSON.parse(meta_file_json);
 						// Set the meta file in the specific connector
 						const connector = userConfig.data_connectors.find(
@@ -227,7 +208,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 						break;
 					}
 					default: {
-						console.log(`Unhandled tool type: ${tool}`);
 						break;
 					}
 				}
@@ -271,10 +251,7 @@ export function useMessages(sendOnConnect?: () => Payload) {
 
 				setMessages(messages.map((m) => m.content));
 
-				console.log("[useMessages] Fetched messages:", messages);
-
 				if (messages.length === 0) {
-					console.log("[useMessages] Handling first message");
 					handleNewMessage(currentThreadName);
 				}
 			} catch (err) {
@@ -285,8 +262,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 	}, [currentThreadId, currentThreadName]);
 
 	const handleNewMessage = async (content: string) => {
-		console.log("[useMessages] Handling new message:", content);
-
 		// Add user message to both local and workspace state
 		const userMessage: MessageBubble = {
 			id: crypto.randomUUID(),
@@ -301,7 +276,6 @@ export function useMessages(sendOnConnect?: () => Payload) {
 		setMessages(updatedMessages);
 		setPotentialResponses([]);
 
-		console.log("[useMessages] Sending message to LLM");
 		sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	};
 

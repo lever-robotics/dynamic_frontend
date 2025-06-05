@@ -3,7 +3,6 @@ import type {
 	MessageBubble as MessageBubbleType,
 	ToolExecutionBubble,
 } from "@/types/chat";
-import { processText } from "@/utils/messageUtils";
 import type React from "react";
 import { MarkdownContent } from "./MarkdownContent";
 import { ToolExecution } from "./ToolExecution";
@@ -85,7 +84,6 @@ export function MessageBubble({
 							: ""
 					}`}
 					onClick={() => {
-						console.log("[MessageBubble] Clicked tool message");
 						if (message.chunks[0]?.toolCall) {
 							setCurrentArtifactById(message.id);
 						}

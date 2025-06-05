@@ -180,7 +180,6 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 			if (event.origin !== API_BASE_URL) return;
 
 			if (event.data.status === "success") {
-				console.log("Logged in!");
 				onClose();
 			}
 		});

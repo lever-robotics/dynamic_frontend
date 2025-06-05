@@ -24,7 +24,6 @@ export function BusinessSetup({
 	);
 	const [logoUrl, setLogoUrl] = useState(defaultLogo);
 	const { connections } = useUserConfig();
-	console.log("setup BusinessInfo");
 	const applicableConnections = Connections.map((connection: Connection) => ({
 		...connection,
 		isConnected: connections.some((conn) => conn.type === connection.type),

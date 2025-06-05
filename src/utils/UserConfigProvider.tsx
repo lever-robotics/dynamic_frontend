@@ -112,7 +112,6 @@ export const UserConfigProvider = ({
 				setError("Failed to get valid token");
 				return;
 			}
-			console.log(userConfig);
 			try {
 				const updateResp = await fetch(
 					`${import.meta.env.VITE_API_URL}/v0/config`,

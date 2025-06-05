@@ -3,7 +3,7 @@ import type {
 	ToolStatus,
 } from "@/types/chat";
 import type React from "react";
-import { LoadingSpinner } from "../LoadingSpinner";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 
 interface ToolExecutionProps {
 	toolExecution: ToolExecutionType;

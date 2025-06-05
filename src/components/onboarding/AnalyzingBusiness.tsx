@@ -96,7 +96,6 @@ export function AnalyzingBusiness({
 			switch (payload.type) {
 				case "tool": {
 					const toolChunk = payload as ToolChunk;
-					console.log("[AnalyzingBusiness] Tool execution:", toolChunk);
 
 					// Update progress based on tool execution
 					setProgress((prev) =>
@@ -128,10 +127,6 @@ export function AnalyzingBusiness({
 						case "agent_update_business_json":
 						case "agent_update_business": {
 							if (toolChunk.status === "complete" && toolChunk.result) {
-								console.log(
-									"[AnalyzingBusiness] Updating business overview:",
-									toolChunk.result,
-								);
 								if (userConfig) {
 									await upsertUserConfig({
 										...userConfig,
@@ -153,7 +148,6 @@ export function AnalyzingBusiness({
 				}
 				case "agent": {
 					const agentChunk = payload as AgentChunk;
-					console.log("[AnalyzingBusiness] Agent status:", agentChunk);
 
 					if (agentChunk.status === "running") {
 						setRunningAgents((prev) => [
@@ -193,7 +187,6 @@ export function AnalyzingBusiness({
 	// Initialize analysis when connected
 	useEffect(() => {
 		if (isConnected) {
-			console.log("[AnalyzingBusiness] Starting analysis");
 			// Send initial flag message with business info
 			sendMessage("flag", {
 				type: "flag",

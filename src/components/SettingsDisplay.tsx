@@ -70,7 +70,6 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 			},
 		);
 		const data = await response.json();
-		console.log(data);
 	};
 
 	const handleToggle = (settingId: string) => {

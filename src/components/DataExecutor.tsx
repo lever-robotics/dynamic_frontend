@@ -110,7 +110,6 @@ export function DataExecutor() {
 
 			const body = await response.json();
 			const data = body.data;
-			console.log("Query results:", data);
 
 			if (data && data.length > 0) {
 				const exampleRow = data[0];

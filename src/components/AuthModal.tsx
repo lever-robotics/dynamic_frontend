@@ -82,7 +82,6 @@ export const AuthModal: React.FC = () => {
 			const authResponse = isSignUp
 				? await signUp({ email, password })
 				: await signIn({ email, password });
-			// console.log(authResponse)
 
 			// Fetch user config after successful sign in
 			if (authResponse.user?.id) {

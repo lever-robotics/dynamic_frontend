@@ -11,7 +11,6 @@ export const TabGroup: React.FC<TabGroupProps> = ({
 	activeTab,
 	onTabChange,
 }) => {
-	console.log("Tabs:", tabs);
 	return (
 		<div className="w-full overflow-x-auto">
 			<nav

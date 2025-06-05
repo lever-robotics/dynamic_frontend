@@ -2,22 +2,18 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type { FlagChunk } from "@/types/chat";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { ChatDisplay } from "./Chat/ChatDisplay";
 import { ChatInput } from "./Chat/ChatInput";
-import { LaunchChat } from "./LaunchChat";
-import { SidebarComp } from "./Sidebar";
 import { Whiteboard } from "./Whiteboard";
 
 // interface MainContentProps {}
 
 export const MainContent: React.FC = () => {
-	console.log("[SinglePageApp] Rendering");
 	const { artifacts, createThread, messages, currentThreadId } = useWorkspace();
 	const { userConfig } = useUserConfig();
 
 	const sendOnConnect = useCallback(() => {
-		console.log("[ChatWrapper] Creating initial connection message");
 		return {
 			type: "flag",
 			flag: "query",
@@ -36,24 +32,14 @@ export const MainContent: React.FC = () => {
 
 	// this function is called when on the launchchat compoent when the user clicks to start a new analysis, this gives it time to incilize the workspace, create the thread
 	const handleStartAnalysis = async (message: string) => {
-		console.log(
-			"[SinglePageApp] Create Thread, set currentThread, added to threads turn off launch chat displaty:",
-			message,
-		);
-
 		try {
 			// Create a new thread with the message as the title
 			const threadId = await createThread(message);
-			console.log("[SinglePageApp] Created thread with ID:", threadId);
-
-			console.log("[SinglePageApp] Analysis started successfully");
 		} catch (error) {
 			console.error("[SinglePageApp] Failed to start analysis:", error);
 			// Handle error appropriately
 		}
 	};
-
-	console.log("[MainContent] currentThreadId:", currentThreadId);
 
 	return (
 		<div className="flex h-screen overflow-hidden bg-portage-50">
