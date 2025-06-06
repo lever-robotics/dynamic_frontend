@@ -30,9 +30,9 @@ export function ChatInput({
 				<textarea
 					value={inputValue}
 					onChange={(e) => setInputValue(e.target.value)}
-					placeholder={isConnected ? "Analyze your data" : "Type a message..."}
+					placeholder={!isConnected ? "Analyze your data" : "Type a message..."}
 					className={`bg-white w-full resize-none rounded-full border border-input px-4 py-3 pr-12 text-sm shadow-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] max-h-[132px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] leading-relaxed ${
-						isConnected
+						!isConnected
 							? "placeholder:text-transparent placeholder:bg-clip-text placeholder:bg-gradient-to-r placeholder:from-primary-400 placeholder:to-secondary-200"
 							: "placeholder:text-muted-foreground"
 					}`}
@@ -46,7 +46,7 @@ export function ChatInput({
 				/>
 				<button
 					type="submit"
-					disabled={!inputValue.trim()}
+					disabled={!isConnected || !inputValue.trim()}
 					className="absolute right-2 flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent transition-colors hover:bg-accent/20 disabled:pointer-events-none disabled:opacity-50"
 					aria-label="Send message"
 				>

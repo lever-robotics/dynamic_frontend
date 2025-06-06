@@ -111,6 +111,7 @@ export function WorkspaceProvider({
 					setArtifacts({ ...ws.artifacts });
 				}
 				if (toolCall.tool === "agent_execute_sql_query") {
+					console.log("[WorkspaceProvider] agent_execute_sql_query", toolCall);
 					const queryId = toolCall.arguments.query_id;
 					setCurrentArtifactById(queryId);
 				}
@@ -125,10 +126,6 @@ export function WorkspaceProvider({
 			initWebSocket();
 		}
 
-		if (isQueryData) {
-			ws.queryData();
-		}
-
 		return () => {
 			if (ws?.isConnected) {
 				ws.disconnect();
@@ -136,7 +133,6 @@ export function WorkspaceProvider({
 		};
 	}, [
 		threadId,
-		isQueryData,
 		getValidToken,
 		userId,
 		updateConnectionMeta,
@@ -144,6 +140,12 @@ export function WorkspaceProvider({
 		userConfig,
 		ws,
 	]);
+
+	useEffect(() => {
+		if (ws && isQueryData) {
+			ws.queryData();
+		}
+	}, [isQueryData, ws]);
 
 	const setCurrentArtifactById = (artifactId: string) => {
 		const allArtifacts = [

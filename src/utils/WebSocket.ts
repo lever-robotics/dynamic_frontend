@@ -223,6 +223,7 @@ export class WebSocketConversation {
 	}
 
 	queryData() {
+		console.log("[WebSocketConversation] queryData");
 		const queryId = crypto.randomUUID();
 		const toolCall = {
 			tool: "agent_execute_sql_query",
