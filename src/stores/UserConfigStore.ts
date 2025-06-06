@@ -1,6 +1,15 @@
+import type { FlagType } from "@/types/chat";
 import type { DataConnector } from "@/types/connectors";
+import { authStore } from "@/utils/AuthProvider";
+import { WebSocketConversation } from "@/utils/WebSocket";
 import { makeAutoObservable, runInAction } from "mobx";
+import { configure } from "mobx";
 import { supabase } from "../utils/SupabaseClient";
+import { workspaceStore } from "./WorkspaceStore";
+
+configure({
+	enforceActions: "never",
+});
 
 export interface UserConfig {
 	completed_onboarding: boolean;
@@ -14,9 +23,13 @@ export class UserConfigStore {
 	userConfig = null;
 	threads = [];
 	threadId = "";
+
+	constructor() {
+		makeAutoObservable(this);
+	}
 	// In your MobX store
-	async upsertUserConfig(token: string, newConfig: UserConfig) {
-		if (!token) {
+	async upsertUserConfig(newConfig: UserConfig) {
+		if (!authStore.session?.access_token) {
 			console.error("No valid token for upsertUserConfig");
 			return;
 		}
@@ -25,7 +38,7 @@ export class UserConfigStore {
 				method: "POST", // or "PUT" depending on your API
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+					Authorization: `Bearer ${authStore.session?.access_token}`,
 				},
 				body: JSON.stringify(newConfig),
 			});
@@ -40,33 +53,59 @@ export class UserConfigStore {
 			console.error("Error updating user config:", err);
 		}
 	}
-	async createThread(userId: string, name: string): Promise<string> {
+	async createThread(name: string): Promise<string> {
 		try {
 			const { data, error } = await supabase
 				.from("threads")
-				.insert([{ user_id: userId, name }])
+				.insert([{ user_id: authStore.session?.user.id, name }])
 				.select()
 				.single();
 			if (error) {
 				console.error("Error creating thread:", error);
 				return "";
 			}
+
 			runInAction(() => {
 				this.threads = [...this.threads, data];
 			});
+
 			return data.id;
 		} catch (err) {
 			console.error("[UserConfigStore] Error creating thread:", err);
 			return "";
 		}
 	}
+	async updateThread(threadId: string, name: string): Promise<string> {
+		try {
+			const { data, error } = await supabase
+				.from("threads")
+				.update([{ name }])
+				.eq("id", threadId)
+				.select()
+				.single();
+			if (error) {
+				console.error("Error updating thread:", error);
+				return "";
+			}
+
+			runInAction(() => {
+				this.threads = this.threads.map((t) =>
+					t.id === threadId ? { ...t, name } : t,
+				);
+			});
+
+			return threadId;
+		} catch (err) {
+			console.error("[UserConfigStore] Error updating thread:", err);
+			return "";
+		}
+	}
 
 	async updateConnectionMeta(
-		token: string,
 		connectionId: string,
 		meta: DataConnector["meta"],
 	) {
-		if (!token) {
+		if (!authStore.session?.access_token) {
 			console.error("No valid token for updateConnectionMeta");
 			return;
 		}
@@ -77,7 +116,7 @@ export class UserConfigStore {
 					method: "PATCH",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
+						Authorization: `Bearer ${authStore.session?.access_token}`,
 					},
 					body: JSON.stringify({ meta }),
 				},
@@ -87,18 +126,21 @@ export class UserConfigStore {
 				throw new Error(updateBody.error);
 			}
 			// Refresh user config after update
-			await this.fetchUserConfig(token);
+			await this.fetchUserConfig(authStore.session?.user.id);
 		} catch (err) {
 			console.error("Error updating connection metadata:", err);
 		}
 	}
 
-	async createConnection(
-		token: string,
-		connectionType: string,
-		keys: Record<string, string>,
-	) {
-		if (!token) {
+	// async switchThread(threadId: string) {
+	// 	await workspaceStore.loadThreadContent(threadId);
+	// 	runInAction(() => {
+	// 		this.threadId = threadId;
+	// 	});
+	// }
+
+	async createConnection(connectionType: string, keys: Record<string, string>) {
+		if (!authStore.session?.access_token) {
 			console.error("No valid token for createConnection");
 			return;
 		}
@@ -109,7 +151,7 @@ export class UserConfigStore {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
+						Authorization: `Bearer ${authStore.session?.access_token}`,
 					},
 					body: JSON.stringify(keys),
 				},
@@ -119,19 +161,15 @@ export class UserConfigStore {
 				throw new Error(body.error);
 			}
 			// Refresh user config after creation
-			await this.fetchUserConfig(token);
+			await this.fetchUserConfig(authStore.session?.user.id);
 		} catch (err) {
 			console.error("Error creating connection:", err);
 		}
 	}
 
-	constructor() {
-		makeAutoObservable(this);
-	}
-
-	async fetchUserConfig(token: string) {
-		if (!token) {
-			console.error("Failed to get valid token");
+	async fetchUserConfig(userId: string) {
+		if (!authStore.session?.access_token) {
+			console.error("No valid token for fetchUserConfig");
 			return;
 		}
 		try {
@@ -139,7 +177,7 @@ export class UserConfigStore {
 				`${import.meta.env.VITE_API_URL}/v0/config`,
 				{
 					headers: {
-						Authorization: `Bearer ${token}`,
+						Authorization: `Bearer ${authStore.session?.access_token}`,
 					},
 				},
 			);
@@ -151,7 +189,7 @@ export class UserConfigStore {
 				`${import.meta.env.VITE_API_URL}/v0/connectors`,
 				{
 					headers: {
-						Authorization: `Bearer ${token}`,
+						Authorization: `Bearer ${authStore.session?.access_token}`,
 					},
 				},
 			);
@@ -166,13 +204,19 @@ export class UserConfigStore {
 					business_url: configBody.data.business_url,
 				};
 			});
+			console.log(this.userConfig);
 		} catch (err) {
 			console.error("Error fetching user config:", err);
 		}
 	}
 
-	async fetchThreads(token: string, userId: string) {
-		if (!token || !userId) {
+	// async switchThread(threadId: string) {
+	// 	this.threadId = threadId;
+	// 	await workspaceStore.loadThreadContent();
+	// }
+
+	async fetchThreads(userId: string) {
+		if (!authStore.session?.access_token || !userId) {
 			console.error("fetchThreads: Missing token or userId");
 			return;
 		}
@@ -181,7 +225,7 @@ export class UserConfigStore {
 			const { data: threads, error: threadsError } = await supabase
 				.from("threads")
 				.select("id, name, created_at")
-				.eq("user_id", userId)
+				.eq("user_id", authStore.session?.user.id)
 				.order("created_at", { ascending: false });
 			if (threadsError) throw threadsError;
 			runInAction(() => {

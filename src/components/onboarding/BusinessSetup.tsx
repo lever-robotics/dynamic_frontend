@@ -3,7 +3,7 @@ import defaultLogo from "@/assets/default_business_logo.png";
 import { userConfigStore } from "@/stores/UserConfigStore";
 import type { Connection } from "@/types/connectors";
 import { Connections } from "@/types/connectors";
-import { useAuth } from "@/utils/AuthProvider";
+import { authStore } from "@/utils/AuthProvider";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { Modal } from "../common/Modal";
@@ -19,6 +19,7 @@ export function BusinessSetup({
 	onClose,
 	setBusinessInfo,
 }: BusinessSetupProps) {
+	const session = authStore.session;
 	const [businessName, setBusinessName] = useState("HydroJug");
 	const [businessUrl, setBusinessUrl] = useState(
 		"https://www.thehydrojug.com/",
@@ -32,11 +33,10 @@ export function BusinessSetup({
 			),
 		}),
 	);
-	const { session } = useAuth();
 
 	const handleContinue = () => {
 		if (businessName && businessUrl) {
-			userConfigStore.upsertUserConfig(session?.access_token || "", {
+			userConfigStore.upsertUserConfig({
 				...userConfigStore.userConfig,
 				business_name: businessName,
 				business_url: businessUrl,

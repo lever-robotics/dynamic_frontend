@@ -1,8 +1,8 @@
 import { userConfigStore } from "@/stores/UserConfigStore";
-import { useAuth } from "@/utils/AuthProvider";
+import { authStore } from "@/utils/AuthProvider";
 import { observer } from "mobx-react-lite";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChatInput } from "./Chat/ChatInput";
 import { MainContent } from "./MainContent";
 import { SettingsDisplay } from "./SettingsDisplay";
@@ -13,7 +13,6 @@ import { BusinessSetup } from "./onboarding/BusinessSetup";
 
 // LeverApp component with new flow implementation
 const LeverApp: React.FC = () => {
-	const { session } = useAuth();
 	const [isFirstTime, setIsFirstTime] = useState(
 		userConfigStore.userConfig?.completed_onboarding === false,
 	);
@@ -24,6 +23,13 @@ const LeverApp: React.FC = () => {
 		url: string;
 	} | null>(null); // info passed in the first time onbaroding between the two components
 
+	useEffect(() => {
+		if (authStore.session) {
+			userConfigStore.fetchUserConfig(authStore.session.user.id);
+			userConfigStore.fetchThreads(authStore.session.user.id);
+		}
+	}, []);
+
 	// const handleQueryDataClick = async () => {
 	// 	if (userConfigStore.threadId === "") {
 	// 		const threadId = await userConfigStore.createThread("Query Data");
@@ -32,25 +38,10 @@ const LeverApp: React.FC = () => {
 	// 	userConfigStore.ws?.queryData();
 	// };
 
-	const handleStartThread = async (message: string) => {
-		try {
-			// Create a new thread with the message as the title
-			const threadId = await userConfigStore.createThread(
-				session?.access_token || "",
-				message,
-			);
-			userConfigStore.threadId = threadId;
-		} catch (error) {
-			console.error("[LeverApp] Failed to start thread:", error);
-			// Handle error appropriately
-		}
-	};
-
 	// const switchThread = (threadId: string) => {
 	// 	userConfigStore.threadId = threadId;
 	// };
 	console.log("Render LeverApp");
-	console.log("threadId", userConfigStore.threadId);
 
 	const resetOnboarding = () => {
 		setIsFirstTime(true);
@@ -70,17 +61,7 @@ const LeverApp: React.FC = () => {
 
 			{/* Render Whiteboard and Chat */}
 			<div className="w-[calc(100%-240px)] flex h-screen overflow-hidden bg-portage-50">
-				{userConfigStore.threadId === "" ? (
-					<div className="flex flex-col items-center justify-center h-full w-full bg-background">
-						<div className="w-full max-w-2xl p-4">
-							<div className="w-full">
-								<ChatInput isConnected={false} onSubmit={handleStartThread} />
-							</div>
-						</div>
-					</div>
-				) : (
-					<MainContent />
-				)}
+				<MainContent />
 			</div>
 
 			{/* Settings Display */}
@@ -108,13 +89,10 @@ const LeverApp: React.FC = () => {
 						<AnalyzingBusiness
 							onComplete={async () => {
 								setIsFirstTime(false);
-								await userConfigStore.upsertUserConfig(
-									session?.access_token || "",
-									{
-										...userConfigStore.userConfig,
-										completed_onboarding: true,
-									},
-								);
+								await userConfigStore.upsertUserConfig({
+									...userConfigStore.userConfig,
+									completed_onboarding: true,
+								});
 								setShowBlueprint(true);
 							}}
 							businessInfo={businessInfo || undefined}
@@ -126,4 +104,4 @@ const LeverApp: React.FC = () => {
 	);
 };
 
-export default observer(LeverApp);
+export default LeverApp;

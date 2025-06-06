@@ -1,9 +1,15 @@
 import type { MessageBubble } from "@/types/chat";
 import { supabase } from "@/utils/SupabaseClient";
 import type { Artifact, Artifacts } from "@/utils/UserConfigProvider";
+import { WebSocketConversation } from "@/utils/WebSocket";
 import { makeAutoObservable, runInAction } from "mobx";
+import { configure } from "mobx";
+import { userConfigStore } from "./UserConfigStore";
 
-// Maybe turn strict mode off somehow
+configure({
+	enforceActions: "never",
+});
+
 export class WorkspaceStore {
 	artifacts: Artifacts = {
 		images: [],
@@ -13,13 +19,16 @@ export class WorkspaceStore {
 	messages: MessageBubble[] = [];
 	currentArtifact: Artifact | null = null;
 	potentialResponses: string[] = [];
+	ws: WebSocketConversation = new WebSocketConversation();
 
 	constructor() {
 		makeAutoObservable(this);
 	}
 
-	async addArtifactAndPersist(threadId: string, artifact: Artifact) {
-		await supabase.addArtifact(threadId, artifact);
+	async addArtifactAndPersist(artifact: Artifact) {
+		if (userConfigStore.threadId !== "") {
+			await supabase.addArtifact(userConfigStore.threadId, artifact);
+		}
 		runInAction(() => {
 			if (artifact.artifact_type === "image") {
 				this.artifacts.images.push(artifact);
@@ -46,11 +55,10 @@ export class WorkspaceStore {
 	 * Updates an artifact in the store and persists the update to the backend.
 	 * Finds the artifact by id and replaces it in the correct array.
 	 */
-	async updateArtifactAndPersist(
-		threadId: string,
-		updatedArtifact: Artifact,
-	): Promise<void> {
-		await supabase.updateArtifact(threadId, updatedArtifact);
+	async updateArtifactAndPersist(updatedArtifact: Artifact): Promise<void> {
+		if (userConfigStore.threadId !== "") {
+			await supabase.updateArtifact(userConfigStore.threadId, updatedArtifact);
+		}
 		runInAction(() => {
 			const arr =
 				updatedArtifact.artifact_type === "image"
@@ -73,22 +81,29 @@ export class WorkspaceStore {
 	//   this.currentArtifact = artifact;
 	// }
 
-	async addMessageAndPersist(threadId: string, message: MessageBubble) {
-		await supabase.pushMessage(threadId, message);
-		runInAction(() => {
-			this.messages.push(message);
-		});
+	async addMessageAndPersist(message: MessageBubble) {
+		if (userConfigStore.threadId !== "") {
+			supabase.pushMessage(userConfigStore.threadId, message);
+		}
+		console.log("Adding message", message);
+		const idx = this.messages.findIndex((m) => m.id === message.id);
+		if (idx === -1) {
+			runInAction(() => {
+				this.messages.push(message);
+			});
+		} else {
+			runInAction(() => {
+				this.messages[idx] = message;
+			});
+		}
 	}
-
-	// setMessages(messages: MessageBubble[]) {
-	//   this.messages = messages;
-	// }
 
 	/**
 	 * Loads artifacts and messages for a thread and sets them in the store.
 	 * Returns true if successful, false otherwise.
 	 */
 	async loadThreadContent(threadId: string): Promise<boolean> {
+		console.log("Loading thread content for threadId", threadId);
 		try {
 			const artifacts = await supabase.getArtifacts(threadId);
 			const messages = await supabase.getMessages(threadId);
@@ -119,7 +134,9 @@ export class WorkspaceStore {
 			runInAction(() => {
 				this.artifacts = processedArtifacts;
 				this.messages = formattedMessages;
+				userConfigStore.threadId = threadId;
 			});
+			console.log("[Workspace] Messages", this.messages.length);
 			return true;
 		} catch (err) {
 			console.error("[WorkspaceStore] Error loading thread content:", err);

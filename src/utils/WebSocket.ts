@@ -1,10 +1,8 @@
-import type { Artifact, Artifacts } from "@/contexts/WorkspaceContext";
 import { userConfigStore } from "@/stores/UserConfigStore";
 import { workspaceStore } from "@/stores/WorkspaceStore";
 import type {
 	AgentChunk,
 	FlagChunk,
-	FlagContext,
 	FlagType,
 	MessageBubble,
 	MessageChunk,
@@ -15,28 +13,20 @@ import type {
 	WebSocketMessage,
 	WebSocketMessageType,
 } from "@/types/chat";
-import type { UserConfig } from "@/utils/UserConfigProvider";
+import type { Artifact, UserConfig } from "@/utils/UserConfigProvider";
+import { authStore } from "./AuthProvider";
 import { supabase } from "./SupabaseClient";
 
 type WebSocketEvent = "message" | "tool" | "agent" | "error" | "open" | "close";
 type Subscriber = (eventData: any) => void;
 
 export class WebSocketConversation {
-	threadId: string | null;
-	token: string;
-	userId: string;
 	ws: WebSocket;
-	potentialResponses: string[];
 	isConnected: boolean;
 	private subscribers: Map<WebSocketEvent, Set<Subscriber>> = new Map();
 
-	constructor(token: string, userId: string, threadId?: string) {
-		this.threadId = threadId || null;
-
-		this.token = token;
-		this.userId = userId;
+	constructor() {
 		this.isConnected = false;
-		this.potentialResponses = [];
 
 		// Initialize subscriber sets for each event
 		["message", "error", "open", "close", "tool", "agent"].forEach((event) => {
@@ -44,29 +34,26 @@ export class WebSocketConversation {
 		});
 	}
 
-	async connect(flag: FlagType) {
-		console.log("Connecting to WebSocket");
-		if (this.threadId) {
-			await workspaceStore.loadThreadContent(this.threadId);
-			console.log(
-				"[WebSocketConversation] Messages loaded:",
-				workspaceStore.messages,
-			);
-			this.notify("message", workspaceStore.messages);
+	connect(flag: FlagType) {
+		if (this.ws && this.isConnected) {
+			this.disconnect();
 		}
+		console.log("Connecting to WebSocket");
 
 		const flagChunk = this.getFlagChunk(flag);
 
-		const wsUrl = `${import.meta.env.VITE_API_URL}/ws?token=${this.token}`;
+		const wsUrl = `${import.meta.env.VITE_API_URL}/ws?token=${authStore.session?.access_token}`;
 
 		this.ws = new WebSocket(wsUrl);
 
 		this.ws.onopen = () => {
+			console.log("WebSocket connected");
 			this.sendMessage("flag", flagChunk);
 			this.notify("open");
 		};
 
 		this.ws.onclose = (event) => {
+			console.log("WebSocket closed");
 			this.notify("close", event);
 		};
 
@@ -88,6 +75,7 @@ export class WebSocketConversation {
 			this.ws.close();
 		}
 		this.isConnected = false;
+		this.unsubscribeAll();
 	}
 
 	private getFlagChunk(flag: FlagType): FlagChunk {
@@ -127,7 +115,7 @@ export class WebSocketConversation {
 		}
 	}
 
-	private sendMessage(type: WebSocketMessageType, payload: Payload) {
+	sendMessage(type: WebSocketMessageType, payload: Payload) {
 		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
 			console.error("WebSocket is not connected");
 			return false;
@@ -136,7 +124,7 @@ export class WebSocketConversation {
 		const wsMessage: WebSocketMessage = {
 			type: type,
 			messageId: crypto.randomUUID(),
-			userId: this.userId,
+			userId: authStore.session?.user.id || "",
 			payload: payload,
 			timestamp: new Date().toISOString(),
 		};
@@ -186,13 +174,12 @@ export class WebSocketConversation {
 			chunks: [{ content }],
 			orderIndex: workspaceStore.messages.length,
 		};
-		await workspaceStore.addMessageAndPersist(this.threadId, userMessage);
+		await workspaceStore.addMessageAndPersist(userMessage);
 		this.sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	}
 
 	private async handleIncomingMessage(message: WebSocketMessage) {
 		const { payload, messageId } = message;
-
 		switch (payload.type) {
 			case "text": {
 				const newChunk: MessageChunkBubble = {
@@ -200,9 +187,10 @@ export class WebSocketConversation {
 				};
 				const lastMessage =
 					workspaceStore.messages[workspaceStore.messages.length - 1];
+				// console.log("Last message", lastMessage);
 				if (lastMessage?.type === "assistant") {
 					lastMessage.chunks.push(newChunk);
-					await workspaceStore.addMessageAndPersist(this.threadId, lastMessage);
+					await workspaceStore.addMessageAndPersist(lastMessage);
 				} else {
 					const assistantMessage: MessageBubble = {
 						id: crypto.randomUUID(),
@@ -210,10 +198,7 @@ export class WebSocketConversation {
 						chunks: [newChunk],
 						orderIndex: workspaceStore.messages.length,
 					};
-					await workspaceStore.addMessageAndPersist(
-						this.threadId,
-						assistantMessage,
-					);
+					await workspaceStore.addMessageAndPersist(assistantMessage);
 				}
 				return;
 			}
@@ -251,7 +236,7 @@ export class WebSocketConversation {
 							typeof toolArgs === "object" &&
 							"potential_responses" in toolArgs
 						) {
-							this.potentialResponses = toolArgs.potential_responses;
+							workspaceStore.potentialResponses = toolArgs.potential_responses;
 						}
 						this.notify("tool", newChunk.toolCall);
 						return;
@@ -263,10 +248,7 @@ export class WebSocketConversation {
 							if (firstDocument) {
 								firstDocument.content = report;
 								newChunk.toolCall.artifactId = firstDocument.id;
-								await workspaceStore.updateArtifactAndPersist(
-									this.threadId,
-									firstDocument,
-								);
+								await workspaceStore.updateArtifactAndPersist(firstDocument);
 							} else {
 								const newDocument: Artifact = {
 									id,
@@ -275,10 +257,7 @@ export class WebSocketConversation {
 									created_at: new Date().toISOString(),
 								};
 								// Create new document and get its ID
-								await workspaceStore.addArtifactAndPersist(
-									this.threadId,
-									newDocument,
-								);
+								await workspaceStore.addArtifactAndPersist(newDocument);
 							}
 						}
 						this.notify("tool", newChunk.toolCall);
@@ -292,10 +271,7 @@ export class WebSocketConversation {
 								content: image,
 								created_at: new Date().toISOString(),
 							};
-							await workspaceStore.addArtifactAndPersist(
-								this.threadId,
-								newImage,
-							);
+							await workspaceStore.addArtifactAndPersist(newImage);
 						}
 						this.notify("tool", newChunk.toolCall);
 						break;
@@ -308,10 +284,7 @@ export class WebSocketConversation {
 								content: result,
 								created_at: new Date().toISOString(),
 							};
-							await workspaceStore.addArtifactAndPersist(
-								this.threadId,
-								newQuery,
-							);
+							await workspaceStore.addArtifactAndPersist(newQuery);
 						}
 						this.notify("tool", newChunk.toolCall);
 						break;
@@ -324,10 +297,7 @@ export class WebSocketConversation {
 								content: result,
 								created_at: new Date().toISOString(),
 							};
-							await workspaceStore.addArtifactAndPersist(
-								this.threadId,
-								newQuery,
-							);
+							await workspaceStore.addArtifactAndPersist(newQuery);
 						}
 						this.notify("tool", newChunk.toolCall);
 						break;
@@ -335,7 +305,7 @@ export class WebSocketConversation {
 
 					case "agent_update_business": {
 						if (result) {
-							await userConfigStore.upsertUserConfig(this.token, {
+							await userConfigStore.upsertUserConfig({
 								...userConfigStore.userConfig,
 								business_overview: result,
 							});
@@ -360,7 +330,7 @@ export class WebSocketConversation {
 						chunks: [newChunk],
 						orderIndex: workspaceStore.messages.length,
 					};
-					await workspaceStore.addMessageAndPersist(this.threadId, newMessage);
+					await workspaceStore.addMessageAndPersist(newMessage);
 				}
 				break;
 			}
@@ -383,6 +353,12 @@ export class WebSocketConversation {
 	 */
 	unsubscribe(event: WebSocketEvent, callback: Subscriber) {
 		this.subscribers.get(event)?.delete(callback);
+	}
+
+	unsubscribeAll() {
+		this.subscribers.forEach((set) => {
+			set.clear();
+		});
 	}
 
 	/**

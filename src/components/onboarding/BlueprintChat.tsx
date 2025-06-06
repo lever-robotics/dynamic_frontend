@@ -1,6 +1,5 @@
 import { userConfigStore } from "@/stores/UserConfigStore";
 import type { MessageBubble } from "@/types/chat";
-import { useAuth } from "@/utils/AuthProvider";
 import { WebSocketConversation } from "@/utils/WebSocket";
 import { useEffect, useState } from "react";
 import { useRef } from "react";
@@ -8,16 +7,11 @@ import { ChatInput } from "../Chat/ChatInput";
 import MessageList from "../Chat/MessageList";
 
 export const BlueprintChat = () => {
-	const { session } = useAuth();
 	const ws = useRef<WebSocketConversation | null>(null);
 
 	useEffect(() => {
 		const initWebSocket = async () => {
-			ws.current = new WebSocketConversation(
-				session?.access_token || "",
-				session?.user.id || "",
-				userConfigStore.threadId,
-			);
+			ws.current = new WebSocketConversation();
 			ws.current.subscribe("open", () => {});
 
 			ws.current.subscribe("error", (error) => {
@@ -33,7 +27,7 @@ export const BlueprintChat = () => {
 		return () => {
 			ws.current?.disconnect();
 		};
-	}, [session]);
+	}, []);
 
 	const handleNewMessage = (content: string) => {
 		if (ws.current) {

@@ -8,7 +8,7 @@ import type {
 	ToolExecutionBubble,
 	WebSocketMessage,
 } from "@/types/chat";
-import { useAuth } from "@/utils/AuthProvider";
+import { authStore } from "@/utils/AuthProvider";
 import { WebSocketConversation } from "@/utils/WebSocket";
 import { observer } from "mobx-react-lite";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
@@ -90,16 +90,11 @@ export function AnalyzingBusiness({
 	>([]);
 	const [runningAgents, setRunningAgents] = useState<string[]>([]);
 	const [messageCounter, setMessageCounter] = useState(1);
-	const { session } = useAuth();
 	const ws = useRef<WebSocketConversation | null>(null);
 
 	useEffect(() => {
 		const initWebSocket = async () => {
-			ws.current = new WebSocketConversation(
-				session?.access_token || "",
-				session?.user.id || "",
-				userConfigStore.threadId,
-			);
+			ws.current = new WebSocketConversation();
 			ws.current.subscribe("tool", async (toolCall: ToolExecutionBubble) => {
 				setProgress((prev) =>
 					Math.min(prev + TOOL_PROGRESS_INCREMENT, TOTAL_PROGRESS),
@@ -174,7 +169,7 @@ export function AnalyzingBusiness({
 		return () => {
 			ws.current?.disconnect();
 		};
-	}, [session, onComplete, messageCounter]);
+	}, [onComplete, messageCounter]);
 
 	return (
 		<Modal

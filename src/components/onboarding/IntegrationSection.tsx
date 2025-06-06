@@ -1,5 +1,5 @@
 import type { Connection } from "@/types/connectors";
-import { useAuth } from "@/utils/AuthProvider";
+import { authStore } from "@/utils/AuthProvider";
 import { useState } from "react";
 import { ConnectionCard } from "./ConnectionCard";
 import { ConnectionDetail } from "./ConnectionDetail";
@@ -12,7 +12,6 @@ interface IntegrationsSectionProps {
 export const IntegrationSection: React.FC<IntegrationsSectionProps> = ({
 	connections,
 }) => {
-	const { session } = useAuth();
 	const [selectedIntegration, setSelectedIntegration] =
 		useState<Connection | null>(null);
 
@@ -24,7 +23,7 @@ export const IntegrationSection: React.FC<IntegrationsSectionProps> = ({
 				{
 					method: "GET",
 					headers: {
-						Authorization: `Bearer ${session?.access_token}`,
+						Authorization: `Bearer ${authStore.session?.access_token}`,
 					},
 				},
 			);

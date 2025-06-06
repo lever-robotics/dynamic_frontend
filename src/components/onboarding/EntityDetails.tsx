@@ -1,6 +1,6 @@
 import { userConfigStore } from "@/stores/UserConfigStore";
 import type { DataConnector, Entity } from "@/types/connectors";
-import { useAuth } from "@/utils/AuthProvider";
+import { authStore } from "@/utils/AuthProvider";
 import { observer } from "mobx-react-lite";
 import { TextareaField } from "./TextareaField";
 
@@ -13,8 +13,6 @@ export const EntityDetails: React.FC<EntityDetailsProps> = ({
 	entity,
 	connection,
 }) => {
-	const { session } = useAuth();
-
 	const handleEntityDescriptionUpdate = async (
 		connection: DataConnector,
 		entityName: string,
@@ -31,14 +29,10 @@ export const EntityDetails: React.FC<EntityDetailsProps> = ({
 		});
 
 		try {
-			await userConfigStore.updateConnectionMeta(
-				session?.access_token || "",
-				connection.id,
-				{
-					version: connection.meta.version,
-					entities: updatedEntities,
-				},
-			);
+			await userConfigStore.updateConnectionMeta(connection.id, {
+				version: connection.meta.version,
+				entities: updatedEntities,
+			});
 		} catch (error) {
 			console.error("Failed to update entity description:", error);
 		}
@@ -65,14 +59,10 @@ export const EntityDetails: React.FC<EntityDetailsProps> = ({
 		});
 
 		try {
-			await userConfigStore.updateConnectionMeta(
-				session?.access_token || "",
-				connection.id,
-				{
-					version: connection.meta.version,
-					entities: updatedEntities,
-				},
-			);
+			await userConfigStore.updateConnectionMeta(connection.id, {
+				version: connection.meta.version,
+				entities: updatedEntities,
+			});
 		} catch (error) {
 			console.error("Failed to update field description:", error);
 		}

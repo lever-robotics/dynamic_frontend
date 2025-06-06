@@ -1,12 +1,11 @@
 // import logoImg from '@/assets/cgLogo.png';
 // import logoImg from '@/assets/hydrojug.png';
-// import logoImg from '@/assets/ecommerce.png';
 import logoImg from "@/assets/lever-nobg.png";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { userConfigStore } from "@/stores/UserConfigStore";
 import { workspaceStore } from "@/stores/WorkspaceStore";
-import { useAuth } from "@/utils/AuthProvider";
+import { authStore } from "@/utils/AuthProvider";
 import { Database, LayoutTemplate, PlusCircle, Settings } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { AspectRatio } from "radix-ui";
@@ -30,31 +29,44 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	setShowSettings,
 	setShowBlueprint,
 }) => {
-	const { session } = useAuth();
 	const handleLogoClick = () => {
 		// TODO: Add home page
 	};
 
-	const handleThreadClick = (threadId: string) => {
+	const handleThreadClick = async (threadId: string) => {
+		// await userConfigStore.switchThread(threadId);
+		console.log("handleThreadClick", threadId);
 		userConfigStore.threadId = threadId;
+		workspaceStore.messages = [];
+		workspaceStore.messages.push({
+			id: "1",
+			type: "assistant",
+			chunks: [{ content: "Loading..." }],
+		});
+		console.log("workspaceStore.messages", workspaceStore.messages);
+		// await workspaceStore.loadThreadContent(threadId);
 	};
 
 	const handleQueryDataClick = async () => {
-		if (userConfigStore.threadId === "") {
-			const threadId = await userConfigStore.createThread(
-				session?.access_token || "",
-				"Query Data",
-			);
-			userConfigStore.threadId = threadId;
-		}
-		workspaceStore.createQuery();
+		// if (workspaceStore.messages.length === 0) {
+		// 	const threadId = await userConfigStore.createThread("Query Data");
+		// 	await userConfigStore.switchThread(threadId);
+		// 	workspaceStore.ws.connect("query");
+		// 	await workspaceStore.loadThreadContent(threadId);
+		// }
+		// workspaceStore.createQuery();
 	};
 	const handleSettingsClick = () => {
 		setShowSettings(true);
 	};
 
-	const handleNewAnalysisClick = () => {
-		userConfigStore.threadId = "";
+	const handleNewAnalysisClick = async () => {
+		// const threadId = await userConfigStore.createThread(
+		// 	"New Analysis",
+		// );
+		// await userConfigStore.switchThread(threadId);
+		// workspaceStore.ws.connect("query");
+		// await workspaceStore.loadThreadContent(threadId);
 	};
 
 	const handleBlueprintClick = () => {

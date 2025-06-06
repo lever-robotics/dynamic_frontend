@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { BusinessData } from "./BusinessData";
-import { BusinessOverview } from "./BusinessOverview";
+import BusinessData from "./BusinessData";
+import BusinessOverview from "./BusinessOverview";
 import { TabGroup } from "./TabGroup";
 
 export function LeftPanel() {

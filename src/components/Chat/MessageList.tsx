@@ -34,6 +34,7 @@ function MessageList({ className = "" }: MessageListProps) {
 			workspaceStore.currentArtifact = foundArtifact;
 		}
 	};
+	const messages = workspaceStore.messages;
 
 	// Check scroll position on every render
 	const shouldScroll =
@@ -52,8 +53,7 @@ function MessageList({ className = "" }: MessageListProps) {
 			ref={containerRef}
 			className={`flex-1 overflow-y-auto p-4 space-y-4 ${className}`}
 		>
-			{workspaceStore.messages.map((message) => {
-				console.log(message);
+			{messages.map((message) => {
 				return (
 					<MessageBubble
 						key={message.id}

@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { userConfigStore } from "@/stores/UserConfigStore";
 import { workspaceStore } from "@/stores/WorkspaceStore";
 import { Connections } from "@/types/connectors";
-import { useAuth } from "@/utils/AuthProvider";
+import { authStore } from "@/utils/AuthProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
@@ -54,7 +54,6 @@ export function DataExecutor() {
 	const [selectedConnector, setSelectedConnector] = useState<string>(
 		availableConnections[0].type,
 	);
-	const { session } = useAuth();
 
 	if (workspaceStore.currentArtifact?.metadata?.data_source) {
 		const dataSource = workspaceStore.currentArtifact.metadata.data_source;
@@ -93,7 +92,7 @@ export function DataExecutor() {
 		if (isExecuting) return; // Prevent multiple executions
 		setIsExecuting(true);
 		try {
-			const token = session?.access_token;
+			const token = authStore.session?.access_token;
 			const response = await fetch(
 				`${API_BASE_URL}/v0/connectors/${selectedConnector}/query`,
 				{
@@ -118,13 +117,10 @@ export function DataExecutor() {
 
 				// Update the artifact with the new query and preserve metadata
 				if (workspaceStore.currentArtifact) {
-					await workspaceStore.updateArtifactAndPersist(
-						userConfigStore.threadId,
-						{
-							...workspaceStore.currentArtifact,
-							content: TempQuery,
-						},
-					);
+					await workspaceStore.updateArtifactAndPersist({
+						...workspaceStore.currentArtifact,
+						content: TempQuery,
+					});
 				}
 			}
 		} catch (error) {

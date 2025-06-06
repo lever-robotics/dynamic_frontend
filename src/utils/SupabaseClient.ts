@@ -1,7 +1,7 @@
 // src/utils/SupabaseClient.ts
-import type { Artifact } from "@/contexts/WorkspaceContext";
 import type { MessageBubble } from "@/types/chat";
 import { SupabaseClient, createClient } from "@supabase/supabase-js";
+import type { Artifact } from "./UserConfigProvider";
 
 const SUPABASE_URL = "https://ugqelrsbgvwjlnzrzqab.supabase.co";
 const SUPABASE_ANON_KEY =

@@ -1,5 +1,5 @@
 import type { Connection } from "@/types/connectors";
-import { useAuth } from "@/utils/AuthProvider";
+import { authStore } from "@/utils/AuthProvider";
 import type * as React from "react";
 import { useEffect, useState } from "react";
 import { MarkdownContent } from "../Chat/MarkdownContent";
@@ -127,7 +127,6 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [formData, setFormData] = useState<Record<string, string>>({});
 	const connectionConfig = getConnectionFields(connection.name);
-	const { session } = useAuth();
 	const [sessionToken, setSessionToken] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -136,7 +135,7 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 				const response = await fetch(`${API_BASE_URL}/v0/oauth/session`, {
 					method: "POST",
 					headers: {
-						Authorization: `Bearer ${session?.access_token}`,
+						Authorization: `Bearer ${authStore.session?.access_token}`,
 					},
 				});
 				if (!response.ok) {
@@ -150,7 +149,7 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 			}
 		};
 		fetchRedirectUrl();
-	}, [session]);
+	}, []);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
