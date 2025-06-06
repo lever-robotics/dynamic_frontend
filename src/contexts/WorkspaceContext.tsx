@@ -322,6 +322,8 @@ Here's a bar chart showing our regional performance:
 }
 \`\`\``;
 
+			const BlankDocument = "";
+
 			// Create the initial document artifact
 			const { error: artifactError } = await supabase
 				.from("thread_artifacts")
@@ -329,7 +331,7 @@ Here's a bar chart showing our regional performance:
 					{
 						thread_id: data.id,
 						artifact_type: "document",
-						content: sampleDocument,
+						content: BlankDocument,
 						created_at: new Date().toISOString(),
 					},
 				]);

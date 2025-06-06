@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		});
 
 		if (error) throw error;
+
 		setUserId(data.user?.id);
 		return data;
 	}

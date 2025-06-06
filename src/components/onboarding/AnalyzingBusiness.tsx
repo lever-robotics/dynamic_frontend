@@ -123,7 +123,7 @@ export function AnalyzingBusiness({
 
 					switch (toolChunk.tool) {
 						case "agent_scrape_website":
-							addStatusMessage("Reading Website Content");
+							addStatusMessage(`Reading ${businessInfo.name}'s Website`);
 							break;
 						case "agent_update_business_json":
 						case "agent_update_business": {
@@ -144,7 +144,16 @@ export function AnalyzingBusiness({
 						}
 						default: {
 							if (toolChunk.status === "complete") {
-								addStatusMessage(`${toolChunk.tool} completed`);
+								const toolDisplayNames: Record<string, string> = {
+									agent_update_business: "Updating Business Memory",
+									agent_read_business: "Thinking",
+									data_gather: "Looking through connected data",
+									agent_scrape_website: "Reading website",
+									agent_update_business_json: "Updating Business Memory",
+								};
+								addStatusMessage(
+									`${toolDisplayNames[toolChunk.tool] || toolChunk.tool} completed`,
+								);
 							}
 							break;
 						}
@@ -182,7 +191,13 @@ export function AnalyzingBusiness({
 				}
 			}
 		},
-		[userConfig, upsertUserConfig, onComplete, messageCounter],
+		[
+			userConfig,
+			upsertUserConfig,
+			onComplete,
+			messageCounter,
+			businessInfo.name,
+		],
 	);
 
 	// WebSocket connection with message handling

@@ -21,6 +21,21 @@ import { useWebSocket } from "./useWebSocket";
 // 	API_BASE_URL?.replace("https", "wss").replace("http", "ws") ||
 // 	"ws://localhost:8000";
 
+// Tool display name mapping
+const toolDisplayNames: Record<string, string> = {
+	agent_user_potential_responses: "Generating Suggestions",
+	write_bi_report: "Writing Business Report",
+	agent_execute_python_code: "Running Analysis",
+	agent_execute_sql_query: "Querying Database",
+	agent_execute_bigquery: "Querying BigQuery",
+	agent_update_business: "Updating Business Profile",
+	agent_write_meta_file: "Updating Connection Details",
+	agent_read_business: "Reading Business Profile",
+	data_gather: "Gathering Data",
+	agent_scrape_website: "Analyzing Website",
+	agent_update_business_json: "Updating Business Memory",
+};
+
 export function useMessages(sendOnConnect?: () => Payload) {
 	const { getValidToken, userId } = useAuth();
 	const {
@@ -123,7 +138,7 @@ export function useMessages(sendOnConnect?: () => Payload) {
 
 				const newChunk: MessageChunkBubble = {
 					toolCall: {
-						tool,
+						tool: toolDisplayNames[tool] || tool,
 						arguments: toolArgs,
 						status: toolChunk.status,
 						result,

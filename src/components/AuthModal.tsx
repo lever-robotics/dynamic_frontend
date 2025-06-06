@@ -70,6 +70,7 @@ export const AuthModal: React.FC = () => {
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [isSignUp, setIsSignUp] = useState(false);
+	const [showVerificationMessage, setShowVerificationMessage] = useState(false);
 
 	const { signIn, signUp } = useAuth();
 	const { fetchUserConfig } = useUserConfig();
@@ -79,14 +80,19 @@ export const AuthModal: React.FC = () => {
 		setError(null);
 		setLoading(true);
 		try {
-			const authResponse = isSignUp
-				? await signUp({ email, password })
-				: await signIn({ email, password });
-			// console.log(authResponse)
-
-			// Fetch user config after successful sign in
-			if (authResponse.user?.id) {
-				await fetchUserConfig();
+			if (isSignUp) {
+				const authResponse = await signUp({ email, password });
+				if (authResponse.user && !authResponse.session) {
+					// User needs to verify their email
+					setShowVerificationMessage(true);
+					return;
+				}
+			} else {
+				const authResponse = await signIn({ email, password });
+				// Fetch user config after successful sign in
+				if (authResponse.user?.id) {
+					await fetchUserConfig();
+				}
 			}
 		} catch (err) {
 			console.error(err);
@@ -97,6 +103,42 @@ export const AuthModal: React.FC = () => {
 	};
 
 	const handleGoogleSignIn = async () => {};
+
+	if (showVerificationMessage) {
+		return (
+			<div className="fixed inset-0 z-50 overflow-y-auto">
+				<div className="fixed inset-0 bg-black/50 transition-opacity" />
+				<div className="flex min-h-full items-center justify-center p-4">
+					<div className="relative transform sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+						<div className="text-sm font-medium tracking-wide text-center max-w-[460px] text-neutral-900">
+							<div className="flex flex-col px-20 py-9 w-full bg-white rounded-3xl shadow-[0px_4px_24px_rgba(0,0,0,0.1)]">
+								<h2 className="text-2xl font-semibold">Check Your Email</h2>
+								<img
+									src={leverLogo}
+									alt="Logo"
+									className="object-contain self-center max-w-full aspect-[2.28] w-[162px] mt-4"
+								/>
+								<p className="mt-6 text-gray-600">
+									We've sent a verification link to {email}. Please check your
+									email and click the link to verify your account.
+								</p>
+								<button
+									type="button"
+									onClick={() => {
+										setShowVerificationMessage(false);
+										setIsSignUp(false);
+									}}
+									className="px-16 py-3.5 mt-8 text-white bg-sky-400 rounded-xl shadow-[0px_4px_10px_rgba(233,68,75,0.25)] font-heading"
+								>
+									Return to Sign In
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="fixed inset-0 z-50 overflow-y-auto">
