@@ -14,13 +14,14 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
+import { userConfigStore } from "@/stores/UserConfigStore";
+import { workspaceStore } from "@/stores/WorkspaceStore";
 import { Connections } from "@/types/connectors";
 import { useAuth } from "@/utils/AuthProvider";
-import { useUserConfig } from "@/utils/UserConfigProvider";
 import { Copy, Download, FileSpreadsheet, FileText, Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import { observer } from "mobx-react-lite";
+import { useState } from "react";
 import * as XLSX from "xlsx";
 import { ConnectionCard } from "./onboarding/ConnectionCard";
 import { type Tab, TabGroupInject } from "./onboarding/TabGroupInject";
@@ -31,22 +32,21 @@ interface QueryResult {
 }
 
 export function DataExecutor() {
-	const { currentArtifact, ws } = useWorkspace();
-
-	const [TempQuery, setTempQuery] = useState(currentArtifact?.content || "");
+	const [TempQuery, setTempQuery] = useState(
+		workspaceStore.currentArtifact?.content || "",
+	);
 	const [results, setResults] = useState<QueryResult[]>([]);
 	const [columns, setColumns] = useState<string[]>([]);
 	const [isExecuting, setIsExecuting] = useState(false);
 
 	// Update TempQuery when currentArtifact changes
-	useEffect(() => {
-		if (currentArtifact?.content) {
-			setTempQuery(currentArtifact.content);
-		}
-	}, [currentArtifact]); // Watch the entire currentArtifact object
+	// useEffect(() => {
+	// 	if (workspaceStore.currentArtifact?.content) {
+	// 		setTempQuery(workspaceStore.currentArtifact.content);
+	// 	}
+	// }, []);
 
-	const { userConfig } = useUserConfig();
-	const connectors = userConfig?.data_connectors || [];
+	const connectors = userConfigStore.userConfig?.data_connectors || [];
 
 	const availableConnections = Connections.filter((conn) =>
 		connectors.some((connector) => connector.type === conn.type),
@@ -54,10 +54,10 @@ export function DataExecutor() {
 	const [selectedConnector, setSelectedConnector] = useState<string>(
 		availableConnections[0].type,
 	);
-	const { getValidToken } = useAuth();
+	const { session } = useAuth();
 
-	if (currentArtifact?.metadata?.data_source) {
-		const dataSource = currentArtifact.metadata.data_source;
+	if (workspaceStore.currentArtifact?.metadata?.data_source) {
+		const dataSource = workspaceStore.currentArtifact.metadata.data_source;
 		// Find the matching connection type
 		const matchingConnection = availableConnections.find(
 			(conn) => conn.type.toLowerCase() === dataSource.toLowerCase(),
@@ -93,7 +93,7 @@ export function DataExecutor() {
 		if (isExecuting) return; // Prevent multiple executions
 		setIsExecuting(true);
 		try {
-			const token = await getValidToken();
+			const token = session?.access_token;
 			const response = await fetch(
 				`${API_BASE_URL}/v0/connectors/${selectedConnector}/query`,
 				{
@@ -117,11 +117,14 @@ export function DataExecutor() {
 				setResults(data);
 
 				// Update the artifact with the new query and preserve metadata
-				if (currentArtifact) {
-					ws.updateArtifact({
-						...currentArtifact,
-						content: TempQuery,
-					});
+				if (workspaceStore.currentArtifact) {
+					await workspaceStore.updateArtifactAndPersist(
+						userConfigStore.threadId,
+						{
+							...workspaceStore.currentArtifact,
+							content: TempQuery,
+						},
+					);
 				}
 			}
 		} catch (error) {
@@ -293,4 +296,4 @@ export function DataExecutor() {
 	);
 }
 
-export default DataExecutor;
+export default observer(DataExecutor);

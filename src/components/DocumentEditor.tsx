@@ -1,11 +1,10 @@
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
+import { workspaceStore } from "@/stores/WorkspaceStore";
+import { observer } from "mobx-react-lite";
 import { MarkdownContent } from "./Chat/MarkdownContent";
 
-export function DocumentEditor() {
-	const { artifacts } = useWorkspace();
-
-	const document = artifacts.documents[0]?.content;
+export const DocumentEditor = observer(() => {
+	const document = workspaceStore.currentArtifact?.content;
 
 	return (
 		<div className="w-full h-full">
@@ -41,4 +40,4 @@ export function DocumentEditor() {
 			</div>
 		</div>
 	);
-}
+});

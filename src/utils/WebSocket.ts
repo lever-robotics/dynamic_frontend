@@ -1,4 +1,6 @@
 import type { Artifact, Artifacts } from "@/contexts/WorkspaceContext";
+import { userConfigStore } from "@/stores/UserConfigStore";
+import { workspaceStore } from "@/stores/WorkspaceStore";
 import type {
 	AgentChunk,
 	FlagChunk,
@@ -24,31 +26,17 @@ export class WebSocketConversation {
 	token: string;
 	userId: string;
 	ws: WebSocket;
-	artifacts: Artifacts;
-	messages: MessageBubble[];
 	potentialResponses: string[];
-	userConfig: UserConfig;
 	isConnected: boolean;
 	private subscribers: Map<WebSocketEvent, Set<Subscriber>> = new Map();
 
-	constructor(
-		token: string,
-		userId: string,
-		userConfig: UserConfig,
-		threadId?: string,
-	) {
+	constructor(token: string, userId: string, threadId?: string) {
 		this.threadId = threadId || null;
-		this.userConfig = userConfig;
+
 		this.token = token;
 		this.userId = userId;
 		this.isConnected = false;
-		this.messages = [];
 		this.potentialResponses = [];
-		this.artifacts = {
-			images: [],
-			documents: [],
-			queries: [],
-		};
 
 		// Initialize subscriber sets for each event
 		["message", "error", "open", "close", "tool", "agent"].forEach((event) => {
@@ -56,66 +44,18 @@ export class WebSocketConversation {
 		});
 	}
 
-	private async loadThreadContent() {
-		try {
-			const artifacts = await supabase.getArtifacts(this.threadId);
-			const messages = await supabase.getMessages(this.threadId);
-			const formattedMessages = messages.map((message) => {
-				return message.content;
-			});
-
-			// Process artifacts
-			const processedArtifacts: Artifacts = {
-				images: artifacts
-					.filter((a) => a.artifact_type === "image")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-				documents: artifacts
-					.filter((a) => a.artifact_type === "document")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-				queries: artifacts
-					.filter((a) => a.artifact_type === "query")
-					.sort(
-						(a, b) =>
-							new Date(b.created_at).getTime() -
-							new Date(a.created_at).getTime(),
-					),
-			};
-
-			return {
-				artifacts: processedArtifacts,
-				messages: formattedMessages,
-			};
-		} catch (err) {
-			console.error(
-				"[WebSocketConversation] Error loading thread content:",
-				err,
-			);
-			return {
-				artifacts: null,
-				messages: null,
-			};
-		}
-	}
-
-	async connect(flag: FlagType, flagContext) {
+	async connect(flag: FlagType) {
 		console.log("Connecting to WebSocket");
 		if (this.threadId) {
-			const { artifacts, messages } = await this.loadThreadContent();
-			this.artifacts = artifacts;
-			this.messages = messages;
-			console.log("[WebSocketConversation] Messages loaded:", this.messages);
-			this.notify("message", this.messages);
+			await workspaceStore.loadThreadContent(this.threadId);
+			console.log(
+				"[WebSocketConversation] Messages loaded:",
+				workspaceStore.messages,
+			);
+			this.notify("message", workspaceStore.messages);
 		}
 
-		const flagChunk = this.getFlagChunk(flag, flagContext);
+		const flagChunk = this.getFlagChunk(flag);
 
 		const wsUrl = `${import.meta.env.VITE_API_URL}/ws?token=${this.token}`;
 
@@ -150,17 +90,16 @@ export class WebSocketConversation {
 		this.isConnected = false;
 	}
 
-	private getFlagChunk(flag: FlagType, context): FlagChunk {
+	private getFlagChunk(flag: FlagType): FlagChunk {
 		switch (flag) {
 			case "query": {
 				return {
 					type: "flag",
 					flag: flag,
 					context: {
-						...context,
-						...this.userConfig,
-						messages: this.messages,
-						artifacts: this.artifacts,
+						...userConfigStore.userConfig,
+						messages: workspaceStore.messages,
+						artifacts: workspaceStore.artifacts,
 					},
 				};
 			}
@@ -169,8 +108,7 @@ export class WebSocketConversation {
 					type: "flag",
 					flag: flag,
 					context: {
-						...context,
-						...this.userConfig,
+						...userConfigStore.userConfig,
 					},
 				};
 			}
@@ -179,8 +117,7 @@ export class WebSocketConversation {
 					type: "flag",
 					flag: flag,
 					context: {
-						...context,
-						...this.userConfig,
+						...userConfigStore.userConfig,
 					},
 				};
 			}
@@ -188,15 +125,6 @@ export class WebSocketConversation {
 				return null;
 			}
 		}
-	}
-
-	updateArtifact(artifact: Artifact) {
-		const index = this.artifacts.queries.findIndex((a) => a.id === artifact.id);
-		if (index !== -1) {
-			this.artifacts.queries[index] = artifact;
-		}
-		this.notify("tool", artifact);
-		supabase.updateArtifact(this.threadId, artifact);
 	}
 
 	private sendMessage(type: WebSocketMessageType, payload: Payload) {
@@ -213,52 +141,56 @@ export class WebSocketConversation {
 			timestamp: new Date().toISOString(),
 		};
 
-		try {
-			this.ws.send(JSON.stringify(wsMessage));
-			return true;
-		} catch (error) {
-			console.error("Error sending message:", error);
-			return false;
-		}
+		this.ws.send(JSON.stringify(wsMessage));
 	}
 
-	queryData() {
-		console.log("[WebSocketConversation] queryData");
-		const queryId = crypto.randomUUID();
-		const toolCall = {
-			tool: "agent_execute_sql_query",
-			arguments: {
-				query_id: queryId,
-			},
-			status: "pending",
-			result: "",
-			error: "",
-		};
-		const newQuery: Artifact = {
-			id: queryId,
-			artifact_type: "query",
-			content: "",
-			created_at: new Date().toISOString(),
-		};
-		this.artifacts.queries.push(newQuery);
-		supabase.addArtifact(this.threadId, newQuery);
-		this.notify("tool", toolCall);
-	}
+	// queryData() {
+	// 	console.log("[WebSocketConversation] queryData");
+	// 	const queryId = crypto.randomUUID();
+	// 	const toolCall = {
+	// 		tool: "agent_execute_sql_query",
+	// 		arguments: {
+	// 			query_id: queryId,
+	// 		},
+	// 		status: "pending",
+	// 		result: "",
+	// 		error: "",
+	// 	};
+	// 	const newQuery: Artifact = {
+	// 		id: queryId,
+	// 		artifact_type: "query",
+	// 		content: "",
+	// 		created_at: new Date().toISOString(),
+	// 	};
+	// 	this.artifacts.queries.push(newQuery);
+	// 	this.createQuery(toolCall);
+	// }
 
-	sendUserMessage(content: string) {
+	// private async createQuery(toolCall: ToolExecutionBubble) {
+	// 	const newQuery: Artifact = {
+	// 		artifact_type: "query",
+	// 		content: "",
+	// 		created_at: new Date().toISOString(),
+	// 		id: crypto.randomUUID(),
+	// 		metadata: {},
+	// 	};
+	// 	this.artifacts.queries.push(newQuery);
+	// 	await workspaceStore.addArtifactAndPersist(this.threadId, newQuery);
+	// 	this.notify("tool", toolCall);
+	// }
+
+	async sendUserMessage(content: string) {
 		const userMessage: MessageBubble = {
 			id: crypto.randomUUID(),
 			type: "user",
 			chunks: [{ content }],
-			orderIndex: this.messages.length,
+			orderIndex: workspaceStore.messages.length,
 		};
-		this.messages.push(userMessage);
-		supabase.pushMessage(this.threadId, userMessage);
-		this.notify("message", userMessage);
+		await workspaceStore.addMessageAndPersist(this.threadId, userMessage);
 		this.sendMessage("toLLM", { type: "toLLM", text: content } as ToLLMMessage);
 	}
 
-	handleIncomingMessage(message: WebSocketMessage) {
+	private async handleIncomingMessage(message: WebSocketMessage) {
 		const { payload, messageId } = message;
 
 		switch (payload.type) {
@@ -266,24 +198,23 @@ export class WebSocketConversation {
 				const newChunk: MessageChunkBubble = {
 					content: (payload as MessageChunk).content,
 				};
-				const lastMessage = this.messages[this.messages.length - 1];
+				const lastMessage =
+					workspaceStore.messages[workspaceStore.messages.length - 1];
 				if (lastMessage?.type === "assistant") {
 					lastMessage.chunks.push(newChunk);
-					supabase.pushMessage(this.threadId, lastMessage);
+					await workspaceStore.addMessageAndPersist(this.threadId, lastMessage);
 				} else {
-					this.messages.push({
+					const assistantMessage: MessageBubble = {
 						id: crypto.randomUUID(),
 						type: "assistant",
 						chunks: [newChunk],
-						orderIndex: this.messages.length,
-					});
-					supabase.pushMessage(
+						orderIndex: workspaceStore.messages.length,
+					};
+					await workspaceStore.addMessageAndPersist(
 						this.threadId,
-						this.messages[this.messages.length - 1],
+						assistantMessage,
 					);
 				}
-				this.notify("message");
-				console.log(this.messages);
 				return;
 			}
 			case "agent": {
@@ -328,11 +259,14 @@ export class WebSocketConversation {
 					case "write_bi_report": {
 						const report = toolArgs.report;
 						if (report) {
-							const firstDocument = this.artifacts.documents[0];
+							const firstDocument = workspaceStore.artifacts.documents[0];
 							if (firstDocument) {
 								firstDocument.content = report;
 								newChunk.toolCall.artifactId = firstDocument.id;
-								supabase.updateArtifact(this.threadId, firstDocument);
+								await workspaceStore.updateArtifactAndPersist(
+									this.threadId,
+									firstDocument,
+								);
 							} else {
 								const newDocument: Artifact = {
 									id,
@@ -341,8 +275,10 @@ export class WebSocketConversation {
 									created_at: new Date().toISOString(),
 								};
 								// Create new document and get its ID
-								this.artifacts.documents.push(newDocument);
-								supabase.addArtifact(this.threadId, newDocument);
+								await workspaceStore.addArtifactAndPersist(
+									this.threadId,
+									newDocument,
+								);
 							}
 						}
 						this.notify("tool", newChunk.toolCall);
@@ -356,8 +292,10 @@ export class WebSocketConversation {
 								content: image,
 								created_at: new Date().toISOString(),
 							};
-							this.artifacts.images.push(newImage);
-							supabase.addArtifact(this.threadId, newImage);
+							await workspaceStore.addArtifactAndPersist(
+								this.threadId,
+								newImage,
+							);
 						}
 						this.notify("tool", newChunk.toolCall);
 						break;
@@ -370,8 +308,10 @@ export class WebSocketConversation {
 								content: result,
 								created_at: new Date().toISOString(),
 							};
-							this.artifacts.queries.push(newQuery);
-							supabase.addArtifact(this.threadId, newQuery);
+							await workspaceStore.addArtifactAndPersist(
+								this.threadId,
+								newQuery,
+							);
 						}
 						this.notify("tool", newChunk.toolCall);
 						break;
@@ -384,14 +324,22 @@ export class WebSocketConversation {
 								content: result,
 								created_at: new Date().toISOString(),
 							};
-							this.artifacts.queries.push(newQuery);
-							supabase.addArtifact(this.threadId, newQuery);
+							await workspaceStore.addArtifactAndPersist(
+								this.threadId,
+								newQuery,
+							);
 						}
 						this.notify("tool", newChunk.toolCall);
 						break;
 					}
 
 					case "agent_update_business": {
+						if (result) {
+							await userConfigStore.upsertUserConfig(this.token, {
+								...userConfigStore.userConfig,
+								business_overview: result,
+							});
+						}
 						this.notify("tool", newChunk.toolCall);
 						break;
 					}
@@ -410,10 +358,9 @@ export class WebSocketConversation {
 						id,
 						type: "tool",
 						chunks: [newChunk],
-						orderIndex: this.messages.length,
+						orderIndex: workspaceStore.messages.length,
 					};
-					this.messages.push(newMessage);
-					this.notify("message", newMessage);
+					await workspaceStore.addMessageAndPersist(this.threadId, newMessage);
 				}
 				break;
 			}

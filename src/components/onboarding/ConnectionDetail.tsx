@@ -2,9 +2,6 @@ import type { Connection } from "@/types/connectors";
 import { useAuth } from "@/utils/AuthProvider";
 import type * as React from "react";
 import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { useUserConfig } from "../../utils/UserConfigProvider";
 import { MarkdownContent } from "../Chat/MarkdownContent";
 import { BackArrow } from "../common/BackArrow";
 import { Modal } from "../common/Modal";
@@ -130,9 +127,8 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [formData, setFormData] = useState<Record<string, string>>({});
 	const connectionConfig = getConnectionFields(connection.name);
-	const [session, setSession] = useState<string | null>(null);
-	const { getValidToken } = useAuth();
-	const { createConnection } = useUserConfig();
+	const { session } = useAuth();
+	const [sessionToken, setSessionToken] = useState<string | null>(null);
 
 	useEffect(() => {
 		const fetchRedirectUrl = async () => {
@@ -140,28 +136,27 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 				const response = await fetch(`${API_BASE_URL}/v0/oauth/session`, {
 					method: "POST",
 					headers: {
-						Authorization: `Bearer ${await getValidToken()}`,
+						Authorization: `Bearer ${session?.access_token}`,
 					},
 				});
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`);
 				}
 
-				const { session } = await response.json();
-
-				setSession(session);
+				const { sessionToken } = await response.json();
+				setSessionToken(sessionToken);
 			} catch (error) {
 				console.error("Error initiating Google auth:", error);
 			}
 		};
 		fetchRedirectUrl();
-	}, [getValidToken]);
+	}, [session]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		const queryParams = new URLSearchParams({
-			session: session || "",
+			session: sessionToken || "",
 		});
 
 		const connector = connection.name.toLowerCase();

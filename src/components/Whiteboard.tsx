@@ -5,9 +5,10 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { type Artifacts, useWorkspace } from "@/contexts/WorkspaceContext";
+import { workspaceStore } from "@/stores/WorkspaceStore";
 import html2pdf from "html2pdf.js";
 import { Download } from "lucide-react";
+import { observer } from "mobx-react-lite";
 import { useRef } from "react";
 import { DataExecutor } from "./DataExecutor";
 import { DocumentEditor } from "./DocumentEditor";
@@ -18,7 +19,7 @@ import { TabGroup } from "./onboarding/TabGroup";
 
 export function Whiteboard() {
 	const documentRef = useRef<HTMLDivElement>(null);
-	const { artifacts, currentArtifact, setCurrentArtifactById } = useWorkspace();
+	const { artifacts, currentArtifact } = workspaceStore;
 
 	// Create tabs from artifacts with their IDs
 	const tabs = [
@@ -45,7 +46,7 @@ export function Whiteboard() {
 		];
 		const artifact = allArtifacts.find((a) => a.id === selectedTab.id);
 		if (artifact) {
-			setCurrentArtifactById(artifact.id);
+			workspaceStore.currentArtifact = artifact;
 		}
 	};
 
@@ -173,3 +174,5 @@ export function Whiteboard() {
 		</div>
 	);
 }
+
+export default observer(Whiteboard);

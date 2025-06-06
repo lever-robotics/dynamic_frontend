@@ -7,9 +7,7 @@ export function RightPanel() {
 
 	return (
 		<div className="w-[600px] border-l border-gray-200">
-			<WorkspaceProvider threadId="" isQueryData={false}>
-				<BlueprintChat />
-			</WorkspaceProvider>
+			<BlueprintChat />
 		</div>
 	);
 }

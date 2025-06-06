@@ -1,3 +1,4 @@
+import type { ToolExecutionBubble } from "@/types/chat";
 import type { DataConnector } from "@/types/connectors";
 import {
 	createContext,
@@ -9,6 +10,7 @@ import {
 } from "react";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "./SupabaseClient";
+import type { WebSocketConversation } from "./WebSocket";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export interface UserConfig {
@@ -25,8 +27,6 @@ interface Thread {
 
 interface UserConfigContextType {
 	userConfig: UserConfig | null;
-	isLoading: boolean;
-	error: string | null;
 	fetchUserConfig: () => Promise<void>;
 	upsertUserConfig: (userConfig: UserConfig) => Promise<void>;
 	updateConnectionMeta: (
@@ -41,6 +41,30 @@ interface UserConfigContextType {
 	createThread: (name: string) => Promise<string>;
 	fetchThreads: () => Promise<void>;
 	threads: Thread[];
+	threadId: string;
+	setThreadId: (threadId: string) => void;
+	artifacts: Artifacts;
+	currentArtifact: Artifact | null;
+	setCurrentArtifact: (artifact: Artifact | null) => void;
+	setCurrentArtifactById: (artifactId: string) => void;
+	ws: WebSocketConversation | null;
+}
+
+export interface Artifact {
+	artifact_type: "image" | "document" | "query";
+	content: string;
+	created_at: string;
+	id: string;
+	metadata?: {
+		data_source?: "bigquery" | "shopify";
+		[key: string]: string | number | boolean | null;
+	};
+}
+
+export interface Artifacts {
+	images: Artifact[];
+	documents: Artifact[];
+	queries: Artifact[];
 }
 
 const UserConfigContext = createContext<UserConfigContextType | undefined>(
@@ -51,20 +75,34 @@ export const UserConfigProvider = ({
 	children,
 }: { children: React.ReactNode }) => {
 	const [userConfig, setUserConfig] = useState<UserConfig | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const { userId, getValidToken } = useAuth();
+	const { session } = useAuth();
 	const [threads, setThreads] = useState<Thread[]>([]);
+	const [threadId, setThreadId] = useState<string>("");
+
+	const [artifacts, setArtifacts] = useState<Artifacts>({
+		images: [],
+		documents: [
+			{
+				artifact_type: "document",
+				content: "",
+				created_at: new Date().toISOString(),
+				id: crypto.randomUUID(),
+				metadata: {},
+			},
+		],
+		queries: [],
+	});
+	const [currentArtifact, setCurrentArtifact] = useState<Artifact>(
+		artifacts.documents[0],
+	);
+	const [ws, setWs] = useState<WebSocketConversation | null>(null);
+
+	console.log("Render UserConfigProvider");
 
 	const fetchUserConfig = useCallback(async () => {
-		if (!userId) return;
-
-		setIsLoading(true);
-		setError(null);
-
-		const token = await getValidToken();
+		const token = session?.access_token;
 		if (!token) {
-			setError("Failed to get valid token");
+			console.error("Failed to get valid token");
 			return;
 		}
 
@@ -98,31 +136,25 @@ export const UserConfigProvider = ({
 			}
 
 			const connectors = Object.values(connectorsBody.data) as DataConnector[];
-
+			console.log("Setting UserConfig", {
+				completed_onboarding: configBody.data.completed_onboarding,
+				business_overview: configBody.data.business_overview,
+				data_connectors: connectors,
+			});
 			setUserConfig({
 				completed_onboarding: configBody.data.completed_onboarding,
 				business_overview: configBody.data.business_overview,
 				data_connectors: connectors,
 			});
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to fetch user config",
-			);
 			console.error("Error fetching user config:", err);
-		} finally {
-			setIsLoading(false);
 		}
-	}, [userId, getValidToken]);
+	}, [session]);
 
 	const fetchThreads = useCallback(async () => {
-		if (!userId) return;
-
-		setIsLoading(true);
-		setError(null);
-
-		const token = await getValidToken();
+		const token = session?.access_token;
 		if (!token) {
-			setError("Failed to get valid token");
+			console.error("Failed to get valid token");
 			return;
 		}
 
@@ -130,36 +162,33 @@ export const UserConfigProvider = ({
 			const { data: threads, error: threadsError } = await supabase
 				.from("threads")
 				.select("id, name, created_at")
-				.eq("user_id", userId)
+				.eq("user_id", session?.user.id)
 				.order("created_at", { ascending: false });
 
 			if (threadsError) throw threadsError;
-
+			console.log("Setting Threads", threads);
 			setThreads(threads || []);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to fetch threads");
 			console.error("Error fetching threads:", err);
-		} finally {
-			setIsLoading(false);
 		}
-	}, [userId, getValidToken]);
+	}, [session]);
 
-	useEffect(() => {
-		if (!userId) return;
-		fetchUserConfig();
-		fetchThreads();
-	}, [userId, fetchUserConfig, fetchThreads]);
+	// useEffect(() => {
+	// 	if (!userId) return;
+	// 	fetchUserConfig();
+	// 	fetchThreads();
+	// }, [userId, fetchUserConfig, fetchThreads]);
 
 	const createThread = async (name: string): Promise<string> => {
 		try {
 			const { data, error } = await supabase
 				.from("threads")
-				.insert([{ user_id: userId, name }])
+				.insert([{ user_id: session?.user.id, name }])
 				.select()
 				.single();
 
 			if (error) {
-				setError(error.message);
+				console.error("Error creating thread:", error);
 				return "";
 			}
 
@@ -169,18 +198,15 @@ export const UserConfigProvider = ({
 			return data.id;
 		} catch (err) {
 			console.error("[UserConfigProvider] Error creating thread:", err);
-			setError(err instanceof Error ? err.message : "Failed to create thread");
 			return "";
 		}
 	};
 
 	const upsertUserConfig = useCallback(
 		async (userConfig: UserConfig) => {
-			if (!userId) return;
-
-			const token = await getValidToken();
+			const token = session?.access_token;
 			if (!token) {
-				setError("Failed to get valid token");
+				console.error("Failed to get valid token");
 				return;
 			}
 			try {
@@ -200,27 +226,18 @@ export const UserConfigProvider = ({
 				if (updateBody.error) {
 					throw new Error(updateBody.error);
 				}
-
-				await fetchUserConfig();
 			} catch (err) {
-				setError(
-					err instanceof Error ? err.message : "Failed to update user config",
-				);
 				console.error("Error updating user config", err);
-			} finally {
-				setIsLoading(false);
 			}
 		},
-		[userId, fetchUserConfig, getValidToken],
+		[session],
 	);
 
 	const updateConnectionMeta = useCallback(
 		async (connectionId: string, meta: DataConnector["meta"]) => {
-			if (!userId) return;
-
-			const token = await getValidToken();
+			const token = session?.access_token;
 			if (!token) {
-				setError("Failed to get valid token");
+				console.error("Failed to get valid token");
 				return;
 			}
 
@@ -244,26 +261,102 @@ export const UserConfigProvider = ({
 
 				await fetchUserConfig();
 			} catch (err) {
-				setError(
-					err instanceof Error
-						? err.message
-						: "Failed to update connection metadata",
-				);
 				console.error("Error updating connection metadata:", err);
-			} finally {
-				setIsLoading(false);
 			}
 		},
-		[userId, fetchUserConfig, getValidToken],
+		[fetchUserConfig, session],
 	);
+
+	// useEffect(() => {
+	// 	console.log("[UserConfigProvider] ws", ws);
+	// 	const initWebSocket = async () => {
+	// 		const token = await getValidToken();
+	// 		const wsConvo = new WebSocketConversation(
+	// 			token,
+	// 			userId,
+	// 			userConfig,
+	// 			threadId,
+	// 		);
+	// 		wsConvo.subscribe("tool", (toolCall: ToolExecutionBubble) => {
+	// 			if (toolCall.tool === "agent_update_business") {
+	// 				upsertUserConfig({
+	// 					...userConfig,
+	// 					business_overview: toolCall.result,
+	// 				});
+	// 				setUserConfig({
+	// 					...userConfig,
+	// 					business_overview: toolCall.result,
+	// 				});
+	// 			}
+	// 			if (toolCall.tool === "agent_write_meta_file") {
+	// 				const connection_id = toolCall.arguments.connection_id;
+	// 				const meta_file_json = toolCall.arguments.meta_file_json;
+	// 				const meta_data = JSON.parse(meta_file_json);
+	// 				// Set the meta file in the specific connector
+	// 				const connector = userConfig.data_connectors.find(
+	// 					(connector) => connector.id === connection_id,
+	// 				);
+	// 				if (connector) {
+	// 					updateConnectionMeta(connection_id, meta_data);
+	// 				}
+	// 			}
+	// 			if (
+	// 				toolCall.tool === "write_bi_report" ||
+	// 				toolCall.tool === "agent_execute_python_code" ||
+	// 				toolCall.tool === "agent_execute_bigquery"
+	// 			) {
+	// 				setArtifacts({ ...ws.artifacts });
+	// 			}
+	// 			if (toolCall.tool === "agent_execute_sql_query") {
+	// 				console.log("[UserConfigProvider] agent_execute_sql_query", toolCall);
+	// 				const queryId = toolCall.arguments.query_id;
+	// 				setCurrentArtifactById(queryId);
+	// 			}
+	// 		});
+	// 		setWs(wsConvo);
+	// 	};
+	// 	if (ws === null) {
+	// 		console.log("[UserConfigProvider] initWebSocket");
+	// 		initWebSocket();
+	// 	} else if (threadId !== ws.threadId) {
+	// 		ws.disconnect();
+	// 		initWebSocket();
+	// 	}
+
+	// 	return () => {
+	// 		console.log("[UserConfigProvider] cleanup");
+	// 		if (ws?.isConnected) {
+	// 			console.log("[UserConfigProvider] disconnecting");
+	// 			ws.disconnect();
+	// 		}
+	// 	};
+	// }, [
+	// 	threadId,
+	// 	getValidToken,
+	// 	userId,
+	// 	updateConnectionMeta,
+	// 	upsertUserConfig,
+	// 	userConfig,
+	// 	ws,
+	// ]);
+
+	const setCurrentArtifactById = (artifactId: string) => {
+		const allArtifacts = [
+			...artifacts.documents,
+			...artifacts.images,
+			...artifacts.queries,
+		];
+		const foundArtifact = allArtifacts.find((a) => a.id === artifactId);
+		if (foundArtifact) {
+			setCurrentArtifact(foundArtifact);
+		}
+	};
 
 	const createConnection = useCallback(
 		async (connectionType: string, keys: Record<string, string>) => {
-			if (!userId) return;
-
-			const token = await getValidToken();
+			const token = session?.access_token;
 			if (!token) {
-				setError("Failed to get valid token");
+				console.error("Failed to get valid token");
 				return;
 			}
 
@@ -277,7 +370,7 @@ export const UserConfigProvider = ({
 							Authorization: `Bearer ${token}`,
 						},
 						body: JSON.stringify({
-							user_id: userId,
+							user_id: session?.user.id,
 							connection_type: connectionType,
 							meta: {
 								version: "1.0",
@@ -296,13 +389,10 @@ export const UserConfigProvider = ({
 				// Refresh the user config to get the new connection
 				await fetchUserConfig();
 			} catch (err) {
-				setError(
-					err instanceof Error ? err.message : "Failed to create connection",
-				);
 				console.error("Error creating connection:", err);
 			}
 		},
-		[userId, fetchUserConfig, getValidToken],
+		[fetchUserConfig, session],
 	);
 
 	const connections = useMemo(() => {
@@ -313,8 +403,6 @@ export const UserConfigProvider = ({
 		<UserConfigContext.Provider
 			value={{
 				userConfig,
-				isLoading,
-				error,
 				fetchUserConfig,
 				upsertUserConfig,
 				updateConnectionMeta,
@@ -323,6 +411,13 @@ export const UserConfigProvider = ({
 				fetchThreads,
 				threads,
 				createThread,
+				threadId,
+				setThreadId,
+				artifacts,
+				currentArtifact,
+				setCurrentArtifact,
+				setCurrentArtifactById,
+				ws,
 			}}
 		>
 			{children}

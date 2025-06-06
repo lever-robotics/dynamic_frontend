@@ -1,8 +1,9 @@
-import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { workspaceStore } from "@/stores/WorkspaceStore";
 import type {
 	MessageBubble as MessageBubbleType,
 	ToolExecutionBubble,
 } from "@/types/chat";
+import { observer } from "mobx-react-lite";
 import type React from "react";
 import { useEffect, useRef } from "react";
 import { MessageBubble } from "./MessageBubble";
@@ -16,16 +17,22 @@ const toolNameMapping: Record<string, string> = {
 };
 
 interface MessageListProps {
-	messages: MessageBubbleType[];
 	className?: string;
 }
 
-export function MessageList({ messages, className = "" }: MessageListProps) {
+function MessageList({ className = "" }: MessageListProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const { setCurrentArtifactById } = useWorkspace();
 	const onSelect = (messageId: string) => {
-		setCurrentArtifactById(messageId);
+		const allArtifacts = [
+			...workspaceStore.artifacts.documents,
+			...workspaceStore.artifacts.images,
+			...workspaceStore.artifacts.queries,
+		];
+		const foundArtifact = allArtifacts.find((a) => a.id === messageId);
+		if (foundArtifact) {
+			workspaceStore.currentArtifact = foundArtifact;
+		}
 	};
 
 	// Check scroll position on every render
@@ -45,7 +52,7 @@ export function MessageList({ messages, className = "" }: MessageListProps) {
 			ref={containerRef}
 			className={`flex-1 overflow-y-auto p-4 space-y-4 ${className}`}
 		>
-			{messages.map((message) => {
+			{workspaceStore.messages.map((message) => {
 				console.log(message);
 				return (
 					<MessageBubble
@@ -60,3 +67,5 @@ export function MessageList({ messages, className = "" }: MessageListProps) {
 		</div>
 	);
 }
+
+export default observer(MessageList);

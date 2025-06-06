@@ -1,4 +1,3 @@
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type {
 	MessageBubble as MessageBubbleType,
 	ToolExecutionBubble,

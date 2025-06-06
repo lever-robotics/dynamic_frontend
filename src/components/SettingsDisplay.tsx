@@ -1,4 +1,5 @@
 import { useAuth } from "@/utils/AuthProvider";
+import { supabase } from "@/utils/SupabaseClient";
 import type React from "react";
 import { useState } from "react";
 import { Modal } from "./common/Modal";
@@ -31,7 +32,7 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 	showBlueprint,
 	resetOnboarding,
 }) => {
-	const { signOut, getValidToken } = useAuth();
+	const { session } = useAuth();
 	const [settings, setSettings] = useState<Setting[]>([
 		{
 			id: "notifications",
@@ -54,7 +55,7 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 	]);
 
 	const testFunction = async () => {
-		const token = await getValidToken();
+		const token = session?.access_token;
 		const response = await fetch(
 			`${API_BASE_URL}/v0/connectors/bigquery/query`,
 			{
@@ -84,7 +85,7 @@ export const SettingsDisplay: React.FC<SettingsDisplayProps> = ({
 
 	const handleSignOut = async () => {
 		try {
-			await signOut();
+			await supabase.auth.signOut();
 		} catch (error) {
 			console.error("Error signing out:", error);
 		}

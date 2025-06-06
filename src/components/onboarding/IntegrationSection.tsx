@@ -12,7 +12,7 @@ interface IntegrationsSectionProps {
 export const IntegrationSection: React.FC<IntegrationsSectionProps> = ({
 	connections,
 }) => {
-	const { getValidToken } = useAuth();
+	const { session } = useAuth();
 	const [selectedIntegration, setSelectedIntegration] =
 		useState<Connection | null>(null);
 
@@ -24,7 +24,7 @@ export const IntegrationSection: React.FC<IntegrationsSectionProps> = ({
 				{
 					method: "GET",
 					headers: {
-						Authorization: `Bearer ${await getValidToken()}`,
+						Authorization: `Bearer ${session?.access_token}`,
 					},
 				},
 			);

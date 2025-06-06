@@ -1,9 +1,10 @@
 "use client";
 import defaultLogo from "@/assets/default_business_logo.png";
+import { userConfigStore } from "@/stores/UserConfigStore";
 import type { Connection } from "@/types/connectors";
 import { Connections } from "@/types/connectors";
-import { useUserConfig } from "@/utils/UserConfigProvider";
-import type * as React from "react";
+import { useAuth } from "@/utils/AuthProvider";
+import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { Modal } from "../common/Modal";
 import { IntegrationSection } from "./IntegrationSection";
@@ -23,15 +24,23 @@ export function BusinessSetup({
 		"https://www.thehydrojug.com/",
 	);
 	const [logoUrl, setLogoUrl] = useState(defaultLogo);
-	const { connections } = useUserConfig();
-	const applicableConnections = Connections.map((connection: Connection) => ({
-		...connection,
-		isConnected: connections.some((conn) => conn.type === connection.type),
-	}));
+	const applicableConnections = userConfigStore.userConfig?.connections?.map(
+		(connection: Connection) => ({
+			...connection,
+			isConnected: userConfigStore.userConfig?.connections.some(
+				(conn) => conn.type === connection.type,
+			),
+		}),
+	);
+	const { session } = useAuth();
 
 	const handleContinue = () => {
 		if (businessName && businessUrl) {
-			setBusinessInfo({ name: businessName, url: businessUrl });
+			userConfigStore.upsertUserConfig(session?.access_token || "", {
+				...userConfigStore.userConfig,
+				business_name: businessName,
+				business_url: businessUrl,
+			});
 			onClose();
 		}
 	};
@@ -98,4 +107,4 @@ export function BusinessSetup({
 	);
 }
 
-export default BusinessSetup;
+export default observer(BusinessSetup);

@@ -11,7 +11,6 @@ import type {
 	ToolExecutionBubble,
 	WebSocketMessage,
 } from "@/types/chat";
-import { useUserConfig } from "@/utils/UserConfigProvider";
 import { memo, useEffect } from "react";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";

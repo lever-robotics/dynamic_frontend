@@ -1,6 +1,6 @@
 import leverLogo from "@/assets/lever-nobg.png";
-import { useAuth } from "@/utils/AuthProvider";
-import { useUserConfig } from "@/utils/UserConfigProvider";
+import type { Credentials } from "@/utils/AuthProvider";
+import { supabase } from "@/utils/SupabaseClient";
 import type React from "react";
 import { useState } from "react";
 
@@ -71,8 +71,35 @@ export const AuthModal: React.FC = () => {
 	const [loading, setLoading] = useState(false);
 	const [isSignUp, setIsSignUp] = useState(false);
 
-	const { signIn, signUp } = useAuth();
-	// const { fetchUserConfig, fetchThreads } = useUserConfig();
+	const signOut = async () => {
+		await supabase.auth.signOut();
+	};
+
+	/**
+	 * Signs in a user with email & password (PKCE flow).
+	 */
+	const signIn = async ({ email, password }: Credentials) => {
+		const { data, error } = await supabase.auth.signInWithPassword({
+			email,
+			password,
+		});
+
+		if (error) throw error;
+		return data;
+	};
+
+	/**
+	 * Signs up a user with email & password (PKCE flow).
+	 */
+	const signUp = async ({ email, password }: Credentials) => {
+		const { data, error } = await supabase.auth.signUp({
+			email,
+			password,
+		});
+
+		if (error) throw error;
+		return data;
+	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();

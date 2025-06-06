@@ -1,5 +1,5 @@
 "use client";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { userConfigStore } from "@/stores/UserConfigStore";
 import type {
 	AgentChunk,
 	FlagChunk,
@@ -9,8 +9,8 @@ import type {
 	WebSocketMessage,
 } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
-import { useUserConfig } from "@/utils/UserConfigProvider";
 import { WebSocketConversation } from "@/utils/WebSocket";
+import { observer } from "mobx-react-lite";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "../common/Modal";
 
@@ -90,112 +90,91 @@ export function AnalyzingBusiness({
 	>([]);
 	const [runningAgents, setRunningAgents] = useState<string[]>([]);
 	const [messageCounter, setMessageCounter] = useState(1);
-	const { userConfig, upsertUserConfig } = useUserConfig();
-	const [isConnected, setIsConnected] = useState(false);
-	const [messages, setMessages] = useState<MessageBubble[]>([]);
-	const { ws } = useWorkspace();
+	const { session } = useAuth();
+	const ws = useRef<WebSocketConversation | null>(null);
 
 	useEffect(() => {
-		if (ws) {
-			const initWebSocket = () => {
-				ws.subscribe("open", () => {
-					setIsConnected(true);
-				});
-				ws.subscribe("message", () => {
-					setMessages([...ws.messages]);
-				});
-				ws.subscribe("error", (error) => {});
-				ws.subscribe("tool", async (toolCall: ToolExecutionBubble) => {
+		const initWebSocket = async () => {
+			ws.current = new WebSocketConversation(
+				session?.access_token || "",
+				session?.user.id || "",
+				userConfigStore.threadId,
+			);
+			ws.current.subscribe("tool", async (toolCall: ToolExecutionBubble) => {
+				setProgress((prev) =>
+					Math.min(prev + TOOL_PROGRESS_INCREMENT, TOTAL_PROGRESS),
+				);
+
+				const addStatusMessage = (text: string) => {
+					setStatusMessages((prev) => {
+						// Check if the last message is the same to prevent duplicates
+						if (prev.length > 0 && prev[prev.length - 1].text === text) {
+							return prev;
+						}
+						return [
+							...prev,
+							{
+								id: prev.length + 1,
+								text,
+								timestamp: Date.now(),
+							},
+						];
+					});
+				};
+
+				switch (toolCall.tool) {
+					case "agent_scrape_website":
+						addStatusMessage("Reading Website Content");
+						break;
+					case "agent_update_business_json":
+					case "agent_update_business": {
+						if (toolCall.status === "complete" && toolCall.result) {
+							addStatusMessage("Updating Business Memory");
+						}
+						break;
+					}
+					default: {
+						if (toolCall.status === "complete") {
+							addStatusMessage(`${toolCall.tool} completed`);
+						}
+						break;
+					}
+				}
+			});
+			ws.current.subscribe("agent", (agentChunk: AgentChunk) => {
+				if (agentChunk.status === "running") {
+					setRunningAgents((prev) => [
+						agentChunk.name,
+						...prev.filter((name) => name !== agentChunk.name),
+					]);
+				} else if (agentChunk.status === "complete") {
 					setProgress((prev) =>
-						Math.min(prev + TOOL_PROGRESS_INCREMENT, TOTAL_PROGRESS),
+						Math.min(prev + AGENT_PROGRESS_INCREMENT, TOTAL_PROGRESS),
 					);
-
-					const addStatusMessage = (text: string) => {
-						setStatusMessages((prev) => {
-							// Check if the last message is the same to prevent duplicates
-							if (prev.length > 0 && prev[prev.length - 1].text === text) {
-								return prev;
-							}
-							return [
-								...prev,
-								{
-									id: prev.length + 1,
-									text,
-									timestamp: Date.now(),
-								},
-							];
-						});
-					};
-
-					switch (toolCall.tool) {
-						case "agent_scrape_website":
-							addStatusMessage("Reading Website Content");
-							break;
-						case "agent_update_business_json":
-						case "agent_update_business": {
-							if (toolCall.status === "complete" && toolCall.result) {
-								if (userConfig) {
-									await upsertUserConfig({
-										...userConfig,
-										business_overview: toolCall.result,
-									});
-								}
-								addStatusMessage("Updating Business Memory");
-							}
-							break;
-						}
-						default: {
-							if (toolCall.status === "complete") {
-								addStatusMessage(`${toolCall.tool} completed`);
-							}
-							break;
-						}
-					}
-				});
-				ws.subscribe("agent", (agentChunk: AgentChunk) => {
-					if (agentChunk.status === "running") {
-						setRunningAgents((prev) => [
-							agentChunk.name,
-							...prev.filter((name) => name !== agentChunk.name),
+					if (agentChunk.name === "Data Gathering Agent") {
+						setProgress(TOTAL_PROGRESS);
+						setMessageCounter((counter) => counter + 1);
+						setStatusMessages((prev) => [
+							...prev,
+							{
+								id: messageCounter,
+								text: "Finalizing analysis",
+								timestamp: Date.now(),
+							},
 						]);
-					} else if (agentChunk.status === "complete") {
-						setProgress((prev) =>
-							Math.min(prev + AGENT_PROGRESS_INCREMENT, TOTAL_PROGRESS),
-						);
-						if (agentChunk.name === "Data Gathering Agent") {
-							setProgress(TOTAL_PROGRESS);
-							setMessageCounter((counter) => counter + 1);
-							setStatusMessages((prev) => [
-								...prev,
-								{
-									id: messageCounter,
-									text: "Finalizing analysis",
-									timestamp: Date.now(),
-								},
-							]);
-							setTimeout(() => onComplete(), 1000);
-						}
+						setTimeout(() => onComplete(), 1000);
 					}
-				});
-				ws.subscribe("close", () => {
-					console.log("WebSocket closed");
-					setIsConnected(false);
-				});
-				ws.connect("onboarding", {
-					business_name: businessInfo.name,
-					business_url: businessInfo.url,
-				});
-			};
+				}
+			});
+			ws.current.connect("onboarding");
+		};
+		if (ws.current === null) {
 			initWebSocket();
 		}
-	}, [
-		upsertUserConfig,
-		onComplete,
-		userConfig,
-		messageCounter,
-		ws,
-		businessInfo,
-	]);
+		return () => {
+			ws.current?.disconnect();
+		};
+	}, [session, onComplete, messageCounter]);
 
 	return (
 		<Modal
@@ -218,3 +197,5 @@ export function AnalyzingBusiness({
 		</Modal>
 	);
 }
+
+export default observer(AnalyzingBusiness);

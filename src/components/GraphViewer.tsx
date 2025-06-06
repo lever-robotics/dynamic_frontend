@@ -1,8 +1,9 @@
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
+import { workspaceStore } from "@/stores/WorkspaceStore";
+import { observer } from "mobx-react-lite";
 
-export function GraphViewer() {
-	const { artifacts, currentArtifact } = useWorkspace();
+export const GraphViewer = observer(() => {
+	const currentArtifact = workspaceStore.currentArtifact;
 	return (
 		<div
 			className={cn(
@@ -28,4 +29,4 @@ export function GraphViewer() {
 			</div>
 		</div>
 	);
-}
+});

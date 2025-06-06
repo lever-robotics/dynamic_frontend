@@ -1,10 +1,11 @@
+import { userConfigStore } from "@/stores/UserConfigStore";
 import type {
 	CombinedConnection,
 	DataConnector,
 	Entity,
 } from "@/types/connectors";
 import { Connections } from "@/types/connectors";
-import { useUserConfig } from "@/utils/UserConfigProvider";
+import { observer } from "mobx-react-lite";
 import { DataSourceItem } from "./DataSourceItem";
 
 interface ConnectionsListProps {
@@ -22,8 +23,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
 	onSelectConnection,
 	onAddConnection,
 }) => {
-	const { userConfig, isLoading } = useUserConfig();
-	const connections = userConfig?.data_connectors || [];
+	const connections = userConfigStore.userConfig?.data_connectors || [];
 
 	const applicableConnections: CombinedConnection[] = connections.map(
 		(dataConnector) => {
@@ -43,9 +43,9 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
 			</div>
 
 			<div className="flex-1 overflow-auto p-4 space-y-2">
-				{isLoading ? (
-					<div className="text-gray-500">Loading Data Connectors...</div>
-				) : connections.length > 0 ? (
+				{connections.length === 0 ? (
+					<div className="text-gray-500">No Data Connectors Configured</div>
+				) : (
 					applicableConnections.map((connection) => (
 						<div key={connection.dataConnector.type} className="space-y-1">
 							<DataSourceItem
@@ -59,8 +59,6 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
 							/>
 						</div>
 					))
-				) : (
-					<div className="text-gray-500">No data connectors configured.</div>
 				)}
 
 				<div
@@ -74,3 +72,5 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
 		</div>
 	);
 };
+
+export default observer(ConnectionsList);

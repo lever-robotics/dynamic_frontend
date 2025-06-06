@@ -1,5 +1,6 @@
-import { useUserConfig } from "@/utils/UserConfigProvider";
-import { useEffect, useState } from "react";
+import { userConfigStore } from "@/stores/UserConfigStore";
+import { observer } from "mobx-react-lite";
+import { useState } from "react";
 import { JsonView } from "./JsonViewer";
 
 function JsonToMarkdown({ data }: { data: any }) {
@@ -210,37 +211,29 @@ function JsonToMarkdown({ data }: { data: any }) {
 
 	return <div className="max-w-none">{renderContent(data)}</div>;
 }
-
-export function BusinessOverview() {
-	const { userConfig, isLoading } = useUserConfig();
+function BusinessOverview() {
 	const [parsedContent, setParsedContent] = useState<any>(null);
 
-	useEffect(() => {
-		if (userConfig?.business_overview) {
-			try {
-				// If it's a string, parse it. If it's already an object, use it directly
-				const parsed =
-					typeof userConfig.business_overview === "string"
-						? JSON.parse(userConfig.business_overview)
-						: userConfig.business_overview;
-				setParsedContent(parsed);
-			} catch (e) {
-				console.error("Failed to parse business overview:", e);
-				setParsedContent(null);
-			}
+	if (userConfigStore.userConfig?.business_overview) {
+		try {
+			// If it's a string, parse it. If it's already an object, use it directly
+			const parsed =
+				typeof userConfigStore.userConfig.business_overview === "string"
+					? JSON.parse(userConfigStore.userConfig.business_overview)
+					: userConfigStore.userConfig.business_overview;
+			setParsedContent(parsed);
+		} catch (e) {
+			console.error("Failed to parse business overview:", e);
+			setParsedContent(null);
 		}
-	}, [userConfig]);
+	}
 
 	return (
 		<div className="h-full flex flex-col bg-white">
 			{/* Content */}
 			<div className="flex-1 overflow-auto p-6">
 				<div className="prose max-w-none">
-					{isLoading ? (
-						<div className="bg-gray-50 p-6 rounded-lg">
-							Loading Business Overview...
-						</div>
-					) : parsedContent ? (
+					{parsedContent ? (
 						<div className="bg-gray-50 p-6 rounded-lg">
 							<JsonToMarkdown data={parsedContent} />
 						</div>
@@ -254,3 +247,5 @@ export function BusinessOverview() {
 		</div>
 	);
 }
+
+export default observer(BusinessOverview);

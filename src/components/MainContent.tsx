@@ -1,62 +1,54 @@
-import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { userConfigStore } from "@/stores/UserConfigStore";
+import { workspaceStore } from "@/stores/WorkspaceStore";
 import type { MessageBubble, ToolExecutionBubble } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
-import { supabase } from "@/utils/SupabaseClient";
-import { useUserConfig } from "@/utils/UserConfigProvider";
 import { WebSocketConversation } from "@/utils/WebSocket";
+import { observer } from "mobx-react-lite";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ChatInput } from "./Chat/ChatInput";
-import { MessageList } from "./Chat/MessageList";
+import MessageList from "./Chat/MessageList";
 import { Whiteboard } from "./Whiteboard";
 
-interface MainContentProps {
-	threadId: string;
-	queryData: boolean;
-}
+// interface MainContentProps {
+// }
 // Bring ChatDisplay into this component
 // Need an addMessage function that will update the messages state and also send the message to the db.
 // Maybe instead of an addMessage there is an addTool and addAssitant
-export const MainContent: React.FC<MainContentProps> = ({
-	threadId,
-	queryData,
-}) => {
-	const { ws } = useWorkspace();
-	const [isConnected, setIsConnected] = useState(false);
-	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
-	const [messages, setMessages] = useState<MessageBubble[]>([]);
+export const MainContent: React.FC = () => {
+	const { session } = useAuth();
+	const ws = useRef<WebSocketConversation | null>(null);
 
 	useEffect(() => {
-		console.log("[MainContent] ws", ws);
-		console.log("[MainContent] isConnected", ws?.isConnected);
-		if (ws) {
-			ws.subscribe("open", () => {
-				console.log("WebSocket connected");
-				setIsConnected(true);
-			});
-			ws.subscribe("message", () => {
-				setMessages([...ws.messages]);
-			});
-			ws.subscribe("error", (error) => {
+		const initWebSocket = async () => {
+			ws.current = new WebSocketConversation(
+				session?.access_token || "",
+				session?.user.id || "",
+				userConfigStore.threadId,
+			);
+			ws.current.subscribe("open", () => {});
+
+			ws.current.subscribe("error", (error) => {
 				console.log("WebSocket error", error);
 			});
-			ws.subscribe("tool", (toolCall: ToolExecutionBubble) => {
-				if (toolCall.tool === "agent_user_potential_responses") {
-					setPotentialResponses(ws.potentialResponses);
-				}
-			});
-			ws.subscribe("close", () => {
-				console.log("WebSocket closed");
-				setIsConnected(false);
-			});
-			console.log("Connecting to WebSocket");
-			ws.connect("query", {});
+			ws.current.subscribe("close", () => {});
+
+			ws.current.connect("query");
+		};
+		if (ws.current === null) {
+			initWebSocket();
+		} else if (ws.current.threadId !== userConfigStore.threadId) {
+			ws.current.disconnect();
+			initWebSocket();
 		}
-	}, [ws]);
+		return () => {
+			ws.current?.disconnect();
+		};
+	}, [session]);
 
 	const handleNewMessage = (content: string) => {
-		if (ws) {
-			ws.sendUserMessage(content);
+		if (ws.current) {
+			ws.current.sendUserMessage(content);
 		}
 	};
 
@@ -73,12 +65,12 @@ export const MainContent: React.FC<MainContentProps> = ({
 				<div className="w-[500px] h-full bg-[#F4F5F7]/[0.43]">
 					<div className="flex flex-col h-full bg-[#F4F5F7]">
 						{/* Messages */}
-						<MessageList messages={messages} />
+						<MessageList />
 
 						{/* Potential Responses */}
-						{potentialResponses.length > 0 && (
+						{workspaceStore.potentialResponses.length > 0 && (
 							<div className="flex flex-wrap gap-2 p-4">
-								{potentialResponses.map((response) => (
+								{workspaceStore.potentialResponses.map((response) => (
 									<button
 										key={response}
 										type="button"
@@ -93,7 +85,7 @@ export const MainContent: React.FC<MainContentProps> = ({
 
 						{/* Chat Input */}
 						<ChatInput
-							isConnected={isConnected}
+							isConnected={ws.current?.isConnected}
 							onSubmit={handleNewMessage}
 							error={null}
 						/>
@@ -104,4 +96,4 @@ export const MainContent: React.FC<MainContentProps> = ({
 	);
 };
 
-export default MainContent;
+export default observer(MainContent);

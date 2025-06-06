@@ -2,6 +2,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import {
 	type ReactNode,
 	createContext,
+	useCallback,
 	useContext,
 	useEffect,
 	useState,
@@ -13,110 +14,42 @@ interface AuthResponse {
 	session: Session | null;
 }
 
-interface Credentials {
+export interface Credentials {
 	email: string;
 	password: string;
 }
 
 type AuthContextType = {
-	getValidToken: () => Promise<string | null | undefined>;
-	signUp: (credentials: Credentials) => Promise<AuthResponse>;
-	signIn: (credentials: Credentials) => Promise<AuthResponse>;
-	signOut: () => Promise<void>;
-	readonly isAuthenticated: boolean;
-	readonly userId: string | null;
+	session: Session | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [session, setSession] = useState<Session | null>(null);
-	const [isAuthenticated, setIsAuthenticated] = useState(false);
-	const [userId, setUserId] = useState<string | null>(null);
-
 	/**
 	 * Subscribes to Supabase to listen for Auth changes
 	 */
 	useEffect(() => {
 		supabase.auth.getSession().then(({ data: { session } }) => {
-			if (session) {
-				setSession(session);
-				setIsAuthenticated(true);
-				setUserId(session.user.id);
-			}
+			setSession(session);
 		});
 
-		const { data: authListener } = supabase.auth.onAuthStateChange(
-			(_event, session) => {
-				if (session) {
-					setSession(session);
-					setIsAuthenticated(true);
-				}
-			},
-		);
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			setSession(session);
+		});
 
 		return () => {
-			authListener.subscription.unsubscribe();
+			subscription.unsubscribe();
 		};
 	}, []);
-
-	const getValidToken = async (): Promise<string | null | undefined> => {
-		if (!session) return null;
-
-		const now = Math.floor(Date.now() / 1000);
-		if (session.expires_at && session.expires_at < now) {
-			const { data: refreshedSession } = await supabase.auth.refreshSession();
-			setSession(refreshedSession.session);
-			return refreshedSession.session?.access_token;
-		}
-
-		return session.access_token;
-	};
-
-	const signOut = async () => {
-		await supabase.auth.signOut();
-		setIsAuthenticated(false);
-		setSession(null);
-		setUserId(null);
-	};
-
-	/**
-	 * Signs in a user with email & password (PKCE flow).
-	 */
-	async function signIn({ email, password }: Credentials) {
-		const { data, error } = await supabase.auth.signInWithPassword({
-			email,
-			password,
-		});
-
-		if (error) throw error;
-		setUserId(data.user?.id);
-		return data;
-	}
-
-	/**
-	 * Signs up a user with email & password (PKCE flow).
-	 */
-	async function signUp({ email, password }: Credentials) {
-		const { data, error } = await supabase.auth.signUp({
-			email,
-			password,
-		});
-
-		if (error) throw error;
-		setUserId(data.user?.id);
-		return data;
-	}
 
 	return (
 		<AuthContext.Provider
 			value={{
-				getValidToken,
-				isAuthenticated,
-				signUp,
-				signIn,
-				signOut,
-				userId,
+				session,
 			}}
 		>
 			{children}

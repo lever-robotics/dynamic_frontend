@@ -3,10 +3,12 @@
 // import logoImg from '@/assets/ecommerce.png';
 import logoImg from "@/assets/lever-nobg.png";
 import { Button } from "@/components/ui/button";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
-import { useUserConfig } from "@/utils/UserConfigProvider";
+import { userConfigStore } from "@/stores/UserConfigStore";
+import { workspaceStore } from "@/stores/WorkspaceStore";
+import { useAuth } from "@/utils/AuthProvider";
 import { Database, LayoutTemplate, PlusCircle, Settings } from "lucide-react";
+import { observer } from "mobx-react-lite";
 import { AspectRatio } from "radix-ui";
 import type React from "react";
 import {
@@ -22,34 +24,37 @@ import {
 interface SidebarProps {
 	setShowSettings: (show: boolean) => void;
 	setShowBlueprint: (show: boolean) => void;
-	handleQueryDataClick: () => Promise<void>;
-	switchThread: (threadId: string) => void;
-	currentThreadId: string;
 }
 
 export const SidebarComp: React.FC<SidebarProps> = ({
 	setShowSettings,
 	setShowBlueprint,
-	handleQueryDataClick,
-	switchThread,
-	currentThreadId,
 }) => {
-	const { threads } = useUserConfig();
-
+	const { session } = useAuth();
 	const handleLogoClick = () => {
 		// TODO: Add home page
 	};
 
 	const handleThreadClick = (threadId: string) => {
-		switchThread(threadId);
+		userConfigStore.threadId = threadId;
 	};
 
+	const handleQueryDataClick = async () => {
+		if (userConfigStore.threadId === "") {
+			const threadId = await userConfigStore.createThread(
+				session?.access_token || "",
+				"Query Data",
+			);
+			userConfigStore.threadId = threadId;
+		}
+		workspaceStore.createQuery();
+	};
 	const handleSettingsClick = () => {
 		setShowSettings(true);
 	};
 
 	const handleNewAnalysisClick = () => {
-		switchThread("");
+		userConfigStore.threadId = "";
 	};
 
 	const handleBlueprintClick = () => {
@@ -85,11 +90,11 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 						{/* Scrollable threads list */}
 						<div className="flex-1 overflow-y-auto scrollbar-hide">
 							<SidebarMenu>
-								{threads.map((thread) => (
+								{userConfigStore.threads.map((thread) => (
 									<SidebarMenuItem key={thread.id}>
 										<SidebarMenuButton
 											onClick={() => handleThreadClick(thread.id)}
-											className={`w-full ${currentThreadId === thread.id ? "bg-anakiwa-100" : ""}`}
+											className={`w-full ${userConfigStore.threadId === thread.id ? "bg-anakiwa-100" : ""}`}
 										>
 											<span className="truncate max-w-[180px]">
 												{thread.name}
@@ -150,4 +155,4 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 	);
 };
 
-export default SidebarComp;
+export default observer(SidebarComp);
