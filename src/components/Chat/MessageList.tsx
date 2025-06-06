@@ -45,14 +45,17 @@ export function MessageList({ messages, className = "" }: MessageListProps) {
 			ref={containerRef}
 			className={`flex-1 overflow-y-auto p-4 space-y-4 ${className}`}
 		>
-			{messages.map((message) => (
-				<MessageBubble
-					key={message.id}
-					message={message}
-					onSelect={onSelect}
-					toolNameMapping={toolNameMapping}
-				/>
-			))}
+			{messages.map((message) => {
+				console.log(message);
+				return (
+					<MessageBubble
+						key={message.id}
+						message={message}
+						onSelect={onSelect}
+						toolNameMapping={toolNameMapping}
+					/>
+				);
+			})}
 			<div ref={messagesEndRef} />
 		</div>
 	);

@@ -56,11 +56,24 @@ export function WorkspaceProvider({
 		useUserConfig();
 	const [artifacts, setArtifacts] = useState<Artifacts>({
 		images: [],
-		documents: [],
+		documents: [
+			{
+				artifact_type: "document",
+				content: "",
+				created_at: new Date().toISOString(),
+				id: crypto.randomUUID(),
+				metadata: {},
+			},
+		],
 		queries: [],
 	});
-	const [currentArtifact, setCurrentArtifact] = useState<Artifact | null>(null);
+	const [currentArtifact, setCurrentArtifact] = useState<Artifact>(
+		artifacts.documents[0],
+	);
 	const [ws, setWs] = useState<WebSocketConversation | null>(null);
+
+	console.log("[WorkspaceProvider] threadId", threadId);
+	console.log("[WorkspaceProvider] ws", ws);
 
 	useEffect(() => {
 		const initWebSocket = async () => {
@@ -68,10 +81,7 @@ export function WorkspaceProvider({
 			const wsConvo = new WebSocketConversation(
 				token,
 				userId,
-				{
-					business_overview: userConfig.business_overview || "",
-					data_connectors: userConfig.data_connectors || [],
-				},
+				userConfig,
 				threadId,
 			);
 			wsConvo.subscribe("tool", (toolCall: ToolExecutionBubble) => {
@@ -108,6 +118,7 @@ export function WorkspaceProvider({
 			setWs(wsConvo);
 		};
 		if (ws === null) {
+			console.log("[WorkspaceProvider] initWebSocket");
 			initWebSocket();
 		} else if (threadId !== ws.threadId) {
 			ws.disconnect();
@@ -117,6 +128,12 @@ export function WorkspaceProvider({
 		if (isQueryData) {
 			ws.queryData();
 		}
+
+		return () => {
+			if (ws?.isConnected) {
+				ws.disconnect();
+			}
+		};
 	}, [
 		threadId,
 		isQueryData,

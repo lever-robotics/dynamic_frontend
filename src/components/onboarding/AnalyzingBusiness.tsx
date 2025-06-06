@@ -1,6 +1,5 @@
 "use client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import type {
 	AgentChunk,
 	FlagChunk,
@@ -71,7 +70,7 @@ const StatusText: React.FC<StatusTextProps> = ({ messages }) => {
 		<div className="flex flex-col gap-1">
 			{visibleMessages.map((message) => (
 				<p
-					key={message.id}
+					key={message.text}
 					className="text-xs leading-4 text-center text-slate-600 text-opacity-60"
 				>
 					{message.text}
@@ -100,15 +99,12 @@ export function AnalyzingBusiness({
 		if (ws) {
 			const initWebSocket = () => {
 				ws.subscribe("open", () => {
-					console.log("WebSocket connected");
 					setIsConnected(true);
 				});
-				ws.subscribe("message", (message) => {
-					setMessages((prevMessages) => [...prevMessages, message]);
+				ws.subscribe("message", () => {
+					setMessages([...ws.messages]);
 				});
-				ws.subscribe("error", (error) => {
-					console.log("WebSocket error", error);
-				});
+				ws.subscribe("error", (error) => {});
 				ws.subscribe("tool", async (toolCall: ToolExecutionBubble) => {
 					setProgress((prev) =>
 						Math.min(prev + TOOL_PROGRESS_INCREMENT, TOTAL_PROGRESS),
@@ -120,11 +116,10 @@ export function AnalyzingBusiness({
 							if (prev.length > 0 && prev[prev.length - 1].text === text) {
 								return prev;
 							}
-							setMessageCounter((counter) => counter + 1);
 							return [
 								...prev,
 								{
-									id: messageCounter,
+									id: prev.length + 1,
 									text,
 									timestamp: Date.now(),
 								},

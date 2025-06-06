@@ -14,7 +14,7 @@ import { BusinessSetup } from "./onboarding/BusinessSetup";
 export const LeverApp: React.FC = () => {
 	const { userConfig, upsertUserConfig, createThread } = useUserConfig(); // universal configurations for the user
 	const [isFirstTime, setIsFirstTime] = useState(
-		!userConfig?.completed_onboarding,
+		userConfig?.completed_onboarding === false,
 	);
 	const [showBlueprint, setShowBlueprint] = useState(false);
 	const [showSettings, setShowSettings] = useState(false); // should not be able to see settings and blueprint at the same time
@@ -50,6 +50,8 @@ export const LeverApp: React.FC = () => {
 	const switchThread = (threadId: string) => {
 		setCurrentThreadId(threadId);
 	};
+
+	console.log("threadId", currentThreadId);
 
 	const resetOnboarding = () => {
 		setIsFirstTime(true);

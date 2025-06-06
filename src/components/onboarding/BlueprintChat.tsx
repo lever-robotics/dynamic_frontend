@@ -6,31 +6,23 @@ import { MessageList } from "../Chat/MessageList";
 
 export const BlueprintChat = () => {
 	const { ws } = useWorkspace();
-	const [isConnected, setIsConnected] = useState(false);
 	const [messages, setMessages] = useState<MessageBubble[]>([]);
 
 	useEffect(() => {
 		if (ws) {
-			ws.subscribe("open", () => {
-				console.log("WebSocket connected");
-				setIsConnected(true);
-			});
-			ws.subscribe("message", (message) => {
-				setMessages((prevMessages) => [...prevMessages, message]);
+			ws.subscribe("message", () => {
+				setMessages([...ws.messages]);
 			});
 			ws.subscribe("error", (error) => {
 				console.log("WebSocket error", error);
 			});
-			ws.subscribe("close", () => {
-				console.log("WebSocket closed");
-				setIsConnected(false);
-			});
+			ws.subscribe("close", () => {});
 			ws.connect("blueprint", {});
 		}
 	}, [ws]);
 
 	const handleNewMessage = (content: string) => {
-		if (ws) {
+		if (ws?.isConnected) {
 			ws.sendUserMessage(content);
 		}
 	};
@@ -43,7 +35,7 @@ export const BlueprintChat = () => {
 
 				{/* Chat Input */}
 				<ChatInput
-					isConnected={isConnected}
+					isConnected={ws?.isConnected}
 					onSubmit={handleNewMessage}
 					error={null}
 				/>

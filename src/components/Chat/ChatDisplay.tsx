@@ -1,6 +1,5 @@
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useMessages } from "@/hooks/useMessages";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import type {
 	AgentChunk,
 	MessageBubble,

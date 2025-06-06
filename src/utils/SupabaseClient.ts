@@ -21,7 +21,7 @@ class Supabase extends SupabaseClient {
 		)
 			.select("*")
 			.eq("thread_id", threadId)
-			.order("created_at", { ascending: false });
+			.order("order_index", { ascending: true });
 
 		if (messagesError) throw messagesError;
 

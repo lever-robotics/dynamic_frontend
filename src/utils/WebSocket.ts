@@ -13,6 +13,7 @@ import type {
 	WebSocketMessage,
 	WebSocketMessageType,
 } from "@/types/chat";
+import type { UserConfig } from "@/utils/UserConfigProvider";
 import { supabase } from "./SupabaseClient";
 
 type WebSocketEvent = "message" | "tool" | "agent" | "error" | "open" | "close";
@@ -26,13 +27,28 @@ export class WebSocketConversation {
 	artifacts: Artifacts;
 	messages: MessageBubble[];
 	potentialResponses: string[];
-
+	userConfig: UserConfig;
+	isConnected: boolean;
 	private subscribers: Map<WebSocketEvent, Set<Subscriber>> = new Map();
 
-	constructor(token: string, userId: string, threadId?: string) {
+	constructor(
+		token: string,
+		userId: string,
+		userConfig: UserConfig,
+		threadId?: string,
+	) {
 		this.threadId = threadId || null;
+		this.userConfig = userConfig;
 		this.token = token;
 		this.userId = userId;
+		this.isConnected = false;
+		this.messages = [];
+		this.potentialResponses = [];
+		this.artifacts = {
+			images: [],
+			documents: [],
+			queries: [],
+		};
 
 		// Initialize subscriber sets for each event
 		["message", "error", "open", "close", "tool", "agent"].forEach((event) => {
@@ -44,6 +60,9 @@ export class WebSocketConversation {
 		try {
 			const artifacts = await supabase.getArtifacts(this.threadId);
 			const messages = await supabase.getMessages(this.threadId);
+			const formattedMessages = messages.map((message) => {
+				return message.content;
+			});
 
 			// Process artifacts
 			const processedArtifacts: Artifacts = {
@@ -72,7 +91,7 @@ export class WebSocketConversation {
 
 			return {
 				artifacts: processedArtifacts,
-				messages: messages,
+				messages: formattedMessages,
 			};
 		} catch (err) {
 			console.error(
@@ -87,10 +106,13 @@ export class WebSocketConversation {
 	}
 
 	async connect(flag: FlagType, flagContext) {
-		if (!this.threadId) {
+		console.log("Connecting to WebSocket");
+		if (this.threadId) {
 			const { artifacts, messages } = await this.loadThreadContent();
 			this.artifacts = artifacts;
 			this.messages = messages;
+			console.log("[WebSocketConversation] Messages loaded:", this.messages);
+			this.notify("message", this.messages);
 		}
 
 		const flagChunk = this.getFlagChunk(flag, flagContext);
@@ -117,12 +139,15 @@ export class WebSocketConversation {
 			console.error("WebSocket error:", event);
 			this.notify("error", event);
 		};
+		this.isConnected = true;
 	}
 
 	disconnect() {
+		console.log("Disconnecting from WebSocket");
 		if (this.ws) {
 			this.ws.close();
 		}
+		this.isConnected = false;
 	}
 
 	private getFlagChunk(flag: FlagType, context): FlagChunk {
@@ -133,6 +158,7 @@ export class WebSocketConversation {
 					flag: flag,
 					context: {
 						...context,
+						...this.userConfig,
 						messages: this.messages,
 						artifacts: this.artifacts,
 					},
@@ -142,14 +168,20 @@ export class WebSocketConversation {
 				return {
 					type: "flag",
 					flag: flag,
-					context: context,
+					context: {
+						...context,
+						...this.userConfig,
+					},
 				};
 			}
 			case "onboarding": {
 				return {
 					type: "flag",
 					flag: flag,
-					context: context,
+					context: {
+						...context,
+						...this.userConfig,
+					},
 				};
 			}
 			default: {
@@ -249,8 +281,8 @@ export class WebSocketConversation {
 						this.messages[this.messages.length - 1],
 					);
 				}
-				this.notify("message", message);
-
+				this.notify("message");
+				console.log(this.messages);
 				return;
 			}
 			case "agent": {

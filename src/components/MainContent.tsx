@@ -1,20 +1,11 @@
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import type { Artifacts } from "@/contexts/WorkspaceContext";
-import { useWebSocket } from "@/hooks/useWebSocket";
-import type {
-	FlagChunk,
-	MessageBubble,
-	MessageChunk,
-	ToolChunk,
-	ToolExecutionBubble,
-} from "@/types/chat";
+import type { MessageBubble, ToolExecutionBubble } from "@/types/chat";
 import { useAuth } from "@/utils/AuthProvider";
 import { supabase } from "@/utils/SupabaseClient";
 import { useUserConfig } from "@/utils/UserConfigProvider";
 import { WebSocketConversation } from "@/utils/WebSocket";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChatDisplay } from "./Chat/ChatDisplay";
 import { ChatInput } from "./Chat/ChatInput";
 import { MessageList } from "./Chat/MessageList";
 import { Whiteboard } from "./Whiteboard";
@@ -36,13 +27,15 @@ export const MainContent: React.FC<MainContentProps> = ({
 	const [messages, setMessages] = useState<MessageBubble[]>([]);
 
 	useEffect(() => {
+		console.log("[MainContent] ws", ws);
+		console.log("[MainContent] isConnected", ws?.isConnected);
 		if (ws) {
 			ws.subscribe("open", () => {
 				console.log("WebSocket connected");
 				setIsConnected(true);
 			});
-			ws.subscribe("message", (message) => {
-				setMessages((prevMessages) => [...prevMessages, message]);
+			ws.subscribe("message", () => {
+				setMessages([...ws.messages]);
 			});
 			ws.subscribe("error", (error) => {
 				console.log("WebSocket error", error);
@@ -59,11 +52,6 @@ export const MainContent: React.FC<MainContentProps> = ({
 			console.log("Connecting to WebSocket");
 			ws.connect("query", {});
 		}
-		return () => {
-			if (ws) {
-				ws.disconnect();
-			}
-		};
 	}, [ws]);
 
 	const handleNewMessage = (content: string) => {

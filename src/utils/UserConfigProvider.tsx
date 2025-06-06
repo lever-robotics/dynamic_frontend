@@ -11,7 +11,7 @@ import { useAuth } from "./AuthProvider";
 import { supabase } from "./SupabaseClient";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-interface UserConfig {
+export interface UserConfig {
 	completed_onboarding: boolean;
 	business_overview: string;
 	data_connectors: DataConnector[];
