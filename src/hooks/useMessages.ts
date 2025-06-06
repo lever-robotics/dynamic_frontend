@@ -34,6 +34,8 @@ const toolDisplayNames: Record<string, string> = {
 	data_gather: "Gathering Data",
 	agent_scrape_website: "Analyzing Website",
 	agent_update_business_json: "Updating Business Memory",
+	agent_data_analysis: "Analyzing Data",
+	agent_data_gather: "Gathering Data",
 };
 
 export function useMessages(sendOnConnect?: () => Payload) {
@@ -49,6 +51,7 @@ export function useMessages(sendOnConnect?: () => Payload) {
 		useUserConfig();
 	const [messages, setMessages] = useState<MessageBubble[]>([]);
 	const [potentialResponses, setPotentialResponses] = useState<string[]>([]);
+	const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
 
 	const pushMessages = async (updatedMessages: MessageBubble[]) => {
 		try {
@@ -83,6 +86,9 @@ export function useMessages(sendOnConnect?: () => Payload) {
 		const { payload, messageId } = wsMessage;
 
 		console.log("[useMessages] Received message:", payload);
+
+		// Clear loading message when any message is received
+		setLoadingMessage(null);
 
 		switch (payload.type) {
 			case "text": {
@@ -133,6 +139,26 @@ export function useMessages(sendOnConnect?: () => Payload) {
 					typeof toolChunk.arguments === "string"
 						? JSON.parse(toolChunk.arguments)
 						: toolChunk.arguments;
+
+				// Set appropriate loading message based on tool type
+				switch (tool) {
+					case "agent_data_analysis":
+						setLoadingMessage("Performing statistical analysis...");
+						break;
+					case "write_bi_report":
+						setLoadingMessage("Reviewing document...");
+						break;
+					case "agent_execute_python_code":
+						setLoadingMessage("Running analysis...");
+						break;
+					case "agent_execute_sql_query":
+					case "agent_execute_bigquery":
+						setLoadingMessage("Querying database...");
+						break;
+					case "agent_scrape_website":
+						setLoadingMessage("Analyzing website...");
+						break;
+				}
 
 				const id = crypto.randomUUID();
 
@@ -302,6 +328,9 @@ export function useMessages(sendOnConnect?: () => Payload) {
 	const handleNewMessage = async (content: string) => {
 		console.log("[useMessages] Handling new message:", content);
 
+		// Set initial loading message
+		setLoadingMessage("Thinking...");
+
 		// Add user message to both local and workspace state
 		const userMessage: MessageBubble = {
 			id: crypto.randomUUID(),
@@ -325,5 +354,7 @@ export function useMessages(sendOnConnect?: () => Payload) {
 		messages,
 		potentialResponses,
 		handleNewMessage,
+		loadingMessage,
+		setLoadingMessage,
 	};
 }

@@ -10,6 +10,7 @@ import {
 	Title,
 	Tooltip,
 } from "chart.js";
+import { useState } from "react";
 import { Bar, Doughnut, Line, Pie } from "react-chartjs-2";
 import ReactMarkdown, { type Components } from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -102,6 +103,35 @@ const ChartRenderer = ({ config }: { config: ChartConfig }) => {
 			);
 	}
 };
+
+// Add ImageModal component
+function ImageModal({
+	src,
+	alt,
+	onClose,
+}: { src: string; alt: string; onClose: () => void }) {
+	return (
+		<div
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+			onClick={onClose}
+		>
+			<div className="relative max-w-[90vw] max-h-[90vh]">
+				<img
+					src={src}
+					alt={alt || "Image content"}
+					className="max-w-full max-h-[90vh] object-contain rounded-lg"
+				/>
+				<button
+					type="button"
+					onClick={onClose}
+					className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/75 transition-colors"
+				>
+					✕
+				</button>
+			</div>
+		</div>
+	);
+}
 
 const markdownComponents: Components = {
 	// Code blocks with syntax highlighting
@@ -203,6 +233,30 @@ const markdownComponents: Components = {
 	),
 	// Horizontal Rule
 	hr: () => <hr className="my-6 border-gray-200" />,
+	// Images
+	img: ({ src, alt, ...props }) => {
+		const [isExpanded, setIsExpanded] = useState(false);
+
+		return (
+			<>
+				<img
+					{...props}
+					src={src}
+					alt={alt || "Image content"}
+					aria-label={alt || "Image content"}
+					className="max-w-full h-auto my-4 rounded-lg shadow-md cursor-pointer hover:opacity-90 transition-opacity"
+					onClick={() => setIsExpanded(true)}
+				/>
+				{isExpanded && (
+					<ImageModal
+						src={src}
+						alt={alt || "Image content"}
+						onClose={() => setIsExpanded(false)}
+					/>
+				)}
+			</>
+		);
+	},
 };
 
 export function MarkdownContent({
@@ -218,99 +272,18 @@ export function MarkdownContent({
 	);
 }
 
-export function ChartMarkdownExample() {
-	const sampleMarkdown = `
-# Chart.js Markdown Example
-
-Here's some regular markdown text that will be rendered normally.
-
-## Line Chart Example
+const sampleMarkdown = `
+This is a sample markdown with a chart:
 
 \`\`\`chart
 {
 	"type": "line",
 	"data": {
-		"labels": ["January", "February", "March", "April", "May", "June"],
-		"datasets": [
-			{
-				"label": "Sales",
-				"data": [65, 59, 80, 81, 56, 55],
-				"borderColor": "rgb(75, 192, 192)",
-				"tension": 0.1
-			}
-		]
-	},
-	"options": {
-		"responsive": true,
-		"plugins": {
-			"title": {
-				"display": true,
-				"text": "Monthly Sales Data"
-			}
-		}
-	}
-}
-\`\`\`
-
-## Bar Chart Example
-
-\`\`\`chart
-{
-	"type": "bar",
-	"data": {
-		"labels": ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-		"datasets": [
-			{
-				"label": "# of Votes",
-				"data": [12, 19, 3, 5, 2, 3],
-				"backgroundColor": [
-					"rgba(255, 99, 132, 0.2)",
-					"rgba(54, 162, 235, 0.2)",
-					"rgba(255, 206, 86, 0.2)",
-					"rgba(75, 192, 192, 0.2)",
-					"rgba(153, 102, 255, 0.2)",
-					"rgba(255, 159, 64, 0.2)"
-				],
-				"borderColor": [
-					"rgba(255, 99, 132, 1)",
-					"rgba(54, 162, 235, 1)",
-					"rgba(255, 206, 86, 1)",
-					"rgba(75, 192, 192, 1)",
-					"rgba(153, 102, 255, 1)",
-					"rgba(255, 159, 64, 1)"
-				],
-				"borderWidth": 1
-			}
-		]
-	},
-	"options": {
-		"scales": {
-			"y": {
-				"beginAtZero": true
-			}
-		}
-	}
-}
-\`\`\`
-
-## Pie Chart Example
-
-\`\`\`chart
-{
-	"type": "pie",
-	"data": {
-		"labels": ["Red", "Blue", "Yellow"],
-		"datasets": [
-			{
-				"label": "Dataset 1",
-				"data": [300, 50, 100],
-				"backgroundColor": [
-					"rgb(255, 99, 132)",
-					"rgb(54, 162, 235)",
-					"rgb(255, 205, 86)"
-				]
-			}
-		]
+		"labels": ["Jan", "Feb", "Mar", "Apr", "May"],
+		"datasets": [{
+			"label": "Sales",
+			"data": [12, 19, 3, 5, 2]
+		}]
 	}
 }
 \`\`\`
@@ -324,6 +297,7 @@ function helloWorld() {
 \`\`\`
 `;
 
+export function ChartMarkdownExample() {
 	return (
 		<div className="container mx-auto p-6 bg-gray-50 rounded-lg">
 			<h1 className="text-3xl font-bold mb-6">Chart Markdown Renderer</h1>

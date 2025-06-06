@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ChatInputProps {
 	isConnected?: boolean;
@@ -7,6 +7,7 @@ interface ChatInputProps {
 	error?: string | null;
 	isLaunchMode?: boolean;
 	disabled?: boolean;
+	onInputChange?: (value: string) => void;
 }
 
 export function ChatInput({
@@ -15,6 +16,7 @@ export function ChatInput({
 	error,
 	isLaunchMode = false,
 	disabled = false,
+	onInputChange,
 }: ChatInputProps) {
 	const [inputValue, setInputValue] = useState("");
 
@@ -28,6 +30,13 @@ export function ChatInput({
 		onSubmit(inputValue.trim());
 		setInputValue("");
 	};
+
+	// Call onInputChange whenever inputValue changes
+	useEffect(() => {
+		if (onInputChange) {
+			onInputChange(inputValue);
+		}
+	}, [inputValue, onInputChange]);
 
 	return (
 		<form onSubmit={handleSubmit} className="p-4">

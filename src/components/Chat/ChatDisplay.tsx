@@ -13,7 +13,7 @@ import type {
 	WebSocketMessage,
 } from "@/types/chat";
 import { useUserConfig } from "@/utils/UserConfigProvider";
-import { memo, useEffect } from "react";
+import { memo, useEffect, useState } from "react";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
 
@@ -27,10 +27,27 @@ export const ChatDisplay = memo(function ChatDisplay({
 	sendOnConnect,
 }: ChatDisplayProps) {
 	const { setCurrentArtifactById } = useWorkspace();
-	const { messages, isConnected, potentialResponses, handleNewMessage } =
-		useMessages(sendOnConnect);
+	const {
+		messages,
+		isConnected,
+		potentialResponses,
+		handleNewMessage,
+		loadingMessage,
+		setLoadingMessage,
+	} = useMessages(sendOnConnect);
+	const [isTyping, setIsTyping] = useState(false);
 
 	console.log("[ChatDisplay] messages:", messages);
+
+	const handleInputChange = (value: string) => {
+		if (value.trim() && !isTyping) {
+			setIsTyping(true);
+			setLoadingMessage("Thinking...");
+		} else if (!value.trim() && isTyping) {
+			setIsTyping(false);
+			setLoadingMessage("Thinking...");
+		}
+	};
 
 	return (
 		<div className="flex flex-col h-full bg-[#F4F5F7]">
@@ -69,6 +86,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 						setCurrentArtifactById(tool.artifactId);
 					}
 				}}
+				loadingMessage={loadingMessage}
 			/>
 
 			{/* Potential Responses */}
@@ -81,7 +99,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 							onClick={() => {
 								handleNewMessage(response);
 							}}
-							className="px-4 py-2 text-sm text-primary border border-primary/20 rounded-full hover:bg-primary/10 transition-colors"
+							className="px-4 py-2 text-sm text-primary-600 border border-primary-300 bg-white/80 rounded-full hover:bg-primary-50 hover:border-primary-400 transition-colors"
 						>
 							{response}
 						</button>
@@ -94,6 +112,7 @@ export const ChatDisplay = memo(function ChatDisplay({
 				isConnected={isConnected}
 				onSubmit={handleNewMessage}
 				error={null}
+				onInputChange={handleInputChange}
 			/>
 		</div>
 	);

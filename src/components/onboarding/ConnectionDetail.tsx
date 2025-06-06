@@ -102,15 +102,21 @@ Your shop domain is the URL of your Shopify store without the "https://" prefix.
 				markdown: `
 # BigQuery Connection Setup
 
-## Setting Up Service Account
+## Finding Your Project and Dataset IDs
 
-1. Go to the Google Cloud Console
-2. Create a new project or select an existing one
-3. Enable the BigQuery API
-4. Create a service account
-5. Generate a new private key (JSON format)
-6. Share your BigQuery dataset with the service account email
-7. Paste the JSON credentials below
+1. **Go to**: [Google Cloud Console BigQuery](https://console.cloud.google.com/bigquery)
+
+2. **In the left sidebar**, open the Explorer tab.
+
+3. **Find your dataset**:
+   * Click the arrow next to your project name (e.g., my-project-123)
+   * Then click the arrow next to your dataset (e.g., my_dataset)
+
+4. **See image for assistnace**:
+   * Light blue box is the ProjectId before the period
+   * Dark blue box is the DatasetId after the period
+
+![BigQuery Interface](/src/assets/big-query.png)
                 `,
 			};
 		default:
