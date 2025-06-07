@@ -40,16 +40,16 @@ export class WorkspaceStore {
 		});
 	}
 
-	createQuery() {
-		const newQuery: Artifact = {
-			id: crypto.randomUUID(),
-			artifact_type: "query",
-			content: "",
-			created_at: new Date().toISOString(),
-		};
-		this.artifacts.queries.push(newQuery);
-		return newQuery;
-	}
+	// createQuery() {
+	// 	const newQuery: Artifact = {
+	// 		id: crypto.randomUUID(),
+	// 		artifact_type: "query",
+	// 		content: "",
+	// 		created_at: new Date().toISOString(),
+	// 	};
+	// 	this.artifacts.queries.push(newQuery);
+	// 	return newQuery;
+	// }
 
 	/**
 	 * Updates an artifact in the store and persists the update to the backend.

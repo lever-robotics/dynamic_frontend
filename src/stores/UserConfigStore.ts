@@ -132,13 +132,6 @@ export class UserConfigStore {
 		}
 	}
 
-	// async switchThread(threadId: string) {
-	// 	await workspaceStore.loadThreadContent(threadId);
-	// 	runInAction(() => {
-	// 		this.threadId = threadId;
-	// 	});
-	// }
-
 	async createConnection(connectionType: string, keys: Record<string, string>) {
 		if (!authStore.session?.access_token) {
 			console.error("No valid token for createConnection");
@@ -209,11 +202,6 @@ export class UserConfigStore {
 			console.error("Error fetching user config:", err);
 		}
 	}
-
-	// async switchThread(threadId: string) {
-	// 	this.threadId = threadId;
-	// 	await workspaceStore.loadThreadContent();
-	// }
 
 	async fetchThreads(userId: string) {
 		if (!authStore.session?.access_token || !userId) {

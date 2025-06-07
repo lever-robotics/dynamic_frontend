@@ -7,6 +7,7 @@ import { userConfigStore } from "@/stores/UserConfigStore";
 import { workspaceStore } from "@/stores/WorkspaceStore";
 import { authStore } from "@/utils/AuthProvider";
 import { Database, LayoutTemplate, PlusCircle, Settings } from "lucide-react";
+import { action } from "mobx";
 import { observer } from "mobx-react-lite";
 import { AspectRatio } from "radix-ui";
 import type React from "react";
@@ -25,7 +26,7 @@ interface SidebarProps {
 	setShowBlueprint: (show: boolean) => void;
 }
 
-export const SidebarComp: React.FC<SidebarProps> = ({
+const SidebarComp: React.FC<SidebarProps> = ({
 	setShowSettings,
 	setShowBlueprint,
 }) => {
@@ -33,19 +34,11 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 		// TODO: Add home page
 	};
 
-	const handleThreadClick = async (threadId: string) => {
-		// await userConfigStore.switchThread(threadId);
-		console.log("handleThreadClick", threadId);
+	const handleThreadClick = action(async (threadId: string) => {
 		userConfigStore.threadId = threadId;
-		workspaceStore.messages = [];
-		workspaceStore.messages.push({
-			id: "1",
-			type: "assistant",
-			chunks: [{ content: "Loading..." }],
-		});
-		console.log("workspaceStore.messages", workspaceStore.messages);
-		// await workspaceStore.loadThreadContent(threadId);
-	};
+		await workspaceStore.loadThreadContent(threadId);
+		workspaceStore.ws.connect("query");
+	});
 
 	const handleQueryDataClick = async () => {
 		// if (workspaceStore.messages.length === 0) {
