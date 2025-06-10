@@ -122,12 +122,12 @@ export const SidebarComp: React.FC<SidebarProps> = ({
 				<SidebarGroup>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							<SidebarMenuItem>
+							{/* <SidebarMenuItem>
 								<SidebarMenuButton onClick={handleQueryDataClick}>
 									<Database className="w-4 h-4" />
 									<span>Query Data</span>
 								</SidebarMenuButton>
-							</SidebarMenuItem>
+							</SidebarMenuItem> */}
 							<SidebarMenuItem>
 								<SidebarMenuButton onClick={handleBlueprintClick}>
 									<LayoutTemplate className="w-4 h-4" />

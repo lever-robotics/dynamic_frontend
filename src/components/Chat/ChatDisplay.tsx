@@ -20,11 +20,13 @@ import { MessageList } from "./MessageList";
 interface ChatDisplayProps {
 	onClose?: () => void;
 	sendOnConnect?: () => Payload;
+	isLever?: boolean;
 }
 
 export const ChatDisplay = memo(function ChatDisplay({
 	onClose,
 	sendOnConnect,
+	isLever = true,
 }: ChatDisplayProps) {
 	const { setCurrentArtifactById } = useWorkspace();
 	const {
@@ -78,32 +80,42 @@ export const ChatDisplay = memo(function ChatDisplay({
 			</div> */}
 
 			{/* Messages */}
-			<MessageList
-				messages={messages}
-				onToolSelect={(tool: ToolExecutionBubble) => {
-					console.log("[ChatDisplay] Tool selected:", tool);
-					if (tool.artifactId) {
-						setCurrentArtifactById(tool.artifactId);
-					}
-				}}
-				loadingMessage={loadingMessage}
-			/>
+			{isLever ? (
+				<>
+					<MessageList
+						messages={messages}
+						onToolSelect={(tool: ToolExecutionBubble) => {
+							console.log("[ChatDisplay] Tool selected:", tool);
+							if (tool.artifactId) {
+								setCurrentArtifactById(tool.artifactId);
+							}
+						}}
+						loadingMessage={loadingMessage}
+					/>
 
-			{/* Potential Responses */}
-			{potentialResponses.length > 0 && (
-				<div className="flex flex-wrap gap-2 p-4">
-					{potentialResponses.map((response) => (
-						<button
-							key={response}
-							type="button"
-							onClick={() => {
-								handleNewMessage(response);
-							}}
-							className="px-4 py-2 text-sm text-primary-600 border border-primary-300 bg-white/80 rounded-full hover:bg-primary-50 hover:border-primary-400 transition-colors"
-						>
-							{response}
-						</button>
-					))}
+					{/* Potential Responses */}
+					{potentialResponses.length > 0 && (
+						<div className="flex flex-wrap gap-2 p-4">
+							{potentialResponses.map((response) => (
+								<button
+									key={response}
+									type="button"
+									onClick={() => {
+										handleNewMessage(response);
+									}}
+									className="px-4 py-2 text-sm text-primary-600 border border-primary-300 bg-white/80 rounded-full hover:bg-primary-50 hover:border-primary-400 transition-colors"
+								>
+									{response}
+								</button>
+							))}
+						</div>
+					)}
+				</>
+			) : (
+				<div className="flex-1 flex items-center justify-center">
+					<p className="text-gray-400 text-sm">
+						Chat is currently under development
+					</p>
 				</div>
 			)}
 
